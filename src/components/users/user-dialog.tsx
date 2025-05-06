@@ -52,9 +52,12 @@ const formSchema = z.object({
     .min(8, "Password must be at least 8 characters")
     .optional(),
   role: z.enum(["SELLER", "ADMIN", "SUPERADMIN"] as const),
-  companyId: z.string().uuid().optional().nullable(),
+  companyId: z.string().optional(),
   active: z.boolean().default(true),
 });
+
+// Special value to represent no company selected
+const NO_COMPANY = "none";
 
 export function UserDialog({
   open,
@@ -79,6 +82,15 @@ export function UserDialog({
     return "SELLER"; // Default role
   };
 
+  // Helper to convert between form value and actual companyId
+  const getCompanyIdValue = (id: string | null | undefined): string => {
+    return id || NO_COMPANY;
+  };
+
+  const getActualCompanyId = (value: string): string | null => {
+    return value === NO_COMPANY ? null : value;
+  };
+
   // Define default values based on whether we're editing or creating
   const defaultValues = {
     firstName: user?.firstName || "",
@@ -86,7 +98,7 @@ export function UserDialog({
     email: "",
     password: "",
     role: getUserRole(user?.role as string),
-    companyId: user?.companyId || null,
+    companyId: getCompanyIdValue(user?.companyId),
     active: user?.active !== undefined ? user.active : true,
   };
 
@@ -121,7 +133,7 @@ export function UserDialog({
         email: "",
         password: "",
         role: getUserRole(user?.role as string),
-        companyId: user?.companyId || null,
+        companyId: getCompanyIdValue(user?.companyId),
         active: user?.active !== undefined ? user.active : true,
       });
     }
@@ -137,7 +149,7 @@ export function UserDialog({
           firstName: values.firstName,
           lastName: values.lastName,
           role: values.role,
-          companyId: values.companyId ?? null, // Ensure it's not undefined
+          companyId: getActualCompanyId(values.companyId || NO_COMPANY),
           active: values.active,
         });
       } else {
@@ -157,7 +169,7 @@ export function UserDialog({
           firstName: values.firstName,
           lastName: values.lastName,
           role: values.role,
-          companyId: values.companyId ?? null, // Ensure it's not undefined
+          companyId: getActualCompanyId(values.companyId || NO_COMPANY),
           active: values.active,
         });
       }
@@ -297,7 +309,7 @@ export function UserDialog({
                   <FormLabel>Company</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    defaultValue={field.value || ""}
+                    defaultValue={field.value || NO_COMPANY}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -305,7 +317,7 @@ export function UserDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value={NO_COMPANY}>None</SelectItem>
                       {companies.map((company) => (
                         <SelectItem key={company.id} value={company.id}>
                           {company.name}

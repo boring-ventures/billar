@@ -36,11 +36,23 @@ interface CompanyDialogProps {
   isSubmitting?: boolean;
 }
 
+// Special values for nullable fields
+const EMPTY_VALUE = "none";
+
 const formSchema = z.object({
   name: z.string().min(1, "Company name is required"),
-  address: z.string().nullable(),
-  phone: z.string().nullable(),
+  address: z.string(),
+  phone: z.string(),
 });
+
+// Helper to convert between form value and actual field value
+const getFormValue = (value: string | null | undefined): string => {
+  return value || EMPTY_VALUE;
+};
+
+const getActualValue = (value: string): string | null => {
+  return value === EMPTY_VALUE ? null : value;
+};
 
 export function CompanyDialog({
   open,
@@ -56,8 +68,8 @@ export function CompanyDialog({
   // Define default values based on whether we're editing or creating
   const defaultValues = {
     name: company?.name || "",
-    address: company?.address || null,
-    phone: company?.phone || null,
+    address: getFormValue(company?.address),
+    phone: getFormValue(company?.phone),
   };
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -70,8 +82,8 @@ export function CompanyDialog({
     if (open) {
       form.reset({
         name: company?.name || "",
-        address: company?.address || null,
-        phone: company?.phone || null,
+        address: getFormValue(company?.address),
+        phone: getFormValue(company?.phone),
       });
     }
   }, [open, company, form]);
@@ -84,15 +96,15 @@ export function CompanyDialog({
         // Update existing company
         success = await updateCompany(company.id, {
           name: values.name,
-          address: values.address,
-          phone: values.phone,
+          address: getActualValue(values.address),
+          phone: getActualValue(values.phone),
         });
       } else {
         // Create new company
         success = await createCompany({
           name: values.name,
-          address: values.address,
-          phone: values.phone,
+          address: getActualValue(values.address),
+          phone: getActualValue(values.phone),
         });
       }
 
@@ -149,10 +161,11 @@ export function CompanyDialog({
                   <FormControl>
                     <Input
                       placeholder="123 Main St, City, Country"
-                      value={field.value || ""}
+                      {...field}
+                      value={field.value === EMPTY_VALUE ? "" : field.value}
                       onChange={(e) => {
                         const value = e.target.value;
-                        field.onChange(value ? value : null);
+                        field.onChange(value || EMPTY_VALUE);
                       }}
                     />
                   </FormControl>
@@ -170,10 +183,11 @@ export function CompanyDialog({
                   <FormControl>
                     <Input
                       placeholder="+1 234 567 8900"
-                      value={field.value || ""}
+                      {...field}
+                      value={field.value === EMPTY_VALUE ? "" : field.value}
                       onChange={(e) => {
                         const value = e.target.value;
-                        field.onChange(value ? value : null);
+                        field.onChange(value || EMPTY_VALUE);
                       }}
                     />
                   </FormControl>

@@ -16,6 +16,7 @@ import {
   ServerCrash,
   UserX,
   Users,
+  TableProperties,
 } from "lucide-react";
 import type { SidebarData } from "../types";
 
@@ -60,6 +61,11 @@ export const sidebarData: SidebarData = {
           title: "User Management",
           url: "/users",
           icon: Users,
+        },
+        {
+          title: "Table Management",
+          url: "/tables",
+          icon: TableProperties,
         },
         {
           title: "Apps",

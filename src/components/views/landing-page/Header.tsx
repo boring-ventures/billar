@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, X, Brain } from "lucide-react";
+import { Menu, X, CircleDot } from "lucide-react";
 import { AuthHeader } from "./auth-header";
 
 export default function Header() {
@@ -13,9 +13,9 @@ export default function Header() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center space-x-2">
-            <Brain className="h-8 w-8 text-primary" />
+            <CircleDot className="h-8 w-8 text-primary" />
             <Link href="/" className="text-2xl font-bold text-primary">
-              POSITIVE-Next
+              Billar
             </Link>
           </div>
           <nav className="hidden md:flex space-x-8">
@@ -24,12 +24,6 @@ export default function Header() {
               className="text-foreground hover:text-primary transition-colors"
             >
               Features
-            </Link>
-            <Link
-              href="/#about"
-              className="text-foreground hover:text-primary transition-colors"
-            >
-              About
             </Link>
             <Link
               href="/#testimonials"
@@ -60,12 +54,6 @@ export default function Header() {
               className="block px-3 py-2 text-foreground hover:text-primary transition-colors"
             >
               Features
-            </Link>
-            <Link
-              href="/#about"
-              className="block px-3 py-2 text-foreground hover:text-primary transition-colors"
-            >
-              About
             </Link>
             <Link
               href="/#testimonials"

@@ -6,8 +6,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/providers/auth-provider";
 import { ThemeProvider } from "@/context/theme-context";
 
-const APP_NAME = "POSITIVE-NEXT";
-const APP_DESCRIPTION = "Your Mind's Best Friend";
+const APP_NAME = "Billar";
+const APP_DESCRIPTION = "Modern Pool Game Management";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 export const metadata: Metadata = {
@@ -64,7 +64,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
         <ThemeProvider defaultTheme="system" storageKey="app-theme">
           <AuthProvider>
             <QueryProvider>

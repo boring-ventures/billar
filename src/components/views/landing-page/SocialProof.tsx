@@ -1,61 +1,48 @@
-"use client"
+"use client";
 
-import React from "react"
+import React from "react";
+import { Trophy, Target, Award, Star, Users, Bookmark } from "lucide-react";
+import { BlurFade } from "@/components/magicui/blur-fade";
 
-import { useEffect, useState } from "react"
-import { motion, useAnimation } from "framer-motion"
-import { Building, Briefcase, Globe, Laptop, Lightbulb, Rocket, Target, Zap, Brain, Heart } from "lucide-react"
-
-const companies = [
-  { name: "TechCorp", icon: Building },
-  { name: "InnovateLabs", icon: Lightbulb },
-  { name: "MindfulCo", icon: Brain },
-  { name: "FutureWorks", icon: Rocket },
-  { name: "ZenithHealth", icon: Heart },
-  { name: "GlobalTech", icon: Globe },
-  { name: "SmartSolutions", icon: Laptop },
-  { name: "PowerInnovate", icon: Zap },
-  { name: "TargetAchievers", icon: Target },
-  { name: "BizPro", icon: Briefcase },
-]
+const partners = [
+  { name: "Pro League", icon: Trophy },
+  { name: "Eight Ball Association", icon: Target },
+  { name: "National Pool Tours", icon: Award },
+  { name: "Champions Club", icon: Star },
+  { name: "Pool Players Network", icon: Users },
+  { name: "Premium Tables", icon: Bookmark },
+];
 
 export default function SocialProof() {
-  const controls = useAnimation()
-  const [currentIndex, setCurrentIndex] = useState(0)
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentIndex((prevIndex) => (prevIndex + 1) % companies.length)
-    }, 3000) // Change company every 3 seconds
-
-    return () => clearInterval(interval)
-  }, [])
-
-  useEffect(() => {
-    controls.start({
-      opacity: [0, 1, 1, 0],
-      y: [20, 0, 0, -20],
-      transition: { duration: 2.5, times: [0, 0.1, 0.9, 1] },
-    })
-  }, [controls])
-
   return (
-    <section className="py-16 bg-secondary overflow-hidden">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-2xl md:text-3xl font-bold text-center text-foreground mb-8">
-          Trusted by Leading Organizations
-        </h2>
-        <div className="flex justify-center items-center h-24">
-          <motion.div key={currentIndex} animate={controls} className="flex flex-col items-center">
-            {React.createElement(companies[currentIndex].icon, {
-              size: 48,
-              className: "text-primary mb-2",
-            })}
-            <span className="text-lg font-semibold text-foreground">{companies[currentIndex].name}</span>
-          </motion.div>
+    <section className="py-20 bg-white relative overflow-hidden">
+      {/* Subtle background pattern */}
+      <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-25" />
+
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
+        <BlurFade>
+          <div className="text-center mb-12">
+            <p className="text-sm font-medium text-primary uppercase tracking-wider">
+              Trusted by organizations worldwide
+            </p>
+          </div>
+        </BlurFade>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-10">
+          {partners.map((partner, i) => (
+            <BlurFade key={partner.name} delay={i * 0.1}>
+              <div className="flex flex-col items-center justify-center group">
+                <div className="w-16 h-16 rounded-full bg-primary/5 flex items-center justify-center mb-4 group-hover:bg-primary/10 transition-colors">
+                  <partner.icon className="h-8 w-8 text-primary/70 group-hover:text-primary transition-colors" />
+                </div>
+                <span className="text-sm font-medium text-gray-600">
+                  {partner.name}
+                </span>
+              </div>
+            </BlurFade>
+          ))}
         </div>
       </div>
     </section>
-  )
+  );
 }
-

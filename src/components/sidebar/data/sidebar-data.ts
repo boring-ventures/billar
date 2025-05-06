@@ -17,6 +17,7 @@ import {
   UserX,
   Users,
   TableProperties,
+  Calendar,
 } from "lucide-react";
 import type { SidebarData } from "../types";
 
@@ -66,6 +67,11 @@ export const sidebarData: SidebarData = {
           title: "Table Management",
           url: "/tables",
           icon: TableProperties,
+        },
+        {
+          title: "Reservations",
+          url: "/reservations",
+          icon: Calendar,
         },
         {
           title: "Apps",

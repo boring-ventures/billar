@@ -18,10 +18,11 @@ import { TABLE_STATUS_LABELS, TABLE_STATUS_COLORS } from "@/types/table";
 import { formatCurrency } from "@/lib/utils";
 import { TableActions } from "./table-actions";
 import { TablesListSkeleton } from "./tables-skeleton";
+import { Table as TableType } from "@/types/table";
 
 interface TablesListProps {
   searchQuery?: string;
-  statusFilter?: TableStatus;
+  statusFilter?: TableStatus | null;
 }
 
 export function TablesList({
@@ -81,27 +82,34 @@ export function TablesList({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredTables.map((table) => (
-            <TableRow key={table.id}>
-              <TableCell className="font-medium">{table.name}</TableCell>
-              <TableCell>
-                <Badge
-                  variant="outline"
-                  className={TABLE_STATUS_COLORS[table.status]}
-                >
-                  {TABLE_STATUS_LABELS[table.status]}
-                </Badge>
-              </TableCell>
-              <TableCell className="hidden md:table-cell">
-                {table.hourlyRate
-                  ? formatCurrency(Number(table.hourlyRate))
-                  : "—"}
-              </TableCell>
-              <TableCell className="text-right">
-                <TableActions tableId={table.id} isInline />
-              </TableCell>
-            </TableRow>
-          ))}
+          {filteredTables.map((table) => {
+            const tableWithNumberRate: TableType = {
+              ...table,
+              hourlyRate: table.hourlyRate ? Number(table.hourlyRate) : null,
+            };
+
+            return (
+              <TableRow key={table.id}>
+                <TableCell className="font-medium">{table.name}</TableCell>
+                <TableCell>
+                  <Badge
+                    variant="outline"
+                    className={TABLE_STATUS_COLORS[table.status]}
+                  >
+                    {TABLE_STATUS_LABELS[table.status]}
+                  </Badge>
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  {table.hourlyRate
+                    ? formatCurrency(Number(table.hourlyRate))
+                    : "—"}
+                </TableCell>
+                <TableCell className="text-right">
+                  <TableActions table={tableWithNumberRate} />
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>

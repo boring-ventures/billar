@@ -1,0 +1,88 @@
+# Billiards Management System Tasks
+
+## Authentication & User Management
+- [ ] Setup Supabase Auth integration
+- [ ] Create user registration flow
+- [ ] Implement login/logout functionality
+- [ ] Build profile management screens
+- [ ] Implement role-based access control (SELLER, ADMIN, SUPERADMIN)
+- [ ] Create company profile management
+
+## Table Management
+- [ ] Create tables dashboard with status overview
+- [ ] Implement table status management (AVAILABLE, OCCUPIED, RESERVED, MAINTENANCE)
+- [ ] Build table details view with maintenance history
+- [ ] Create table activity log tracking system
+- [ ] Implement hourly rate configuration
+
+## Session Management
+- [ ] Design session creation flow
+- [ ] Build active session tracking interface
+- [ ] Implement session timer with cost calculation
+- [ ] Create session history view
+- [ ] Build session reports by table/time period
+
+## Reservation System
+- [ ] Create customer management system
+- [ ] Build reservation calendar view
+- [ ] Implement reservation creation/editing
+- [ ] Add reservation confirmation workflow
+- [ ] Create reservation payment tracking
+- [ ] Implement reminders for upcoming reservations
+
+## Inventory Management
+- [ ] Build inventory categories management
+- [ ] Create inventory items CRUD
+- [ ] Implement stock level tracking
+- [ ] Add stock movement recording (PURCHASE, SALE, ADJUSTMENT, etc.)
+- [ ] Create low stock alerts system
+- [ ] Implement inventory reports
+
+## POS System
+- [ ] Design POS interface
+- [ ] Implement product selection and cart
+- [ ] Build order creation workflow
+- [ ] Create payment processing (CASH, QR, CREDIT_CARD)
+- [ ] Implement receipt generation
+- [ ] Link POS orders to table sessions
+
+## Financial Management
+- [ ] Create financial dashboard
+- [ ] Implement financial report generation
+- [ ] Build income tracking (sales, table rent, other)
+- [ ] Create expense tracking system
+- [ ] Implement profit calculation
+- [ ] Build financial export functionality
+
+## Maintenance Management
+- [ ] Create maintenance scheduling system
+- [ ] Implement maintenance record keeping
+- [ ] Build maintenance cost tracking
+- [ ] Create maintenance notification system
+
+## Reporting
+- [ ] Build comprehensive reporting dashboard
+- [ ] Implement date range filtering for reports
+- [ ] Create table usage reports
+- [ ] Build sales and inventory reports
+- [ ] Implement financial performance reports
+
+## System Administration
+- [ ] Create system settings interface
+- [ ] Implement backup and restore functionality
+- [ ] Build company profile management
+- [ ] Create user role management
+- [ ] Implement system logs and audit trails
+
+## Mobile Responsiveness
+- [ ] Ensure responsive design for all screens
+- [ ] Optimize POS interface for tablets
+- [ ] Create mobile-friendly table status view
+- [ ] Implement responsive navigation
+
+## Integration & Deployment
+- [ ] Set up CI/CD pipeline
+- [ ] Configure production database
+- [ ] Implement environment variable management
+- [ ] Create deployment documentation
+- [ ] Perform security audit

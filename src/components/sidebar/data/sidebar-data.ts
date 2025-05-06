@@ -16,7 +16,6 @@ import {
   ServerCrash,
   UserX,
   Users,
-  Building,
 } from "lucide-react";
 import type { SidebarData } from "../types";
 
@@ -61,16 +60,6 @@ export const sidebarData: SidebarData = {
           title: "User Management",
           url: "/users",
           icon: Users,
-          items: [
-            {
-              title: "Users",
-              url: "/users",
-            },
-            {
-              title: "Companies",
-              url: "/users?tab=companies",
-            },
-          ],
         },
         {
           title: "Apps",

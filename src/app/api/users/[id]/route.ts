@@ -6,10 +6,10 @@ import { cookies } from "next/headers";
 // GET /api/users/[id] - Get a specific user
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const userId = params.id;
+    const userId = (await params).id;
 
     const user = await prisma.profile.findUnique({
       where: { id: userId },
@@ -33,10 +33,10 @@ export async function GET(
 // PATCH /api/users/[id] - Update a user
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const userId = params.id;
+    const userId = (await params).id;
     const body = await request.json();
     const { firstName, lastName, role, companyId, active } = body;
 
@@ -64,10 +64,10 @@ export async function PATCH(
 // DELETE /api/users/[id] - Delete a user
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const userId = params.id;
+    const userId = (await params).id;
 
     // First get the profile to get the Supabase user ID
     const profile = await prisma.profile.findUnique({

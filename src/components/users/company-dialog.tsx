@@ -24,10 +24,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
+interface Company {
+  id: string;
+  name: string;
+  address?: string | null;
+  phone?: string | null;
+}
+
 interface CompanyDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  company: any | null;
+  company: Company | null;
   onSuccess: () => void;
 }
 

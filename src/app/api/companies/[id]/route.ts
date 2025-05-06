@@ -4,10 +4,10 @@ import prisma from "@/lib/prisma";
 // GET /api/companies/[id] - Get a specific company
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const companyId = params.id;
+    const companyId = (await params).id;
 
     const company = await prisma.company.findUnique({
       where: { id: companyId },
@@ -38,10 +38,10 @@ export async function GET(
 // PATCH /api/companies/[id] - Update a company
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const companyId = params.id;
+    const companyId = (await params).id;
     const body = await request.json();
     const { name, address, phone } = body;
 
@@ -67,10 +67,10 @@ export async function PATCH(
 // DELETE /api/companies/[id] - Delete a company
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const companyId = params.id;
+    const companyId = (await params).id;
 
     // First check if company has associated users
     const company = await prisma.company.findUnique({

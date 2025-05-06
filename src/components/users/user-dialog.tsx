@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { UserRole } from "@prisma/client";
 import { useToast } from "@/components/ui/use-toast";
+import { User } from "@/types/user";
 import {
   Dialog,
   DialogContent,
@@ -37,7 +37,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 interface UserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  user: any | null;
+  user: User | null;
   onSuccess: () => void;
 }
 
@@ -49,7 +49,7 @@ const formSchema = z.object({
     .string()
     .min(8, "Password must be at least 8 characters")
     .optional(),
-  role: z.enum(["SELLER", "ADMIN", "SUPERADMIN"]),
+  role: z.enum(["SELLER", "ADMIN", "SUPERADMIN"] as const),
   companyId: z.string().uuid().optional().nullable(),
   active: z.boolean().default(true),
 });

@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "./data-table";
 import { CompanyDialog } from "./company-dialog";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,15 +40,47 @@ interface Company {
 export function CompanyTable() {
   const { toast } = useToast();
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const fetchCompanies = async () => {
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        const queryParams = new URLSearchParams();
+        if (searchQuery) {
+          queryParams.append("query", searchQuery);
+        }
+
+        const response = await fetch(
+          `/api/companies?${queryParams.toString()}`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setCompanies(data);
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to fetch companies",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching companies:", error);
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchCompanies();
+  }, [searchQuery, toast]);
+
+  const fetchCompaniesAgain = async () => {
     try {
-      setIsLoading(true);
       const queryParams = new URLSearchParams();
       if (searchQuery) {
         queryParams.append("query", searchQuery);
@@ -59,28 +90,11 @@ export function CompanyTable() {
       if (response.ok) {
         const data = await response.json();
         setCompanies(data);
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to fetch companies",
-          variant: "destructive",
-        });
       }
     } catch (error) {
       console.error("Error fetching companies:", error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchCompanies();
-  }, [searchQuery]);
 
   const handleDelete = async () => {
     if (!selectedCompany) return;
@@ -95,7 +109,7 @@ export function CompanyTable() {
           title: "Success",
           description: "Company deleted successfully",
         });
-        fetchCompanies();
+        fetchCompaniesAgain();
       } else {
         const data = await response.json();
         toast({
@@ -220,7 +234,7 @@ export function CompanyTable() {
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         company={selectedCompany}
-        onSuccess={fetchCompanies}
+        onSuccess={fetchCompaniesAgain}
       />
 
       <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>

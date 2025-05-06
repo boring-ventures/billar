@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "./data-table";
-import { UserRole } from "@prisma/client";
 import { UserDialog } from "./user-dialog";
 import { Badge } from "@/components/ui/badge";
+import { User } from "@/types/user";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,30 +29,48 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-interface User {
-  id: string;
-  firstName: string | null;
-  lastName: string | null;
-  role: UserRole;
-  active: boolean;
-  avatarUrl: string | null;
-  company: {
-    name: string;
-  } | null;
-}
-
 export function UserTable() {
   const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const fetchUsers = async () => {
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const queryParams = new URLSearchParams();
+        if (searchQuery) {
+          queryParams.append("query", searchQuery);
+        }
+
+        const response = await fetch(`/api/users?${queryParams.toString()}`);
+        if (response.ok) {
+          const data = await response.json();
+          setUsers(data);
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to fetch users",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchUsers();
+  }, [searchQuery, toast]);
+
+  const fetchUsersAgain = async () => {
     try {
-      setIsLoading(true);
       const queryParams = new URLSearchParams();
       if (searchQuery) {
         queryParams.append("query", searchQuery);
@@ -62,28 +80,11 @@ export function UserTable() {
       if (response.ok) {
         const data = await response.json();
         setUsers(data);
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to fetch users",
-          variant: "destructive",
-        });
       }
     } catch (error) {
       console.error("Error fetching users:", error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchUsers();
-  }, [searchQuery]);
 
   const handleDelete = async () => {
     if (!selectedUser) return;
@@ -98,7 +99,7 @@ export function UserTable() {
           title: "Success",
           description: "User deleted successfully",
         });
-        fetchUsers();
+        fetchUsersAgain();
       } else {
         const data = await response.json();
         toast({
@@ -237,7 +238,7 @@ export function UserTable() {
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         user={selectedUser}
-        onSuccess={fetchUsers}
+        onSuccess={fetchUsersAgain}
       />
 
       <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>

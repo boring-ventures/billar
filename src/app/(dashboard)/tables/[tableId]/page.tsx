@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { TableStatus } from "@prisma/client";
 import { useTables } from "@/hooks/use-tables";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { useSessions } from "@/hooks/use-sessions";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,10 +29,15 @@ import {
   Clock,
   Wrench,
   History,
+  MoreHorizontal,
+  PlayCircle,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { TableStatusForm } from "@/components/tables/table-status-form";
 import { Separator } from "@/components/ui/separator";
+import { TableActions } from "@/components/tables/table-actions";
+import { TableDetailsSkeleton } from "@/components/tables/tables-skeleton";
+import { SessionHistory } from "@/components/sessions/session-history";
 
 export default function TableDetailsPage() {
   const params = useParams();
@@ -42,9 +48,12 @@ export default function TableDetailsPage() {
     null
   );
   const [isLoading, setIsLoading] = useState(true);
+  const { createSession, isSubmitting: isSessionSubmitting } = useSessions();
 
   const canEditTable =
     profile?.role === "ADMIN" || profile?.role === "SUPERADMIN";
+
+  const canStartSession = tableDetails?.status === "AVAILABLE";
 
   useEffect(() => {
     const loadTableDetails = async () => {
@@ -72,15 +81,12 @@ export default function TableDetailsPage() {
     }
   }, [tableId, router]);
 
+  const handleStartSession = async () => {
+    await createSession(tableId);
+  };
+
   if (isLoading || !tableDetails) {
-    return (
-      <div className="container mx-auto py-12 flex justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mx-auto" />
-          <p className="mt-2 text-muted-foreground">Loading table details...</p>
-        </div>
-      </div>
-    );
+    return <TableDetailsSkeleton />;
   }
 
   return (
@@ -97,12 +103,14 @@ export default function TableDetailsPage() {
             Back to Tables
           </Button>
 
-          {canEditTable && (
-            <Button onClick={() => router.push(`/tables/${tableId}/edit`)}>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Table
+          {canStartSession && (
+            <Button onClick={handleStartSession} disabled={isSessionSubmitting}>
+              <PlayCircle className="h-4 w-4 mr-2" />
+              Start Session
             </Button>
           )}
+
+          <TableActions table={tableDetails} />
         </div>
       </div>
 
@@ -165,7 +173,7 @@ export default function TableDetailsPage() {
               </TabsTrigger>
               <TabsTrigger value="sessions">
                 <Clock className="h-4 w-4 mr-2" />
-                Recent Sessions
+                Sessions
               </TabsTrigger>
             </TabsList>
 
@@ -257,20 +265,17 @@ export default function TableDetailsPage() {
                           <div className="flex justify-between">
                             <div>
                               <p className="font-medium">
-                                Maintenance on{" "}
-                                {formatDate(maintenance.maintenanceAt)}
+                                {maintenance.description || "Maintenance"}
                               </p>
-                              {maintenance.description && (
+                              {maintenance.cost && (
                                 <p className="text-sm mt-1">
-                                  {maintenance.description}
+                                  Cost: {formatCurrency(maintenance.cost)}
                                 </p>
                               )}
                             </div>
-                            {maintenance.cost && (
-                              <div className="text-sm">
-                                Cost: {formatCurrency(maintenance.cost)}
-                              </div>
-                            )}
+                            <div className="text-sm text-muted-foreground">
+                              {formatDate(maintenance.maintenanceAt)}
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -281,59 +286,7 @@ export default function TableDetailsPage() {
             </TabsContent>
 
             <TabsContent value="sessions" className="border rounded-md">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recent Sessions</CardTitle>
-                  <CardDescription>
-                    Recent usage sessions for this table
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {tableDetails.sessions?.length === 0 ? (
-                    <p className="text-center py-4 text-muted-foreground">
-                      No sessions found
-                    </p>
-                  ) : (
-                    <div className="space-y-4">
-                      {tableDetails.sessions?.map((session) => (
-                        <div
-                          key={session.id}
-                          className="border-b pb-3 last:border-0"
-                        >
-                          <div className="flex justify-between">
-                            <div>
-                              <p className="font-medium">
-                                Session on {formatDate(session.startedAt)}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {session.endedAt
-                                  ? `Duration: ${Math.round((new Date(session.endedAt).getTime() - new Date(session.startedAt).getTime()) / (1000 * 60))} minutes`
-                                  : "In progress"}
-                              </p>
-                            </div>
-                            <div>
-                              <Badge
-                                variant={
-                                  session.status === "COMPLETED"
-                                    ? "outline"
-                                    : "default"
-                                }
-                              >
-                                {session.status}
-                              </Badge>
-                              {session.totalCost && (
-                                <p className="text-sm mt-1 text-right">
-                                  {formatCurrency(session.totalCost)}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <SessionHistory tableId={tableId} />
             </TabsContent>
           </Tabs>
         </div>

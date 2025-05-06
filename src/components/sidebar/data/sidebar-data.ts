@@ -16,6 +16,7 @@ import {
   ServerCrash,
   UserX,
   Users,
+  Building,
 } from "lucide-react";
 import type { SidebarData } from "../types";
 
@@ -57,6 +58,21 @@ export const sidebarData: SidebarData = {
           icon: CheckSquare,
         },
         {
+          title: "User Management",
+          url: "/users",
+          icon: Users,
+          items: [
+            {
+              title: "Users",
+              url: "/users",
+            },
+            {
+              title: "Companies",
+              url: "/users?tab=companies",
+            },
+          ],
+        },
+        {
           title: "Apps",
           url: "/apps",
           icon: AppWindow,
@@ -66,11 +82,6 @@ export const sidebarData: SidebarData = {
           url: "/chats",
           badge: "3",
           icon: MessageSquare,
-        },
-        {
-          title: "Users",
-          url: "/users",
-          icon: Users,
         },
       ],
     },

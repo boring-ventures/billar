@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useToast } from "@/components/ui/use-toast";
-import { User } from "@/types/user";
+import { User, UserRoleType } from "@/types/user";
 import {
   Dialog,
   DialogContent,
@@ -33,12 +33,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useUsers } from "@/hooks/use-users";
 
 interface UserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user: User | null;
   onSuccess: () => void;
+  isSubmitting?: boolean;
 }
 
 const formSchema = z.object({
@@ -59,13 +61,23 @@ export function UserDialog({
   onOpenChange,
   user,
   onSuccess,
+  isSubmitting = false,
 }: UserDialogProps) {
   const { toast } = useToast();
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>(
     []
   );
+  const { createUser, updateUser } = useUsers();
 
   const isEditing = !!user;
+
+  // Get the user's role as a valid UserRoleType
+  const getUserRole = (role: string | undefined): UserRoleType => {
+    if (role === "SELLER" || role === "ADMIN" || role === "SUPERADMIN") {
+      return role;
+    }
+    return "SELLER"; // Default role
+  };
 
   // Define default values based on whether we're editing or creating
   const defaultValues = {
@@ -73,7 +85,7 @@ export function UserDialog({
     lastName: user?.lastName || "",
     email: "",
     password: "",
-    role: user?.role || "SELLER",
+    role: getUserRole(user?.role as string),
     companyId: user?.companyId || null,
     active: user?.active !== undefined ? user.active : true,
   };
@@ -108,7 +120,7 @@ export function UserDialog({
         lastName: user?.lastName || "",
         email: "",
         password: "",
-        role: user?.role || "SELLER",
+        role: getUserRole(user?.role as string),
         companyId: user?.companyId || null,
         active: user?.active !== undefined ? user.active : true,
       });
@@ -117,37 +129,17 @@ export function UserDialog({
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      if (isEditing) {
-        // Update existing user
-        const response = await fetch(`/api/users/${user.id}`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            firstName: values.firstName,
-            lastName: values.lastName,
-            role: values.role,
-            companyId: values.companyId,
-            active: values.active,
-          }),
-        });
+      let success;
 
-        if (response.ok) {
-          toast({
-            title: "Success",
-            description: "User updated successfully",
-          });
-          onSuccess();
-          onOpenChange(false);
-        } else {
-          const error = await response.json();
-          toast({
-            title: "Error",
-            description: error.error || "Failed to update user",
-            variant: "destructive",
-          });
-        }
+      if (isEditing && user) {
+        // Update existing user
+        success = await updateUser(user.id, {
+          firstName: values.firstName,
+          lastName: values.lastName,
+          role: values.role,
+          companyId: values.companyId ?? null, // Ensure it's not undefined
+          active: values.active,
+        });
       } else {
         // Create new user
         if (!values.email || !values.password) {
@@ -159,37 +151,20 @@ export function UserDialog({
           return;
         }
 
-        const response = await fetch("/api/users", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: values.email,
-            password: values.password,
-            firstName: values.firstName,
-            lastName: values.lastName,
-            role: values.role,
-            companyId: values.companyId,
-            active: values.active,
-          }),
+        success = await createUser({
+          email: values.email,
+          password: values.password,
+          firstName: values.firstName,
+          lastName: values.lastName,
+          role: values.role,
+          companyId: values.companyId ?? null, // Ensure it's not undefined
+          active: values.active,
         });
+      }
 
-        if (response.ok) {
-          toast({
-            title: "Success",
-            description: "User created successfully",
-          });
-          onSuccess();
-          onOpenChange(false);
-        } else {
-          const error = await response.json();
-          toast({
-            title: "Error",
-            description: error.error || "Failed to create user",
-            variant: "destructive",
-          });
-        }
+      if (success) {
+        onSuccess();
+        onOpenChange(false);
       }
     } catch (error) {
       console.error("Error submitting form:", error);
@@ -322,7 +297,7 @@ export function UserDialog({
                   <FormLabel>Company</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    defaultValue={field.value || undefined}
+                    defaultValue={field.value || ""}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -365,8 +340,14 @@ export function UserDialog({
             />
 
             <DialogFooter>
-              <Button type="submit">
-                {isEditing ? "Update User" : "Create User"}
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting
+                  ? isEditing
+                    ? "Updating..."
+                    : "Creating..."
+                  : isEditing
+                    ? "Update User"
+                    : "Create User"}
               </Button>
             </DialogFooter>
           </form>

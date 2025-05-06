@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "./data-table";
-import { CompanyDialog } from "./company-dialog";
+import { CompanyDialog } from "../users/company-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +13,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Edit, Trash, Users, Table } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,118 +23,42 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { TableSkeleton } from "./table-skeleton";
+import { useCompanies } from "@/hooks/use-companies";
 
-interface Company {
-  id: string;
-  name: string;
-  address: string | null;
-  phone: string | null;
-  _count: {
-    profiles: number;
-    tables: number;
-  };
-}
+// Import the Company type from the custom hook file
+// This is a workaround - in a real project, you would have a shared types file
+type CompanyFromHook = ReturnType<typeof useCompanies>["companies"][number];
 
 export function CompanyTable() {
-  const { toast } = useToast();
-  const [companies, setCompanies] = useState<Company[]>([]);
+  const { companies, isLoading, isSubmitting, fetchCompanies, deleteCompany } =
+    useCompanies();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
-  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [selectedCompany, setSelectedCompany] =
+    useState<CompanyFromHook | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    const fetchCompanies = async () => {
-      try {
-        const queryParams = new URLSearchParams();
-        if (searchQuery) {
-          queryParams.append("query", searchQuery);
-        }
+    fetchCompanies(searchQuery);
+  }, [searchQuery, fetchCompanies]);
 
-        const response = await fetch(
-          `/api/companies?${queryParams.toString()}`
-        );
-        if (response.ok) {
-          const data = await response.json();
-          setCompanies(data);
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to fetch companies",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching companies:", error);
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred",
-          variant: "destructive",
-        });
-      }
-    };
-
-    fetchCompanies();
-  }, [searchQuery, toast]);
-
-  const fetchCompaniesAgain = async () => {
-    try {
-      const queryParams = new URLSearchParams();
-      if (searchQuery) {
-        queryParams.append("query", searchQuery);
-      }
-
-      const response = await fetch(`/api/companies?${queryParams.toString()}`);
-      if (response.ok) {
-        const data = await response.json();
-        setCompanies(data);
-      }
-    } catch (error) {
-      console.error("Error fetching companies:", error);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!selectedCompany) return;
-
-    try {
-      const response = await fetch(`/api/companies/${selectedCompany.id}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: "Company deleted successfully",
-        });
-        fetchCompaniesAgain();
-      } else {
-        const data = await response.json();
-        toast({
-          title: "Error",
-          description: data.error || "Failed to delete company",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Error deleting company:", error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred",
-        variant: "destructive",
-      });
-    } finally {
-      setIsDeleteAlertOpen(false);
-      setSelectedCompany(null);
-    }
-  };
-
-  const handleAddEdit = (company: Company | null = null) => {
+  const handleAddEdit = (company: CompanyFromHook | null = null) => {
     setSelectedCompany(company);
     setIsDialogOpen(true);
   };
 
-  const columns: ColumnDef<Company>[] = [
+  const handleDelete = async () => {
+    if (selectedCompany) {
+      const success = await deleteCompany(selectedCompany.id);
+      if (success) {
+        setIsDeleteAlertOpen(false);
+      }
+    }
+  };
+
+  // Define columns without explicit type annotation
+  const columns = [
     {
       accessorKey: "name",
       header: "Name",
@@ -144,22 +66,22 @@ export function CompanyTable() {
     {
       accessorKey: "address",
       header: "Address",
-      cell: ({ row }) => {
+      cell: ({ row }: { row: { original: CompanyFromHook } }) => {
         return <div>{row.original.address || "N/A"}</div>;
       },
     },
     {
       accessorKey: "phone",
       header: "Phone",
-      cell: ({ row }) => {
+      cell: ({ row }: { row: { original: CompanyFromHook } }) => {
         return <div>{row.original.phone || "N/A"}</div>;
       },
     },
     {
-      accessorKey: "profiles",
+      id: "profiles",
       header: "Users",
-      cell: ({ row }) => {
-        const count = row.original._count.profiles;
+      cell: ({ row }: { row: { original: CompanyFromHook } }) => {
+        const count = row.original._count?.profiles || 0;
         return (
           <div className="flex items-center">
             <Users className="mr-2 h-4 w-4 text-muted-foreground" />
@@ -169,10 +91,10 @@ export function CompanyTable() {
       },
     },
     {
-      accessorKey: "tables",
+      id: "tables",
       header: "Tables",
-      cell: ({ row }) => {
-        const count = row.original._count.tables;
+      cell: ({ row }: { row: { original: CompanyFromHook } }) => {
+        const count = row.original._count?.tables || 0;
         return (
           <div className="flex items-center">
             <Table className="mr-2 h-4 w-4 text-muted-foreground" />
@@ -183,7 +105,7 @@ export function CompanyTable() {
     },
     {
       id: "actions",
-      cell: ({ row }) => {
+      cell: ({ row }: { row: { original: CompanyFromHook } }) => {
         const company = row.original;
 
         return (
@@ -207,7 +129,6 @@ export function CompanyTable() {
                   setIsDeleteAlertOpen(true);
                 }}
                 className="text-destructive"
-                disabled={company._count.profiles > 0}
               >
                 <Trash className="mr-2 h-4 w-4" />
                 Delete
@@ -218,6 +139,10 @@ export function CompanyTable() {
       },
     },
   ];
+
+  if (isLoading) {
+    return <TableSkeleton columnCount={6} />;
+  }
 
   return (
     <div>
@@ -234,7 +159,8 @@ export function CompanyTable() {
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         company={selectedCompany}
-        onSuccess={fetchCompaniesAgain}
+        onSuccess={() => fetchCompanies(searchQuery)}
+        isSubmitting={isSubmitting}
       />
 
       <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
@@ -243,7 +169,7 @@ export function CompanyTable() {
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the
-              company and remove its data from our servers.
+              company and remove all of its data from our servers.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -251,8 +177,9 @@ export function CompanyTable() {
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground"
+              disabled={isSubmitting}
             >
-              Delete
+              {isSubmitting ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

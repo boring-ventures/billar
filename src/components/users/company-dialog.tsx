@@ -23,25 +23,23 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useCompanies } from "@/hooks/use-companies";
 
-interface Company {
-  id: string;
-  name: string;
-  address?: string | null;
-  phone?: string | null;
-}
+// Define the Company type based on the hook type
+type Company = ReturnType<typeof useCompanies>["companies"][number];
 
 interface CompanyDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   company: Company | null;
   onSuccess: () => void;
+  isSubmitting?: boolean;
 }
 
 const formSchema = z.object({
   name: z.string().min(1, "Company name is required"),
-  address: z.string().optional(),
-  phone: z.string().optional(),
+  address: z.string().nullable(),
+  phone: z.string().nullable(),
 });
 
 export function CompanyDialog({
@@ -49,15 +47,17 @@ export function CompanyDialog({
   onOpenChange,
   company,
   onSuccess,
+  isSubmitting = false,
 }: CompanyDialogProps) {
   const { toast } = useToast();
+  const { createCompany, updateCompany } = useCompanies();
   const isEditing = !!company;
 
   // Define default values based on whether we're editing or creating
   const defaultValues = {
     name: company?.name || "",
-    address: company?.address || "",
-    phone: company?.phone || "",
+    address: company?.address || null,
+    phone: company?.phone || null,
   };
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -70,64 +70,35 @@ export function CompanyDialog({
     if (open) {
       form.reset({
         name: company?.name || "",
-        address: company?.address || "",
-        phone: company?.phone || "",
+        address: company?.address || null,
+        phone: company?.phone || null,
       });
     }
   }, [open, company, form]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      if (isEditing) {
-        // Update existing company
-        const response = await fetch(`/api/companies/${company.id}`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(values),
-        });
+      let success;
 
-        if (response.ok) {
-          toast({
-            title: "Success",
-            description: "Company updated successfully",
-          });
-          onSuccess();
-          onOpenChange(false);
-        } else {
-          const error = await response.json();
-          toast({
-            title: "Error",
-            description: error.error || "Failed to update company",
-            variant: "destructive",
-          });
-        }
+      if (isEditing && company) {
+        // Update existing company
+        success = await updateCompany(company.id, {
+          name: values.name,
+          address: values.address,
+          phone: values.phone,
+        });
       } else {
         // Create new company
-        const response = await fetch("/api/companies", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(values),
+        success = await createCompany({
+          name: values.name,
+          address: values.address,
+          phone: values.phone,
         });
+      }
 
-        if (response.ok) {
-          toast({
-            title: "Success",
-            description: "Company created successfully",
-          });
-          onSuccess();
-          onOpenChange(false);
-        } else {
-          const error = await response.json();
-          toast({
-            title: "Error",
-            description: error.error || "Failed to create company",
-            variant: "destructive",
-          });
-        }
+      if (success) {
+        onSuccess();
+        onOpenChange(false);
       }
     } catch (error) {
       console.error("Error submitting form:", error);
@@ -178,7 +149,11 @@ export function CompanyDialog({
                   <FormControl>
                     <Input
                       placeholder="123 Main St, City, Country"
-                      {...field}
+                      value={field.value || ""}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        field.onChange(value ? value : null);
+                      }}
                     />
                   </FormControl>
                   <FormMessage />
@@ -193,7 +168,14 @@ export function CompanyDialog({
                 <FormItem>
                   <FormLabel>Phone</FormLabel>
                   <FormControl>
-                    <Input placeholder="+1 234 567 8900" {...field} />
+                    <Input
+                      placeholder="+1 234 567 8900"
+                      value={field.value || ""}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        field.onChange(value ? value : null);
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -201,8 +183,14 @@ export function CompanyDialog({
             />
 
             <DialogFooter>
-              <Button type="submit">
-                {isEditing ? "Update Company" : "Create Company"}
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting
+                  ? isEditing
+                    ? "Updating..."
+                    : "Creating..."
+                  : isEditing
+                    ? "Update Company"
+                    : "Create Company"}
               </Button>
             </DialogFooter>
           </form>

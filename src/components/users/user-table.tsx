@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "./data-table";
-import { UserDialog } from "./user-dialog";
+import { UserDialog } from "../users/user-dialog";
 import { Badge } from "@/components/ui/badge";
 import { User } from "@/types/user";
 import {
@@ -17,7 +16,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Edit, Trash } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useToast } from "@/components/ui/use-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,109 +26,39 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { TableSkeleton } from "./table-skeleton";
+import { useUsers } from "@/hooks/use-users";
 
 export function UserTable() {
-  const { toast } = useToast();
-  const [users, setUsers] = useState<User[]>([]);
+  const { users, isLoading, isSubmitting, fetchUsers, deleteUser } = useUsers();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const queryParams = new URLSearchParams();
-        if (searchQuery) {
-          queryParams.append("query", searchQuery);
-        }
-
-        const response = await fetch(`/api/users?${queryParams.toString()}`);
-        if (response.ok) {
-          const data = await response.json();
-          setUsers(data);
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to fetch users",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching users:", error);
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred",
-          variant: "destructive",
-        });
-      }
-    };
-
-    fetchUsers();
-  }, [searchQuery, toast]);
-
-  const fetchUsersAgain = async () => {
-    try {
-      const queryParams = new URLSearchParams();
-      if (searchQuery) {
-        queryParams.append("query", searchQuery);
-      }
-
-      const response = await fetch(`/api/users?${queryParams.toString()}`);
-      if (response.ok) {
-        const data = await response.json();
-        setUsers(data);
-      }
-    } catch (error) {
-      console.error("Error fetching users:", error);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!selectedUser) return;
-
-    try {
-      const response = await fetch(`/api/users/${selectedUser.id}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: "User deleted successfully",
-        });
-        fetchUsersAgain();
-      } else {
-        const data = await response.json();
-        toast({
-          title: "Error",
-          description: data.error || "Failed to delete user",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Error deleting user:", error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred",
-        variant: "destructive",
-      });
-    } finally {
-      setIsDeleteAlertOpen(false);
-      setSelectedUser(null);
-    }
-  };
+    fetchUsers(searchQuery);
+  }, [searchQuery, fetchUsers]);
 
   const handleAddEdit = (user: User | null = null) => {
     setSelectedUser(user);
     setIsDialogOpen(true);
   };
 
-  const columns: ColumnDef<User>[] = [
+  const handleDelete = async () => {
+    if (selectedUser) {
+      const success = await deleteUser(selectedUser.id);
+      if (success) {
+        setIsDeleteAlertOpen(false);
+      }
+    }
+  };
+
+  const columns = [
     {
       accessorKey: "avatar",
       header: "",
-      cell: ({ row }) => {
+      cell: ({ row }: { row: { original: User } }) => {
         const user = row.original;
         const initials = `${user.firstName?.charAt(0) || ""}${user.lastName?.charAt(0) || ""}`;
 
@@ -147,7 +75,7 @@ export function UserTable() {
     {
       accessorKey: "name",
       header: "Name",
-      cell: ({ row }) => {
+      cell: ({ row }: { row: { original: User } }) => {
         const user = row.original;
         return <div>{`${user.firstName || ""} ${user.lastName || ""}`}</div>;
       },
@@ -155,7 +83,7 @@ export function UserTable() {
     {
       accessorKey: "role",
       header: "Role",
-      cell: ({ row }) => {
+      cell: ({ row }: { row: { original: User } }) => {
         const role = row.original.role;
         const variant =
           role === "SUPERADMIN"
@@ -170,14 +98,14 @@ export function UserTable() {
     {
       accessorKey: "company",
       header: "Company",
-      cell: ({ row }) => {
+      cell: ({ row }: { row: { original: User } }) => {
         return <div>{row.original.company?.name || "N/A"}</div>;
       },
     },
     {
       accessorKey: "active",
       header: "Status",
-      cell: ({ row }) => {
+      cell: ({ row }: { row: { original: User } }) => {
         const isActive = row.original.active;
         return (
           <Badge variant={isActive ? "default" : "secondary"}>
@@ -188,7 +116,7 @@ export function UserTable() {
     },
     {
       id: "actions",
-      cell: ({ row }) => {
+      cell: ({ row }: { row: { original: User } }) => {
         const user = row.original;
 
         return (
@@ -223,6 +151,10 @@ export function UserTable() {
     },
   ];
 
+  if (isLoading) {
+    return <TableSkeleton columnCount={6} />;
+  }
+
   return (
     <div>
       <DataTable
@@ -238,7 +170,8 @@ export function UserTable() {
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         user={selectedUser}
-        onSuccess={fetchUsersAgain}
+        onSuccess={() => fetchUsers(searchQuery)}
+        isSubmitting={isSubmitting}
       />
 
       <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
@@ -255,8 +188,9 @@ export function UserTable() {
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground"
+              disabled={isSubmitting}
             >
-              Delete
+              {isSubmitting ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

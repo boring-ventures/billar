@@ -19,6 +19,7 @@ import {
   TableProperties,
   Calendar,
   Package,
+  Receipt,
 } from "lucide-react";
 import type { SidebarData } from "../types";
 
@@ -53,6 +54,11 @@ export const sidebarData: SidebarData = {
           title: "Dashboard",
           url: "/",
           icon: LayoutDashboard,
+        },
+        {
+          title: "Point of Sale",
+          url: "/inventory/pos",
+          icon: Receipt,
         },
         {
           title: "User Management",

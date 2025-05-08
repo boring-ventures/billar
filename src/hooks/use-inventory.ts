@@ -1,8 +1,13 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { useToast } from "@/components/ui/use-toast";
 import { MovementType } from "@prisma/client";
+import { useToast } from "@/components/ui/use-toast";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  QueryClient,
+} from "@tanstack/react-query";
 
 // Types for inventory categories
 export type InventoryCategory = {
@@ -48,7 +53,6 @@ export type ItemFormValues = {
   criticalThreshold: number;
   price?: number;
   stockAlerts: boolean;
-  companyId?: string;
 };
 
 // Types for stock movements
@@ -77,493 +81,380 @@ export type StockMovementFormValues = {
   reference?: string;
 };
 
+// Types for inventory reports
+export type InventoryReport = {
+  totalProducts: number;
+  lowStockItems: number;
+  totalValue: number;
+  stockMovements: {
+    purchases: number;
+    sales: number;
+    adjustments: number;
+  };
+  topProducts: Array<{
+    name: string;
+    quantity: number;
+    value: number;
+  }>;
+  dateRange: {
+    start: string;
+    end: string;
+  };
+  reportType: string;
+};
+
+// Types for inventory overview
+export type InventoryOverview = {
+  totalProducts: number;
+  lowStockItems: number;
+  recentMovements: number;
+  pendingOrders: number;
+};
+
+// Generic fetch function for API calls
+async function apiFetch<T>(
+  url: string,
+  options?: RequestInit
+): Promise<{ data: T }> {
+  const response = await fetch(url, options);
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "An error occurred");
+  }
+
+  return response.json();
+}
+
+// Compatibility hook to provide the same API as the old useInventory hook
+// This wraps the new hooks to maintain backward compatibility
 export function useInventory() {
-  const { toast } = useToast();
-  const [categories, setCategories] = useState<InventoryCategory[]>([]);
-  const [items, setItems] = useState<InventoryItem[]>([]);
-  const [itemDetails, setItemDetails] = useState<InventoryItem | null>(null);
-  const [stockMovements, setStockMovements] = useState<StockMovement[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isDetailLoading, setIsDetailLoading] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Category Operations
-  const fetchCategories = useCallback(
-    async (searchQuery?: string) => {
-      try {
-        setIsLoading(true);
-        const queryParams = new URLSearchParams();
-        if (searchQuery) {
-          queryParams.append("query", searchQuery);
-        }
-
-        const response = await fetch(
-          `/api/inventory/categories?${queryParams.toString()}`
-        );
-        if (response.ok) {
-          const data = await response.json();
-          setCategories(data);
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to fetch categories",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching categories:", error);
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [toast]
-  );
-
-  const createCategory = useCallback(
-    async (categoryData: CategoryFormValues) => {
-      try {
-        setIsSubmitting(true);
-        const response = await fetch("/api/inventory/categories", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(categoryData),
-        });
-
-        if (response.ok) {
-          toast({
-            title: "Success",
-            description: "Category created successfully",
-          });
-          await fetchCategories();
-          return true;
-        } else {
-          const error = await response.json();
-          toast({
-            title: "Error",
-            description: error.error || "Failed to create category",
-            variant: "destructive",
-          });
-          return false;
-        }
-      } catch (error) {
-        console.error("Error creating category:", error);
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred",
-          variant: "destructive",
-        });
-        return false;
-      } finally {
-        setIsSubmitting(false);
-      }
-    },
-    [fetchCategories, toast]
-  );
-
-  const updateCategory = useCallback(
-    async (categoryId: string, categoryData: Partial<CategoryFormValues>) => {
-      try {
-        setIsSubmitting(true);
-        const response = await fetch(
-          `/api/inventory/categories/${categoryId}`,
-          {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(categoryData),
-          }
-        );
-
-        if (response.ok) {
-          toast({
-            title: "Success",
-            description: "Category updated successfully",
-          });
-          await fetchCategories();
-          return true;
-        } else {
-          const error = await response.json();
-          toast({
-            title: "Error",
-            description: error.error || "Failed to update category",
-            variant: "destructive",
-          });
-          return false;
-        }
-      } catch (error) {
-        console.error("Error updating category:", error);
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred",
-          variant: "destructive",
-        });
-        return false;
-      } finally {
-        setIsSubmitting(false);
-      }
-    },
-    [fetchCategories, toast]
-  );
-
-  const deleteCategory = useCallback(
-    async (categoryId: string) => {
-      try {
-        setIsSubmitting(true);
-        const response = await fetch(
-          `/api/inventory/categories/${categoryId}`,
-          {
-            method: "DELETE",
-          }
-        );
-
-        if (response.ok) {
-          toast({
-            title: "Success",
-            description: "Category deleted successfully",
-          });
-          await fetchCategories();
-          return true;
-        } else {
-          const error = await response.json();
-          toast({
-            title: "Error",
-            description: error.error || "Failed to delete category",
-            variant: "destructive",
-          });
-          return false;
-        }
-      } catch (error) {
-        console.error("Error deleting category:", error);
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred",
-          variant: "destructive",
-        });
-        return false;
-      } finally {
-        setIsSubmitting(false);
-      }
-    },
-    [fetchCategories, toast]
-  );
-
-  // Item Operations
-  const fetchItems = useCallback(
-    async (searchQuery?: string, lowStock?: boolean) => {
-      try {
-        setIsLoading(true);
-        const queryParams = new URLSearchParams();
-        if (searchQuery) {
-          queryParams.append("query", searchQuery);
-        }
-        if (lowStock) {
-          queryParams.append("lowStock", "true");
-        }
-
-        const response = await fetch(
-          `/api/inventory/items?${queryParams.toString()}`
-        );
-        if (response.ok) {
-          const data = await response.json();
-          setItems(data);
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to fetch inventory items",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching inventory items:", error);
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [toast]
-  );
-
-  const fetchItemDetails = useCallback(
-    async (itemId: string) => {
-      try {
-        setIsDetailLoading(true);
-        const response = await fetch(`/api/inventory/items/${itemId}`);
-
-        if (response.ok) {
-          const data = await response.json();
-          setItemDetails(data);
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to fetch item details",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching item details:", error);
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred",
-          variant: "destructive",
-        });
-      } finally {
-        setIsDetailLoading(false);
-      }
-    },
-    [toast]
-  );
-
-  const createItem = useCallback(
-    async (itemData: ItemFormValues) => {
-      try {
-        setIsSubmitting(true);
-        const response = await fetch("/api/inventory/items", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(itemData),
-        });
-
-        if (response.ok) {
-          toast({
-            title: "Success",
-            description: "Item created successfully",
-          });
-          await fetchItems();
-          return true;
-        } else {
-          const error = await response.json();
-          toast({
-            title: "Error",
-            description: error.error || "Failed to create item",
-            variant: "destructive",
-          });
-          return false;
-        }
-      } catch (error) {
-        console.error("Error creating item:", error);
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred",
-          variant: "destructive",
-        });
-        return false;
-      } finally {
-        setIsSubmitting(false);
-      }
-    },
-    [fetchItems, toast]
-  );
-
-  const updateItem = useCallback(
-    async (itemId: string, itemData: Partial<ItemFormValues>) => {
-      try {
-        setIsSubmitting(true);
-        const response = await fetch(`/api/inventory/items/${itemId}`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(itemData),
-        });
-
-        if (response.ok) {
-          toast({
-            title: "Success",
-            description: "Item updated successfully",
-          });
-          await fetchItems();
-          if (itemDetails) {
-            await fetchItemDetails(itemId);
-          }
-          return true;
-        } else {
-          const error = await response.json();
-          toast({
-            title: "Error",
-            description: error.error || "Failed to update item",
-            variant: "destructive",
-          });
-          return false;
-        }
-      } catch (error) {
-        console.error("Error updating item:", error);
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred",
-          variant: "destructive",
-        });
-        return false;
-      } finally {
-        setIsSubmitting(false);
-      }
-    },
-    [fetchItems, fetchItemDetails, itemDetails, toast]
-  );
-
-  const deleteItem = useCallback(
-    async (itemId: string) => {
-      try {
-        setIsSubmitting(true);
-        const response = await fetch(`/api/inventory/items/${itemId}`, {
-          method: "DELETE",
-        });
-
-        if (response.ok) {
-          toast({
-            title: "Success",
-            description: "Item deleted successfully",
-          });
-          await fetchItems();
-          return true;
-        } else {
-          const error = await response.json();
-          toast({
-            title: "Error",
-            description: error.error || "Failed to delete item",
-            variant: "destructive",
-          });
-          return false;
-        }
-      } catch (error) {
-        console.error("Error deleting item:", error);
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred",
-          variant: "destructive",
-        });
-        return false;
-      } finally {
-        setIsSubmitting(false);
-      }
-    },
-    [fetchItems, toast]
-  );
-
-  // Stock Movement Operations
-  const fetchStockMovements = useCallback(
-    async (itemId?: string) => {
-      try {
-        setIsLoading(true);
-        const queryParams = new URLSearchParams();
-        if (itemId) {
-          queryParams.append("itemId", itemId);
-        }
-
-        const response = await fetch(
-          `/api/inventory/stock-movements?${queryParams.toString()}`
-        );
-        if (response.ok) {
-          const data = await response.json();
-          setStockMovements(data);
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to fetch stock movements",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching stock movements:", error);
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [toast]
-  );
-
-  const createStockMovement = useCallback(
-    async (movementData: StockMovementFormValues) => {
-      try {
-        setIsSubmitting(true);
-        const response = await fetch("/api/inventory/stock-movements", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(movementData),
-        });
-
-        if (response.ok) {
-          toast({
-            title: "Success",
-            description: "Stock movement recorded successfully",
-          });
-          if (movementData.itemId) {
-            await fetchStockMovements(movementData.itemId);
-            await fetchItemDetails(movementData.itemId);
-          } else {
-            await fetchStockMovements();
-          }
-          await fetchItems();
-          return true;
-        } else {
-          const error = await response.json();
-          toast({
-            title: "Error",
-            description: error.error || "Failed to record stock movement",
-            variant: "destructive",
-          });
-          return false;
-        }
-      } catch (error) {
-        console.error("Error recording stock movement:", error);
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred",
-          variant: "destructive",
-        });
-        return false;
-      } finally {
-        setIsSubmitting(false);
-      }
-    },
-    [fetchStockMovements, fetchItemDetails, fetchItems, toast]
-  );
+  const itemsQuery = useInventoryItems();
+  const categoriesQuery = useInventoryCategories();
+  const movementsQuery = useStockMovements();
 
   return {
-    // State
-    categories,
-    items,
-    itemDetails,
-    stockMovements,
-    isLoading,
-    isDetailLoading,
-    isSubmitting,
+    // State properties
+    items: itemsQuery.data?.data || [],
+    categories: categoriesQuery.data?.data || [],
+    stockMovements: movementsQuery.data?.data || [],
+    isLoading: itemsQuery.isLoading || categoriesQuery.isLoading || movementsQuery.isLoading,
+    isSubmitting: false, // Always false since we use React Query's isPending now
+    itemDetails: null, // Not needed with new approach
 
-    // Category functions
-    fetchCategories,
-    createCategory,
-    updateCategory,
-    deleteCategory,
-
-    // Item functions
-    fetchItems,
-    fetchItemDetails,
-    createItem,
-    updateItem,
-    deleteItem,
-
-    // Stock movement functions
-    fetchStockMovements,
-    createStockMovement,
+    // These functions are maintained for backward compatibility
+    // but they don't do anything since React Query handles data fetching
+    fetchItems: async () => {},
+    fetchCategories: async () => {},
+    fetchStockMovements: async () => {},
+    fetchItemDetails: async () => {},
   };
+}
+
+// Inventory Categories Hooks
+export function useInventoryCategories(searchQuery?: string) {
+  const queryParams = new URLSearchParams();
+  if (searchQuery) {
+    queryParams.append("query", searchQuery);
+  }
+
+  return useQuery({
+    queryKey: ["inventoryCategories", searchQuery],
+    queryFn: () =>
+      apiFetch<InventoryCategory[]>(
+        `/api/inventory/categories?${queryParams.toString()}`
+      ),
+  });
+}
+
+export function useCreateCategory() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (data: CategoryFormValues) =>
+      apiFetch<InventoryCategory>("/api/inventory/categories", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Category created successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["inventoryCategories"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create category",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useUpdateCategory() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<CategoryFormValues>;
+    }) =>
+      apiFetch<InventoryCategory>(`/api/inventory/categories/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Category updated successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["inventoryCategories"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update category",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useDeleteCategory() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiFetch(`/api/inventory/categories/${id}`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Category deleted successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["inventoryCategories"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete category",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+// Inventory Items Hooks
+export function useInventoryItems(filters?: {
+  searchQuery?: string;
+  lowStock?: boolean;
+  categoryId?: string;
+}) {
+  const queryParams = new URLSearchParams();
+  if (filters?.searchQuery) {
+    queryParams.append("query", filters.searchQuery);
+  }
+  if (filters?.lowStock) {
+    queryParams.append("lowStock", "true");
+  }
+  if (filters?.categoryId) {
+    queryParams.append("categoryId", filters.categoryId);
+  }
+
+  return useQuery({
+    queryKey: ["inventoryItems", filters],
+    queryFn: () =>
+      apiFetch<InventoryItem[]>(
+        `/api/inventory/items?${queryParams.toString()}`
+      ),
+  });
+}
+
+export function useInventoryItem(id: string) {
+  return useQuery({
+    queryKey: ["inventoryItem", id],
+    queryFn: () => apiFetch<InventoryItem>(`/api/inventory/items/${id}`),
+    enabled: !!id,
+  });
+}
+
+export function useCreateItem() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (data: ItemFormValues) =>
+      apiFetch<InventoryItem>("/api/inventory/items", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Item created successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["inventoryItems"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create item",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useUpdateItem() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<ItemFormValues>;
+    }) =>
+      apiFetch<InventoryItem>(`/api/inventory/items/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      }),
+    onSuccess: (_, variables) => {
+      toast({
+        title: "Success",
+        description: "Item updated successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["inventoryItems"] });
+      queryClient.invalidateQueries({ 
+        queryKey: ["inventoryItem", variables.id] 
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update item",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useDeleteItem() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiFetch(`/api/inventory/items/${id}`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Item deleted successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["inventoryItems"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete item",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+// Stock Movement Hooks
+export function useStockMovements(itemId?: string) {
+  const queryParams = new URLSearchParams();
+  if (itemId) {
+    queryParams.append("itemId", itemId);
+  }
+
+  return useQuery({
+    queryKey: ["stockMovements", itemId],
+    queryFn: () =>
+      apiFetch<StockMovement[]>(
+        `/api/inventory/stock-movements?${queryParams.toString()}`
+      ),
+    enabled: !itemId || !!itemId, // Always enabled if no itemId, else only if itemId exists
+  });
+}
+
+export function useCreateStockMovement() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (data: StockMovementFormValues) =>
+      apiFetch<StockMovement>("/api/inventory/stock-movements", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      }),
+    onSuccess: (_, variables) => {
+      toast({
+        title: "Success",
+        description: "Stock movement recorded successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["stockMovements"] });
+      queryClient.invalidateQueries({ 
+        queryKey: ["inventoryItem", variables.itemId] 
+      });
+      queryClient.invalidateQueries({ queryKey: ["inventoryItems"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to record stock movement",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+// Inventory Reports Hooks
+export function useInventoryReport(reportType: string, date: string) {
+  return useQuery({
+    queryKey: ["inventoryReport", reportType, date],
+    queryFn: () =>
+      apiFetch<InventoryReport>(
+        `/api/inventory/reports?reportType=${reportType}&date=${date}`
+      ),
+    enabled: !!reportType && !!date,
+  });
+}
+
+// Inventory Overview Hook
+export function useInventoryOverview() {
+  return useQuery({
+    queryKey: ["inventoryOverview"],
+    queryFn: () => apiFetch<InventoryOverview>(`/api/inventory/overview`),
+  });
 }

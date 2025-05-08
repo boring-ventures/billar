@@ -1,182 +1,218 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { authenticateRequest } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { z } from "zod";
+import { MovementType } from "@prisma/client";
+
+// Validation schema for stock movements
+const stockMovementSchema = z.object({
+  itemId: z.string(),
+  quantity: z.number().int().positive(),
+  type: z.enum([
+    "PURCHASE",
+    "SALE",
+    "ADJUSTMENT",
+    "RETURN",
+    "TRANSFER",
+  ] as const),
+  costPrice: z.number().optional().nullable(),
+  reason: z.string().optional().nullable(),
+  reference: z.string().optional().nullable(),
+});
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session || !session.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const profile = await prisma.profile.findUnique({
-      where: { userId: session.user.id as string },
-    });
-
-    if (!profile) {
-      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
-    }
-
+    // Authenticate request using the middleware
+    const profile = await authenticateRequest(req);
+    console.log("GET Stock Movements - Profile role:", profile.role); // Debug log
+    
+    // Process query parameters
     const itemId = req.nextUrl.searchParams.get("itemId");
-
-    // Build query to fetch only movements for items in the user's company
-    let query: any = {
-      where: {},
+    const type = req.nextUrl.searchParams.get("type") as MovementType | null;
+    
+    // Initialize query for movements
+    let movementWhereClause: any = {};
+    
+    // For SUPERADMIN, show all movements across companies
+    if (profile.role === "SUPERADMIN") {
+      // Add filters if provided but don't restrict by company
+      if (itemId) {
+        movementWhereClause.itemId = itemId;
+      }
+      if (type) {
+        movementWhereClause.type = type;
+      }
+    } else if (profile.companyId) {
+      // Regular user with company - get all company items first
+      const companyItems = await prisma.inventoryItem.findMany({
+        where: {
+          companyId: profile.companyId,
+        },
+        select: {
+          id: true,
+        },
+      });
+      
+      const companyItemIds = companyItems.map(item => item.id);
+      
+      // Restrict movements to company items
+      movementWhereClause = {
+        itemId: {
+          in: companyItemIds,
+        },
+        ...(itemId ? { itemId } : {}),
+        ...(type ? { type } : {}),
+      };
+    } else {
+      // User has no company association and is not a superadmin
+      return NextResponse.json({ data: [] }); // Return empty array instead of error
+    }
+    
+    console.log("Using where clause:", JSON.stringify(movementWhereClause)); // Debug log
+    
+    // Query database for movements based on role-appropriate filters
+    const movements = await prisma.stockMovement.findMany({
+      where: movementWhereClause,
       include: {
         item: {
           select: {
             id: true,
             name: true,
-            companyId: true,
           },
         },
       },
-      orderBy: { createdAt: "desc" },
-    };
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+    
+    console.log(`Found ${movements.length} stock movements`); // Debug log
 
-    if (itemId) {
-      // If itemId is provided, filter by that specific item
-      query.where.itemId = itemId;
-    } else {
-      // If no itemId, fetch all movements for the company's items
-      query.where = {
-        item: {
-          companyId: profile.companyId,
-        },
-      };
-    }
-
-    const movements = await prisma.stockMovement.findMany(query);
-
-    // Filter out any items that don't belong to the company
-    // This is an extra security measure
-    const filteredMovements = movements.filter(
-      (movement) => movement.item.companyId === profile.companyId
-    );
-
-    return NextResponse.json(filteredMovements);
-  } catch (error) {
+    // Return success response
+    return NextResponse.json({ data: movements });
+  } catch (error: any) {
     console.error("Error fetching stock movements:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+      { error: error.message || "Internal server error" },
+      { status: error.status || 500 }
     );
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session || !session.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    // Authenticate request using the middleware
+    const profile = await authenticateRequest(req);
+    console.log("POST Stock Movement - Profile role:", profile.role); // Debug log
 
-    const profile = await prisma.profile.findUnique({
-      where: { userId: session.user.id as string },
-    });
-
-    if (!profile) {
-      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
-    }
-
+    // Parse and validate request body
     const body = await req.json();
+    
+    try {
+      const validatedData = stockMovementSchema.parse(body);
 
-    // Validate required fields
-    if (!body.itemId) {
-      return NextResponse.json(
-        { error: "Item ID is required" },
-        { status: 400 }
-      );
-    }
-
-    if (!body.quantity || body.quantity <= 0) {
-      return NextResponse.json(
-        { error: "Quantity must be a positive number" },
-        { status: 400 }
-      );
-    }
-
-    if (!body.type) {
-      return NextResponse.json(
-        { error: "Movement type is required" },
-        { status: 400 }
-      );
-    }
-
-    // Check if item exists and belongs to the user's company
-    const item = await prisma.inventoryItem.findUnique({
-      where: { id: body.itemId },
-    });
-
-    if (!item) {
-      return NextResponse.json({ error: "Item not found" }, { status: 404 });
-    }
-
-    if (item.companyId !== profile.companyId) {
-      return NextResponse.json(
-        { error: "Unauthorized access to this item" },
-        { status: 403 }
-      );
-    }
-
-    // Calculate new quantity based on movement type
-    let newQuantity = item.quantity;
-
-    switch (body.type) {
-      case "PURCHASE":
-      case "RETURN":
-        newQuantity += body.quantity;
-        break;
-      case "SALE":
-      case "TRANSFER":
-        newQuantity -= body.quantity;
-        // Don't allow negative stock
-        if (newQuantity < 0) {
-          return NextResponse.json(
-            { error: "Not enough inventory available" },
-            { status: 400 }
-          );
-        }
-        break;
-      case "ADJUSTMENT":
-        // For adjustments, the quantity is already the final amount
-        newQuantity = body.quantity;
-        break;
-    }
-
-    // Use a transaction to update both the stock movement and item
-    const result = await prisma.$transaction(async (tx) => {
-      // Create the stock movement
-      const movement = await tx.stockMovement.create({
-        data: {
-          itemId: body.itemId,
-          quantity: body.quantity,
-          type: body.type,
-          costPrice: body.costPrice || null,
-          reason: body.reason || null,
-          reference: body.reference || null,
-          createdBy: profile.id,
+      // Validate that the item exists
+      const item = await prisma.inventoryItem.findUnique({
+        where: {
+          id: validatedData.itemId,
         },
       });
 
-      // Update the item's quantity
-      const updatedItem = await tx.inventoryItem.update({
-        where: { id: body.itemId },
-        data: {
-          quantity: newQuantity,
-          lastStockUpdate: new Date(),
-        },
+      if (!item) {
+        return NextResponse.json(
+          { error: "Item not found" },
+          { status: 404 }
+        );
+      }
+
+      // Check if user has access to this item
+      if (profile.role !== "SUPERADMIN" && profile.companyId !== item.companyId) {
+        return NextResponse.json(
+          { error: "You don't have permission to modify this item" },
+          { status: 403 }
+        );
+      }
+
+      // Calculate new quantity based on movement type
+      let newQuantity = item.quantity;
+      
+      switch (validatedData.type) {
+        case "PURCHASE":
+        case "RETURN":
+          newQuantity += validatedData.quantity;
+          break;
+        case "SALE":
+        case "TRANSFER":
+          // Prevent quantity from going negative
+          if (item.quantity < validatedData.quantity) {
+            return NextResponse.json(
+              { error: "Insufficient stock available" },
+              { status: 400 }
+            );
+          }
+          newQuantity -= validatedData.quantity;
+          break;
+        case "ADJUSTMENT":
+          // For adjustments, verify if it would make the quantity negative
+          if (validatedData.reason?.includes("decrease") && item.quantity < validatedData.quantity) {
+            return NextResponse.json(
+              { error: "Adjustment would result in negative stock" },
+              { status: 400 }
+            );
+          } else if (validatedData.reason?.includes("decrease")) {
+            newQuantity -= validatedData.quantity;
+          } else {
+            newQuantity += validatedData.quantity;
+          }
+          break;
+      }
+
+      // Use a transaction to update both the movement and item quantity
+      const result = await prisma.$transaction(async (tx) => {
+        // Create the stock movement
+        const movement = await tx.stockMovement.create({
+          data: {
+            ...validatedData,
+            createdBy: profile.id,
+          },
+          include: {
+            item: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        });
+
+        // Update the item quantity
+        await tx.inventoryItem.update({
+          where: { id: validatedData.itemId },
+          data: {
+            quantity: newQuantity,
+            lastStockUpdate: new Date(),
+          },
+        });
+
+        return movement;
       });
 
-      return { movement, updatedItem };
-    });
-
-    return NextResponse.json(result.movement, { status: 201 });
-  } catch (error) {
+      // Return success response
+      return NextResponse.json({ data: result }, { status: 201 });
+    } catch (validationError) {
+      if (validationError instanceof z.ZodError) {
+        return NextResponse.json(
+          { error: validationError.errors },
+          { status: 400 }
+        );
+      }
+      throw validationError;
+    }
+  } catch (error: any) {
     console.error("Error creating stock movement:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+      { error: error.message || "Internal server error" },
+      { status: error.status || 500 }
     );
   }
 }

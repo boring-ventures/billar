@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
   SelectContent,
@@ -28,73 +27,102 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-
-interface Product {
-  id: string
-  name: string
-  sku: string | null
-  quantity: number
-  criticalThreshold: number
-  price: number | null
-  categoryId: string | null
-}
-
-interface Category {
-  id: string
-  name: string
-}
+import { 
+  useInventoryItems, 
+  useInventoryCategories, 
+  useCreateItem, 
+  useUpdateItem, 
+  useDeleteItem,
+  type ItemFormValues
+} from "@/hooks/use-inventory"
+import { Checkbox } from "@/components/ui/checkbox"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 
 export function InventoryProductTable() {
-  const [products, setProducts] = useState<Product[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
-  const [formData, setFormData] = useState({
+  const [editingItemId, setEditingItemId] = useState<string | null>(null)
+  const [deleteItemId, setDeleteItemId] = useState<string | null>(null)
+  const [formData, setFormData] = useState<ItemFormValues>({
     name: "",
     sku: "",
     quantity: 0,
     criticalThreshold: 5,
-    price: "",
-    categoryId: "",
+    price: undefined,
+    stockAlerts: true,
+    categoryId: undefined,
   })
+
+  // Fetch data using React Query hooks
+  const { data: itemsResponse, isLoading: isLoadingItems } = useInventoryItems()
+  const { data: categoriesResponse, isLoading: isLoadingCategories } = useInventoryCategories()
+  const createItemMutation = useCreateItem()
+  const updateItemMutation = useUpdateItem()
+  const deleteItemMutation = useDeleteItem()
+
+  // Extract data from responses
+  const items = itemsResponse?.data || []
+  const categories = categoriesResponse?.data || []
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // TODO: Implement product creation/update logic
+    
+    if (editingItemId) {
+      updateItemMutation.mutate({
+        id: editingItemId,
+        data: formData
+      })
+    } else {
+      createItemMutation.mutate(formData)
+    }
+    
+    // Reset form and close dialog
     setIsDialogOpen(false)
+    resetForm()
+  }
+
+  const resetForm = () => {
     setFormData({
       name: "",
       sku: "",
       quantity: 0,
       criticalThreshold: 5,
-      price: "",
-      categoryId: "",
+      price: undefined,
+      stockAlerts: true,
+      categoryId: undefined,
     })
-    setEditingProduct(null)
+    setEditingItemId(null)
   }
 
-  const handleEdit = (product: Product) => {
-    setEditingProduct(product)
+  const handleEdit = (itemId: string) => {
+    const item = items.find(i => i.id === itemId)
+    if (!item) return
+
+    setEditingItemId(item.id)
     setFormData({
-      name: product.name,
-      sku: product.sku || "",
-      quantity: product.quantity,
-      criticalThreshold: product.criticalThreshold,
-      price: product.price?.toString() || "",
-      categoryId: product.categoryId || "",
+      name: item.name,
+      sku: item.sku || "",
+      quantity: item.quantity,
+      criticalThreshold: item.criticalThreshold,
+      price: item.price || undefined,
+      stockAlerts: item.stockAlerts,
+      categoryId: item.categoryId || undefined,
     })
     setIsDialogOpen(true)
   }
 
   const handleDelete = async (id: string) => {
-    // TODO: Implement product deletion logic
+    deleteItemMutation.mutate(id)
+    setDeleteItemId(null)
   }
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between">
         <h3 className="text-lg font-medium">Products</h3>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open)
+          if (!open) resetForm()
+        }}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
@@ -104,7 +132,7 @@ export function InventoryProductTable() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                {editingProduct ? "Edit Product" : "Add New Product"}
+                {editingItemId ? "Edit Product" : "Add New Product"}
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -167,24 +195,28 @@ export function InventoryProductTable() {
                   id="price"
                   type="number"
                   step="0.01"
-                  value={formData.price}
+                  value={formData.price || ""}
                   onChange={(e) =>
-                    setFormData({ ...formData, price: e.target.value })
+                    setFormData({ 
+                      ...formData, 
+                      price: e.target.value ? parseFloat(e.target.value) : undefined 
+                    })
                   }
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
                 <Select
-                  value={formData.categoryId}
+                  value={formData.categoryId || "none"}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, categoryId: value })
+                    setFormData({ ...formData, categoryId: value === "none" ? undefined : value })
                   }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
                     {categories.map((category) => (
                       <SelectItem key={category.id} value={category.id}>
                         {category.name}
@@ -192,6 +224,16 @@ export function InventoryProductTable() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="stockAlerts" 
+                  checked={formData.stockAlerts}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, stockAlerts: !!checked })
+                  }
+                />
+                <Label htmlFor="stockAlerts">Enable stock alerts</Label>
               </div>
               <div className="flex justify-end space-x-2">
                 <Button
@@ -201,14 +243,39 @@ export function InventoryProductTable() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit">
-                  {editingProduct ? "Update" : "Create"}
+                <Button 
+                  type="submit"
+                  disabled={createItemMutation.isPending || updateItemMutation.isPending}
+                >
+                  {(createItemMutation.isPending || updateItemMutation.isPending) 
+                    ? "Saving..." 
+                    : (editingItemId ? "Update" : "Create")}
                 </Button>
               </div>
             </form>
           </DialogContent>
         </Dialog>
       </div>
+
+      <AlertDialog open={!!deleteItemId} onOpenChange={(open) => !open && setDeleteItemId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action will permanently delete this product from your inventory.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => deleteItemId && handleDelete(deleteItemId)}
+              disabled={deleteItemMutation.isPending}
+            >
+              {deleteItemMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div className="rounded-md border">
         <Table>
@@ -223,50 +290,67 @@ export function InventoryProductTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {products.map((product) => (
-              <TableRow key={product.id}>
-                <TableCell>{product.name}</TableCell>
-                <TableCell>{product.sku || "—"}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    {product.quantity}
-                    {product.quantity <= product.criticalThreshold && (
-                      <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {product.price
-                    ? new Intl.NumberFormat("en-US", {
-                        style: "currency",
-                        currency: "USD",
-                      }).format(product.price)
-                    : "—"}
-                </TableCell>
-                <TableCell>
-                  {categories.find((c) => c.id === product.categoryId)?.name ||
-                    "—"}
-                </TableCell>
-                <TableCell>
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEdit(product)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(product.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+            {isLoadingItems ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-4">
+                  Loading items...
                 </TableCell>
               </TableRow>
-            ))}
+            ) : items.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-4">
+                  No products found. Add one to get started.
+                </TableCell>
+              </TableRow>
+            ) : (
+              items.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell>{item.name}</TableCell>
+                  <TableCell>{item.sku || "—"}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {item.quantity}
+                      {item.quantity <= item.criticalThreshold && (
+                        <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {item.price
+                      ? new Intl.NumberFormat("en-US", {
+                          style: "currency",
+                          currency: "USD",
+                        }).format(item.price)
+                      : "—"}
+                  </TableCell>
+                  <TableCell>
+                    {categories.find((c) => c.id === item.categoryId)?.name ||
+                      "—"}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex space-x-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEdit(item.id)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                        <span className="sr-only">Edit</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive"
+                        onClick={() => setDeleteItemId(item.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Delete</span>
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>

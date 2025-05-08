@@ -1,8 +1,9 @@
 // This file implements authentication middleware for API routes
 import { cookies } from 'next/headers';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { PostgrestError } from '@supabase/supabase-js';
 import prisma from './prisma';
+import { NextRequest } from 'next/server';
+import { UserRole } from '@prisma/client';
 
 interface User {
   id: string;
@@ -56,8 +57,8 @@ export async function getCurrentUser(): Promise<User | null> {
   return session?.user || null;
 }
 
-// Auth middleware for API routes
-export async function authenticateRequest(req: Request) {
+// Auth middleware for API routes - following the pattern from Logic Tasks.txt
+export async function authenticateRequest(req: NextRequest) {
   const session = await auth();
   
   if (!session || !session.user) {
@@ -80,10 +81,21 @@ export async function authenticateRequest(req: Request) {
     };
   }
   
-  // Ensure profile has the correct role property format
-  // For testing purposes, set all users as SUPERADMIN
+  // Determine role properly
+  // First check metadata (from session) to see if the user is a SUPERADMIN
+  const sessionRole = (session.user.role || '').toString().toUpperCase();
+  const dbRole = (profile.role || 'SELLER').toString().toUpperCase();
+  
+  let effectiveRole = dbRole;
+  
+  // Promote to SUPERADMIN if either session or db profile indicates it
+  if (sessionRole === 'SUPERADMIN' || dbRole === 'SUPERADMIN') {
+    effectiveRole = 'SUPERADMIN';
+  }
+  
+  // Return enhanced profile with properly resolved role
   return {
     ...profile,
-    role: "SUPERADMIN" 
+    role: effectiveRole
   };
 }

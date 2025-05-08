@@ -1,185 +1,175 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
+import { authenticateRequest } from "@/lib/auth";
 import { z } from "zod";
+import { UserRole } from "@prisma/client";
 
+// Validation schema for table creation and updates
 const tableSchema = z.object({
   name: z.string().min(1, "Table name is required"),
   status: z.enum(["AVAILABLE", "OCCUPIED", "RESERVED", "MAINTENANCE"]),
-  hourlyRate: z.coerce.number().optional(),
+  hourlyRate: z.coerce.number().optional().nullable(),
   companyId: z.string().uuid().optional(),
 });
 
 export async function GET(req: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-
-    // Get the current user's session
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession();
-
-    if (sessionError || !session) {
-      return new NextResponse(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-      });
-    }
-
+    // Authenticate request using middleware
+    const profile = await authenticateRequest(req);
+    
     const { searchParams } = new URL(req.url);
     const query = searchParams.get("query");
 
-    // Get user profile to check company access
-    const userProfile = await prisma.profile.findUnique({
-      where: {
-        userId: session.user.id,
-      },
-      select: {
-        id: true,
-        companyId: true,
-        role: true,
-      },
-    });
-
-    if (!userProfile) {
-      return new NextResponse(
-        JSON.stringify({ error: "User profile not found" }),
-        { status: 404 }
-      );
+    // Initialize query filter based on role
+    let queryFilter: any = {};
+    
+    // Handle permissions based on role
+    const userRole = profile.role.toString();
+    
+    // Role-based access control pattern
+    if (userRole === 'SUPERADMIN') {
+      // Superadmins can access all records across companies
+      // No company filter needed, leave queryFilter empty
+      // If company filter is provided via searchParams, respect it
+      if (searchParams.get("companyId")) {
+        queryFilter.companyId = searchParams.get("companyId");
+      }
+    } else if (profile.companyId) {
+      // Regular users can only access their company's data
+      queryFilter = { companyId: profile.companyId };
+    } else {
+      // Edge case: User without company association
+      return NextResponse.json([]);
+    }
+    
+    // Add search query filter if provided
+    if (query) {
+      queryFilter = {
+        ...queryFilter,
+        name: {
+          contains: query,
+          mode: "insensitive" as const,
+        },
+      };
     }
 
-    // Only return tables for the user's company
-    // If SUPERADMIN without company, return no tables (they need to select a company first)
-    if (!userProfile.companyId) {
-      return new NextResponse(JSON.stringify([]));
-    }
-
-    const where = {
-      companyId: userProfile.companyId,
-      ...(query
-        ? {
-            name: {
-              contains: query,
-              mode: "insensitive" as const,
-            },
-          }
-        : {}),
-    };
-
+    // Execute database query using Prisma
     const tables = await prisma.table.findMany({
-      where,
+      where: queryFilter,
       orderBy: {
         name: "asc",
       },
     });
 
-    return new NextResponse(JSON.stringify(tables));
-  } catch (error) {
+    return NextResponse.json(tables);
+  } catch (error: any) {
     console.error("Error fetching tables:", error);
-    return new NextResponse(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500 }
+    return NextResponse.json(
+      { error: error.message || "Internal server error" },
+      { status: error.status || 500 }
     );
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-
-    // Get the current user's session
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession();
-
-    if (sessionError || !session) {
-      return new NextResponse(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-      });
-    }
-
-    // Get user profile to check company access and permissions
-    const userProfile = await prisma.profile.findUnique({
-      where: {
-        userId: session.user.id,
-      },
-      select: {
-        id: true,
-        companyId: true,
-        role: true,
-      },
-    });
-
-    if (!userProfile) {
-      return new NextResponse(
-        JSON.stringify({ error: "User profile not found" }),
-        { status: 404 }
-      );
-    }
-
-    // Only ADMIN and SUPERADMIN can create tables
-    if (userProfile.role === "SELLER") {
-      return new NextResponse(
-        JSON.stringify({ error: "Insufficient permissions" }),
-        { status: 403 }
-      );
-    }
-
-    const json = await req.json();
-    const validationResult = tableSchema.safeParse(json);
+    // Authenticate request using middleware
+    const profile = await authenticateRequest(req);
+    
+    // Parse and validate request body
+    const body = await req.json();
+    const validationResult = tableSchema.safeParse(body);
 
     if (!validationResult.success) {
-      return new NextResponse(
-        JSON.stringify({
+      return NextResponse.json(
+        {
           error: "Validation error",
           details: validationResult.error.errors,
-        }),
+        },
         { status: 400 }
       );
     }
 
     const { name, status, hourlyRate } = validationResult.data;
-
-    // Use either provided companyId or the user's companyId
-    const companyId = validationResult.data.companyId || userProfile.companyId;
-
-    if (!companyId) {
-      return new NextResponse(
-        JSON.stringify({ error: "Company ID is required" }),
+    
+    // Handle permissions based on role
+    const userRole = profile.role.toString();
+    
+    // Determine company context for the operation
+    let operationCompanyId: string | undefined;
+    
+    // Role-based company resolution pattern for operations
+    if (userRole === 'SUPERADMIN') {
+      // SUPERADMIN special handling:
+      // Option 1: Use company ID from request if provided
+      if (validationResult.data.companyId) {
+        // Verify the company exists
+        const companyExists = await prisma.company.findUnique({
+          where: { id: validationResult.data.companyId },
+        });
+        
+        if (!companyExists) {
+          return NextResponse.json(
+            { error: "Company not found" }, 
+            { status: 404 }
+          );
+        }
+        
+        operationCompanyId = validationResult.data.companyId;
+      } 
+      // Option 2: Find a suitable default company
+      else {
+        // Get the first available company or create one if needed
+        const defaultCompany = await prisma.company.findFirst({
+          orderBy: { name: 'asc' }
+        });
+        
+        if (!defaultCompany) {
+          return NextResponse.json(
+            { error: "No company available for this operation. Please create a company first." },
+            { status: 400 }
+          );
+        }
+        
+        operationCompanyId = defaultCompany.id;
+      }
+    } 
+    // Regular users must have a company association
+    else if (userRole === 'ADMIN' && profile.companyId) {
+      operationCompanyId = profile.companyId;
+    } 
+    // Non-admin users cannot create tables
+    else if (userRole !== 'ADMIN' && userRole !== 'SUPERADMIN') {
+      return NextResponse.json(
+        { error: "You don't have permission to create new tables. Please contact your administrator." },
+        { status: 403 }
+      );
+    }
+    // Handle edge case: user without company association
+    else {
+      return NextResponse.json(
+        { error: "No company context available for this operation" },
         { status: 400 }
       );
     }
 
-    // SUPERADMIN can create tables for any company, ADMIN only for their own
-    if (userProfile.role === "ADMIN" && companyId !== userProfile.companyId) {
-      return new NextResponse(
-        JSON.stringify({ error: "Cannot create table for another company" }),
+    // Ensure ADMIN can only create tables for their own company
+    if (userRole === 'ADMIN' && 
+        validationResult.data.companyId && 
+        validationResult.data.companyId !== profile.companyId) {
+      return NextResponse.json(
+        { error: "Cannot create table for another company" },
         { status: 403 }
       );
     }
 
-    // Check if company exists
-    const companyExists = await prisma.company.findUnique({
-      where: {
-        id: companyId,
-      },
-    });
-
-    if (!companyExists) {
-      return new NextResponse(JSON.stringify({ error: "Company not found" }), {
-        status: 404,
-      });
-    }
-
-    // Create the table
+    // Create the table with proper company context
     const table = await prisma.table.create({
       data: {
         name,
         status,
         hourlyRate: hourlyRate !== undefined ? hourlyRate : null,
-        companyId,
+        companyId: operationCompanyId,
       },
     });
 
@@ -189,16 +179,25 @@ export async function POST(req: NextRequest) {
         tableId: table.id,
         previousStatus: status, // Initial status is both previous and new
         newStatus: status,
-        changedById: userProfile.id,
+        changedById: profile.id,
       },
     });
 
-    return new NextResponse(JSON.stringify(table), { status: 201 });
-  } catch (error) {
+    return NextResponse.json(table, { status: 201 });
+  } catch (error: any) {
     console.error("Error creating table:", error);
-    return new NextResponse(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500 }
+    
+    // Specific error handling for common cases
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Validation error", details: error.errors },
+        { status: 400 }
+      );
+    }
+    
+    return NextResponse.json(
+      { error: error.message || "Internal server error" },
+      { status: error.status || 500 }
     );
   }
 }

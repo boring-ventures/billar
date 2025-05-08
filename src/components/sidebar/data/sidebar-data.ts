@@ -21,6 +21,7 @@ import {
   Package,
   Receipt,
   DollarSign,
+  Wrench,
 } from "lucide-react";
 import type { SidebarData } from "../types";
 
@@ -53,7 +54,7 @@ export const sidebarData: SidebarData = {
       items: [
         {
           title: "Dashboard",
-          url: "/",
+          url: "/dashboard",
           icon: LayoutDashboard,
         },
         {
@@ -96,6 +97,32 @@ export const sidebarData: SidebarData = {
           title: "Table Management",
           url: "/tables",
           icon: TableProperties,
+        },
+        {
+          title: "Maintenance",
+          icon: Wrench,
+          items: [
+            {
+              title: "Overview",
+              url: "/maintenance",
+              icon: LayoutDashboard,
+            },
+            {
+              title: "Schedule",
+              url: "/maintenance/schedule",
+              icon: Calendar,
+            },
+            {
+              title: "Records",
+              url: "/maintenance/records",
+              icon: CheckSquare,
+            },
+            {
+              title: "Costs",
+              url: "/maintenance/costs",
+              icon: DollarSign,
+            },
+          ],
         },
         {
           title: "Reservations",

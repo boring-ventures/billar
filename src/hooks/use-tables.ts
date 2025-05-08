@@ -106,27 +106,10 @@ export function useTables() {
       try {
         setIsSubmitting(true);
         
-        // Deep clone the data to avoid modifying the original
-        const dataToSend = { ...tableData };
-        
-        // Validation checks
-        if (!dataToSend.companyId) {
-          console.error("Company ID is required but missing");
-          toast({
-            title: "Error",
-            description: "Company ID is required to create a table",
-            variant: "destructive",
-          });
-          return false;
-        }
-        
-        // Format the hourly rate as a number if present
-        if (dataToSend.hourlyRate !== undefined) {
-          dataToSend.hourlyRate = Number(dataToSend.hourlyRate);
-        }
-        
-        // Log the data being sent to help with debugging
-        console.log("API call - Creating table with data:", dataToSend);
+        // Ensure we're sending the companyId if it exists
+        const dataToSend = {
+          ...tableData
+        };
         
         const response = await fetch("/api/tables", {
           method: "POST",
@@ -136,35 +119,18 @@ export function useTables() {
           body: JSON.stringify(dataToSend),
         });
 
-        // Always parse response data
-        let responseData;
-        try {
-          responseData = await response.json();
-          console.log("API response data:", responseData);
-        } catch (err) {
-          console.error("Failed to parse response:", err);
-          responseData = { error: "Failed to parse server response" };
-        }
-
         if (response.ok) {
           toast({
             title: "Success",
             description: "Table created successfully",
           });
-          
-          // Only update state after confirming success
           await fetchTables();
           return true;
         } else {
-          // Detailed error logging
-          console.error("Error creating table:", { 
-            status: response.status,
-            data: responseData
-          });
-          
+          const error = await response.json();
           toast({
             title: "Error",
-            description: responseData.error || "Failed to create table",
+            description: error.error || "Failed to create table",
             variant: "destructive",
           });
           return false;

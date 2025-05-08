@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { TableStatus } from "@prisma/client";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useTables } from "@/hooks/use-tables";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -27,6 +28,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Table } from "@/types/table";
 import { Loader2 } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
 
 const formSchema = z.object({
   name: z.string().min(1, "Table name is required"),
@@ -35,6 +37,7 @@ const formSchema = z.object({
     .number()
     .min(0, "Hourly rate must be a positive number")
     .optional(),
+  companyId: z.string().uuid().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -48,11 +51,17 @@ export function TableForm({ initialData, isEditMode = false }: TableFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { createTable, updateTable } = useTables();
+  const { currentUser, profile } = useCurrentUser();
+  
+  // Use either profile or currentUser for compatibility
+  const userRole = currentUser?.role || profile?.role;
+  const userCompanyId = currentUser?.companyId || profile?.companyId;
 
   const defaultValues: Partial<FormValues> = {
     name: initialData?.name || "",
     status: initialData?.status || "AVAILABLE",
     hourlyRate: initialData?.hourlyRate || undefined,
+    companyId: undefined, // Will be set automatically
   };
 
   const form = useForm<FormValues>({
@@ -60,8 +69,26 @@ export function TableForm({ initialData, isEditMode = false }: TableFormProps) {
     defaultValues,
   });
 
+  // Set companyId when form is submitted
+  useEffect(() => {
+    if (userCompanyId) {
+      form.setValue("companyId", userCompanyId);
+    }
+  }, [userCompanyId, form]);
+
   const onSubmit = async (values: FormValues) => {
     setIsSubmitting(true);
+
+    // For superadmins without a company selected, show error
+    if (!values.companyId && userRole === "SUPERADMIN") {
+      toast({
+        title: "Company Required",
+        description: "Please select a company before creating a table.",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       if (isEditMode && initialData) {

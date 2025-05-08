@@ -39,20 +39,25 @@ interface TableStatusFormProps {
   tableId: string;
   currentStatus: TableStatus;
   onStatusChange?: () => void;
+  onSuccess?: () => void;
 }
 
 export function TableStatusForm({
   tableId,
   currentStatus,
   onStatusChange,
+  onSuccess,
 }: TableStatusFormProps) {
-  const { profile } = useCurrentUser();
+  const { currentUser, profile } = useCurrentUser();
   const { updateTableStatus } = useTables();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Use either profile or currentUser for compatibility
+  const userRole = currentUser?.role || profile?.role;
+
   // Based on user role, determine which status changes are allowed
   const allowedStatuses = (): TableStatus[] => {
-    if (profile?.role === "SELLER") {
+    if (userRole === "SELLER") {
       // Sellers can only change between AVAILABLE and OCCUPIED
       if (currentStatus === "AVAILABLE") return ["AVAILABLE", "OCCUPIED"];
       if (currentStatus === "OCCUPIED") return ["AVAILABLE", "OCCUPIED"];
@@ -83,8 +88,13 @@ export function TableStatusForm({
         values.status,
         values.notes
       );
-      if (success && onStatusChange) {
-        onStatusChange();
+      if (success) {
+        if (onStatusChange) {
+          onStatusChange();
+        }
+        if (onSuccess) {
+          onSuccess();
+        }
       }
     } finally {
       setIsSubmitting(false);

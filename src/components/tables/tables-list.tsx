@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { Plus, LayoutGrid, TableProperties } from "lucide-react";
 import { useTables } from "@/hooks/use-tables";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { TableStatus } from "@prisma/client";
@@ -19,22 +20,29 @@ import { formatCurrency } from "@/lib/utils";
 import { TableActions } from "./table-actions";
 import { TablesListSkeleton } from "./tables-skeleton";
 import { Table as TableType } from "@/types/table";
+import { Button } from "@/components/ui/button";
 
 interface TablesListProps {
   searchQuery?: string;
   statusFilter?: TableStatus | null;
+  canAddTable?: boolean;
 }
 
 export function TablesList({
   searchQuery = "",
   statusFilter,
+  canAddTable = false,
 }: TablesListProps) {
   const router = useRouter();
   const { tables, isLoading, fetchTables } = useTables();
-  const { profile } = useCurrentUser();
+  const { currentUser, profile } = useCurrentUser();
 
-  const canEditTable =
-    profile?.role === "ADMIN" || profile?.role === "SUPERADMIN";
+  // Use both currentUser and profile for compatibility
+  const userCanEdit = canAddTable || 
+    currentUser?.role === "ADMIN" || 
+    currentUser?.role === "SUPERADMIN" ||
+    profile?.role === "ADMIN" || 
+    profile?.role === "SUPERADMIN";
 
   useEffect(() => {
     fetchTables(searchQuery);
@@ -46,6 +54,10 @@ export function TablesList({
 
   const handleEditTable = (tableId: string) => {
     router.push(`/tables/${tableId}/edit`);
+  };
+
+  const handleCreateTable = () => {
+    router.push("/tables/new");
   };
 
   const filteredTables = useMemo(() => {
@@ -60,12 +72,40 @@ export function TablesList({
 
   if (filteredTables.length === 0) {
     return (
-      <div className="rounded-md border p-8 text-center">
-        <p className="text-muted-foreground">
-          {tables.length === 0
-            ? "No tables found. Create your first table!"
-            : "No tables match the current filters."}
+      <div className="rounded-md border p-0">
+        {tables.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 space-y-8">
+            <div className="rounded-full bg-primary/10 p-8">
+              <TableProperties className="h-20 w-20 text-primary" />
+            </div>
+            <div className="space-y-4 max-w-md text-center">
+              <h3 className="text-2xl font-semibold">No tables found</h3>
+              <p className="text-muted-foreground text-lg mb-6">
+                You haven't created any billiard tables yet.
+              </p>
+              
+              {/* Always display the create button */}
+              <Button 
+                size="lg"
+                onClick={handleCreateTable}
+                className="px-8 py-6 text-lg bg-primary text-primary-foreground"
+              >
+                <Plus className="mr-3 h-6 w-6" />
+                Create Your First Table
+              </Button>
+              
+              <p className="text-sm text-muted-foreground mt-4">
+                Create a table to start managing your billiard business.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="p-8 text-center">
+            <p className="text-muted-foreground py-4">
+              No tables match the current filters.
         </p>
+          </div>
+        )}
       </div>
     );
   }
@@ -89,7 +129,7 @@ export function TablesList({
             };
 
             return (
-              <TableRow key={table.id}>
+              <TableRow key={table.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleViewTable(table.id)}>
                 <TableCell className="font-medium">{table.name}</TableCell>
                 <TableCell>
                   <Badge
@@ -104,7 +144,7 @@ export function TablesList({
                     ? formatCurrency(Number(table.hourlyRate))
                     : "—"}
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <TableActions table={tableWithNumberRate} />
                 </TableCell>
               </TableRow>

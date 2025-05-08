@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import prisma from "@/lib/prisma";
+import { UserRole } from "@prisma/client";
 
 export async function GET(
   request: NextRequest,
@@ -28,6 +29,29 @@ export async function GET(
     const userProfile = await prisma.profile.findUnique({
       where: { userId: currentUser.id },
     });
+
+    // If current user is requesting their own profile but it doesn't exist,
+    // create it automatically as a recovery mechanism
+    if (userId === currentUser.id && !userProfile) {
+      try {
+        console.log("Auto-creating missing profile for user:", userId);
+        const newProfile = await prisma.profile.create({
+          data: {
+            userId,
+            role: UserRole.SELLER,
+            active: true,
+          },
+        });
+        console.log("Profile successfully created:", newProfile.id);
+        return NextResponse.json({ profile: newProfile });
+      } catch (createError) {
+        console.error("Failed to auto-create profile:", createError);
+        return NextResponse.json(
+          { error: "Failed to create missing profile" },
+          { status: 500 }
+        );
+      }
+    }
 
     if (userId !== currentUser.id && userProfile?.role !== "SUPERADMIN") {
       return NextResponse.json(

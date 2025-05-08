@@ -1,59 +1,90 @@
 "use client";
 
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Package, AlertTriangle, TrendingUp, ListOrdered } from "lucide-react";
 import { InventoryCategoryTable } from "@/components/inventory/category-table";
-import { InventoryItemTable } from "@/components/inventory/item-table";
+import { InventoryProductTable } from "@/components/inventory/product-table";
 import { StockMovementTable } from "@/components/inventory/stock-movement-table";
-import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { InventoryReports } from "@/components/inventory/inventory-reports";
 
 export default function InventoryPage() {
-  const searchParams = useSearchParams();
-  const tabParam = searchParams.get("tab");
-  const [activeTab, setActiveTab] = useState(
-    tabParam === "items"
-      ? "items"
-      : tabParam === "stock-movements"
-        ? "stock-movements"
-        : "categories"
-  );
-
-  // Update the tab when URL changes
-  useEffect(() => {
-    setActiveTab(
-      tabParam === "items"
-        ? "items"
-        : tabParam === "stock-movements"
-          ? "stock-movements"
-          : "categories"
-    );
-  }, [tabParam]);
-
   return (
-    <div className="flex flex-col space-y-6 p-4 md:p-8">
-      <div className="flex flex-col gap-2">
-        <h2 className="text-3xl font-bold tracking-tight">
-          Inventory Management
-        </h2>
-        <p className="text-muted-foreground">
-          Manage inventory categories, items, and stock movements.
-        </p>
+    <div className="flex-1 space-y-4 p-8 pt-6">
+      <div className="flex items-center justify-between space-y-2">
+        <h2 className="text-3xl font-bold tracking-tight">Inventory Management</h2>
       </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-3">
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="categories">Categories</TabsTrigger>
-          <TabsTrigger value="items">Items</TabsTrigger>
-          <TabsTrigger value="stock-movements">Stock Movements</TabsTrigger>
+          <TabsTrigger value="products">Products</TabsTrigger>
+          <TabsTrigger value="movements">Stock Movements</TabsTrigger>
+          <TabsTrigger value="reports">Reports</TabsTrigger>
         </TabsList>
-        <TabsContent value="categories" className="mt-6">
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Products</CardTitle>
+                <Package className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">0</div>
+                <p className="text-xs text-muted-foreground">
+                  Active inventory items
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Low Stock Alerts</CardTitle>
+                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">0</div>
+                <p className="text-xs text-muted-foreground">
+                  Items below threshold
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Stock Movements</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">0</div>
+                <p className="text-xs text-muted-foreground">
+                  Recent movements
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Active Orders</CardTitle>
+                <ListOrdered className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">0</div>
+                <p className="text-xs text-muted-foreground">
+                  Pending orders
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+        <TabsContent value="categories">
           <InventoryCategoryTable />
         </TabsContent>
-        <TabsContent value="items" className="mt-6">
-          <InventoryItemTable />
+        <TabsContent value="products">
+          <InventoryProductTable />
         </TabsContent>
-        <TabsContent value="stock-movements" className="mt-6">
+        <TabsContent value="movements">
           <StockMovementTable />
+        </TabsContent>
+        <TabsContent value="reports">
+          <InventoryReports />
         </TabsContent>
       </Tabs>
     </div>

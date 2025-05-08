@@ -1,91 +1,55 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import type { User } from "@supabase/supabase-js";
-import type { Profile } from "@prisma/client";
+import { useCallback, useEffect, useState } from "react";
+import { User, UserRoleType } from "@/types/user";
 
-type CurrentUserData = {
-  user: User | null;
-  profile: Profile | null;
-  isLoading: boolean;
-  error: Error | null;
-  refetch?: () => Promise<void>;
-};
+interface EnhancedUser extends Omit<User, 'role'> {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  email?: string;
+  role: UserRoleType;
+  companyId: string | null;
+  active: boolean;
+  avatarUrl?: string | null;
+  company?: {
+    name: string;
+  } | null;
+}
 
-export function useCurrentUser(): CurrentUserData {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+export function useCurrentUser() {
+  const [currentUser, setCurrentUser] = useState<EnhancedUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  const supabase = createClientComponentClient();
 
-  const fetchUserData = useCallback(async () => {
+  const fetchCurrentUser = useCallback(async () => {
     try {
       setIsLoading(true);
-      setError(null);
-
-      // Get current user from Supabase
-      const { data: userData, error: userError } =
-        await supabase.auth.getUser();
-
-      if (userError) {
-        throw userError;
+      const response = await fetch("/api/me");
+      if (response.ok) {
+        const data = await response.json();
+        setCurrentUser(data);
+      } else {
+        setCurrentUser(null);
       }
-
-      if (userData.user) {
-        setUser(userData.user);
-
-        // Fetch the user's profile from the API
-        const response = await fetch("/api/profile");
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch profile");
-        }
-
-        const profileData = await response.json();
-        setProfile(profileData);
-      }
-    } catch (err) {
-      console.error("Error fetching user data:", err);
-      setError(err instanceof Error ? err : new Error(String(err)));
+    } catch (error) {
+      console.error("Error fetching current user:", error);
+      setCurrentUser(null);
     } finally {
       setIsLoading(false);
     }
-  }, [supabase.auth]);
+  }, []);
 
   useEffect(() => {
-    fetchUserData();
+    fetchCurrentUser();
+  }, [fetchCurrentUser]);
 
-    // Listen for auth state changes
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-          if (session) {
-            setUser(session.user);
+  // For backward compatibility
+  const profile = currentUser;
 
-            // Fetch the user's profile when auth state changes
-            try {
-              const response = await fetch("/api/profile");
-              if (response.ok) {
-                const profileData = await response.json();
-                setProfile(profileData);
-              }
-            } catch (err) {
-              console.error("Error fetching profile:", err);
-            }
-          }
-        } else if (event === "SIGNED_OUT") {
-          setUser(null);
-          setProfile(null);
-        }
-      }
-    );
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, [supabase.auth, fetchUserData]);
-
-  return { user, profile, isLoading, error, refetch: fetchUserData };
+  return {
+    currentUser,
+    profile, // Provide profile for backward compatibility
+    isLoading,
+    refreshUser: fetchCurrentUser,
+  };
 }

@@ -33,7 +33,7 @@ export function TableActions({ table }: TableActionsProps) {
   const router = useRouter();
   const { deleteTable } = useTables();
   const { createSession, isSubmitting: isSessionSubmitting } = useSessions();
-  const { profile } = useCurrentUser();
+  const { currentUser, profile } = useCurrentUser();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,9 +55,9 @@ export function TableActions({ table }: TableActionsProps) {
     await createSession(table.id);
   };
 
-  const canManageTable =
-    profile?.role === "ADMIN" || profile?.role === "SUPERADMIN";
-
+  // Use both currentUser and profile for compatibility
+  const role = currentUser?.role || profile?.role;
+  const canManageTable = role === "ADMIN" || role === "SUPERADMIN";
   const canStartSession = table.status === "AVAILABLE";
 
   // Determine if there are any controls to show

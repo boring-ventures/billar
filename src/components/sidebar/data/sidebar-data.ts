@@ -20,6 +20,7 @@ import {
   Calendar,
   Package,
   Receipt,
+  DollarSign,
 } from "lucide-react";
 import type { SidebarData } from "../types";
 
@@ -54,6 +55,32 @@ export const sidebarData: SidebarData = {
           title: "Dashboard",
           url: "/",
           icon: LayoutDashboard,
+        },
+        {
+          title: "Financial",
+          icon: DollarSign,
+          items: [
+            {
+              title: "Overview",
+              url: "/financial",
+              icon: LayoutDashboard,
+            },
+            {
+              title: "Income",
+              url: "/financial/income",
+              icon: DollarSign,
+            },
+            {
+              title: "Expenses",
+              url: "/financial/expenses",
+              icon: Receipt,
+            },
+            {
+              title: "Reports",
+              url: "/financial/reports",
+              icon: CheckSquare,
+            },
+          ],
         },
         {
           title: "Point of Sale",

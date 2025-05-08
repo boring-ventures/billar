@@ -188,7 +188,7 @@ export function StockMovementTable() {
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4 mr-2" />
               Add Movement
             </Button>
           </DialogTrigger>
@@ -293,7 +293,7 @@ export function StockMovementTable() {
                   onClick={() => setIsDialogOpen(false)}
                 >
                   Cancel
-                </Button>
+        </Button>
                 <Button type="submit">Create Movement</Button>
               </div>
             </form>

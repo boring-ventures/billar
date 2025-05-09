@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { FacebookIcon, GithubIcon, UploadCloud } from "lucide-react";
+import { UploadCloud } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -179,8 +179,8 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
                   className="rounded-full object-cover"
                 />
               ) : (
-                <div className="flex h-24 w-24 items-center justify-center rounded-full bg-muted">
-                  <UploadCloud className="h-8 w-8 text-muted-foreground" />
+                <div className="flex h-24 w-24 items-center justify-center rounded-full bg-slate-800 border border-slate-600">
+                  <UploadCloud className="h-8 w-8 text-slate-300" />
                 </div>
               )}
             </div>
@@ -188,7 +188,7 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
               type="file"
               accept="image/*"
               onChange={handleAvatarChange}
-              className="w-full max-w-xs"
+              className="w-full max-w-xs bg-slate-800 border border-slate-600 text-white"
             />
           </div>
 
@@ -197,11 +197,15 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel className="text-white">Email</FormLabel>
                 <FormControl>
-                  <Input placeholder="name@example.com" {...field} />
+                  <Input 
+                    placeholder="name@example.com" 
+                    className="bg-slate-800 border border-slate-600 text-white placeholder:text-slate-400 focus-visible:ring-blue-500"
+                    {...field} 
+                  />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-red-400" />
               </FormItem>
             )}
           />
@@ -212,11 +216,15 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
               name="firstName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>First Name</FormLabel>
+                  <FormLabel className="text-white">First Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="John" {...field} />
+                    <Input 
+                      placeholder="John" 
+                      className="bg-slate-800 border border-slate-600 text-white placeholder:text-slate-400 focus-visible:ring-blue-500"
+                      {...field} 
+                    />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-red-400" />
                 </FormItem>
               )}
             />
@@ -225,11 +233,15 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
               name="lastName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Last Name</FormLabel>
+                  <FormLabel className="text-white">Last Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Doe" {...field} />
+                    <Input 
+                      placeholder="Doe" 
+                      className="bg-slate-800 border border-slate-600 text-white placeholder:text-slate-400 focus-visible:ring-blue-500"
+                      {...field} 
+                    />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-red-400" />
                 </FormItem>
               )}
             />
@@ -240,16 +252,17 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Password</FormLabel>
+                <FormLabel className="text-white">Password</FormLabel>
                 <FormControl>
                   <PasswordInput
                     placeholder="********"
+                    className="bg-slate-800 border border-slate-600 text-white placeholder:text-slate-400 focus-visible:ring-blue-500"
                     {...field}
                     onChange={handlePasswordChange}
                   />
                 </FormControl>
                 <PasswordStrengthIndicator password={password} />
-                <FormMessage />
+                <FormMessage className="text-red-400" />
               </FormItem>
             )}
           />
@@ -259,50 +272,27 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
             name="confirmPassword"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Confirm Password</FormLabel>
+                <FormLabel className="text-white">Confirm Password</FormLabel>
                 <FormControl>
-                  <PasswordInput placeholder="********" {...field} />
+                  <PasswordInput 
+                    placeholder="********" 
+                    className="bg-slate-800 border border-slate-600 text-white placeholder:text-slate-400 focus-visible:ring-blue-500"
+                    {...field} 
+                  />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-red-400" />
               </FormItem>
             )}
           />
 
-          <Button className="w-full" disabled={isLoading}>
+          <Button
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white mt-2"
+            disabled={isLoading}
+          >
             Create Account
           </Button>
         </form>
       </Form>
-
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">
-            Or continue with
-          </span>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          className="w-full"
-          type="button"
-          disabled={isLoading}
-        >
-          <GithubIcon className="h-4 w-4" /> GitHub
-        </Button>
-        <Button
-          variant="outline"
-          className="w-full"
-          type="button"
-          disabled={isLoading}
-        >
-          <FacebookIcon className="h-4 w-4" /> Facebook
-        </Button>
-      </div>
     </div>
   );
 }

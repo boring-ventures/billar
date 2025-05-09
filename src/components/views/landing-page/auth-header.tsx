@@ -9,7 +9,7 @@ export function AuthHeader() {
 
   if (isLoading) {
     return (
-      <div className="h-9 w-[100px] animate-pulse rounded-md bg-muted" />
+      <div className="h-9 w-[100px] animate-pulse rounded-md bg-gray-200" />
     );
   }
 
@@ -21,13 +21,13 @@ export function AuthHeader() {
     <div className="flex items-center space-x-4">
       <Link
         href="/sign-in"
-        className="text-primary hover:text-primary-foreground hover:bg-primary px-4 py-2 rounded-md transition-colors"
+        className="text-blue-700 hover:text-white hover:bg-blue-700 px-4 py-2 rounded-md transition-colors"
       >
         Sign In
       </Link>
       <Link
         href="/sign-up"
-        className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors"
+        className="bg-blue-700 text-white px-4 py-2 rounded-md hover:bg-blue-800 transition-colors"
       >
         Sign Up
       </Link>

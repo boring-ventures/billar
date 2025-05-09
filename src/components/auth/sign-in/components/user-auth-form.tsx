@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { FacebookIcon, GithubIcon } from "lucide-react";
 import { useAuth } from "@/providers/auth-provider";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -74,11 +73,15 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
               name="email"
               render={({ field }) => (
                 <FormItem className="space-y-1">
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel className="text-white">Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="name@example.com" {...field} />
+                    <Input 
+                      placeholder="name@example.com"
+                      className="bg-slate-800 border border-slate-600 text-white placeholder:text-slate-400 focus-visible:ring-blue-500" 
+                      {...field} 
+                    />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-red-400" />
                 </FormItem>
               )}
             />
@@ -88,54 +91,31 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
               render={({ field }) => (
                 <FormItem className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel className="text-white">Password</FormLabel>
                     <Link
                       href="/forgot-password"
-                      className="text-sm font-medium text-muted-foreground hover:opacity-75"
+                      className="text-sm font-medium text-slate-300 hover:text-blue-400"
                     >
                       Forgot password?
                     </Link>
                   </div>
                   <FormControl>
-                    <PasswordInput placeholder="********" {...field} />
+                    <PasswordInput 
+                      placeholder="********" 
+                      className="bg-slate-800 border border-slate-600 text-white placeholder:text-slate-400 focus-visible:ring-blue-500"
+                      {...field} 
+                    />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-red-400" />
                 </FormItem>
               )}
             />
-            <Button className="mt-2" disabled={isLoading}>
+            <Button 
+              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white" 
+              disabled={isLoading}
+            >
               Login
             </Button>
-
-            <div className="relative my-2">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Or continue with
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                className="w-full"
-                type="button"
-                disabled={isLoading}
-              >
-                <GithubIcon className="h-4 w-4" /> GitHub
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full"
-                type="button"
-                disabled={isLoading}
-              >
-                <FacebookIcon className="h-4 w-4" /> Facebook
-              </Button>
-            </div>
           </div>
         </form>
       </Form>

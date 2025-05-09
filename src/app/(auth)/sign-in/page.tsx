@@ -12,15 +12,15 @@ export const metadata: Metadata = {
 export default function SignInPage() {
   return (
     <AuthLayout>
-      <Card className="p-6">
+      <Card className="p-6 border border-slate-700 shadow-md bg-black rounded-lg">
         <div className="flex flex-col space-y-2 text-left">
-          <h1 className="text-2xl font-semibold tracking-tight">Login</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-2xl font-semibold tracking-tight text-white">Login</h1>
+          <p className="text-sm text-slate-300">
             Enter your email and password below <br />
             to log into your account.{" "}
             <Link
               href="/sign-up"
-              className="underline underline-offset-4 hover:text-primary"
+              className="text-blue-400 underline underline-offset-4 hover:text-blue-300"
             >
               Don&apos;t have an account?
             </Link>
@@ -28,28 +28,28 @@ export default function SignInPage() {
         </div>
         <UserAuthForm />
         <div className="mt-4 text-center text-sm">
-          <p className="text-muted-foreground">
+          <p className="text-slate-300">
             Prefer to sign in without a password?{" "}
             <Link
               href="/magic-link"
-              className="underline underline-offset-4 hover:text-primary"
+              className="text-blue-400 underline underline-offset-4 hover:text-blue-300"
             >
               Sign in with a magic link
             </Link>
           </p>
         </div>
-        <p className="mt-4 px-8 text-center text-sm text-muted-foreground">
+        <p className="mt-4 px-8 text-center text-sm text-slate-300">
           By clicking login, you agree to our{" "}
           <Link
             href="/terms"
-            className="underline underline-offset-4 hover:text-primary"
+            className="text-blue-400 underline underline-offset-4 hover:text-blue-300"
           >
             Terms of Service
           </Link>{" "}
           and{" "}
           <Link
             href="/privacy"
-            className="underline underline-offset-4 hover:text-primary"
+            className="text-blue-400 underline underline-offset-4 hover:text-blue-300"
           >
             Privacy Policy
           </Link>

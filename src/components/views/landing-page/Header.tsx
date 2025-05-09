@@ -9,25 +9,25 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 bg-background border-b border-border">
+    <header className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center space-x-2">
-            <CircleDot className="h-8 w-8 text-primary" />
-            <Link href="/" className="text-2xl font-bold text-primary">
+            <CircleDot className="h-8 w-8 text-blue-700" />
+            <Link href="/" className="text-2xl font-bold text-blue-700">
               Billar
             </Link>
           </div>
           <nav className="hidden md:flex space-x-8">
             <Link
               href="/#features"
-              className="text-foreground hover:text-primary transition-colors"
+              className="text-gray-600 hover:text-blue-700 transition-colors"
             >
               Features
             </Link>
             <Link
               href="/#testimonials"
-              className="text-foreground hover:text-primary transition-colors"
+              className="text-gray-600 hover:text-blue-700 transition-colors"
             >
               Testimonials
             </Link>
@@ -39,7 +39,7 @@ export default function Header() {
             <button
               type="button"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="text-foreground"
+              className="text-gray-600"
             >
               {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -47,17 +47,17 @@ export default function Header() {
         </div>
       </div>
       {isMenuOpen && (
-        <div className="md:hidden bg-background">
+        <div className="md:hidden bg-white">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
             <Link
               href="/#features"
-              className="block px-3 py-2 text-foreground hover:text-primary transition-colors"
+              className="block px-3 py-2 text-gray-600 hover:text-blue-700 transition-colors"
             >
               Features
             </Link>
             <Link
               href="/#testimonials"
-              className="block px-3 py-2 text-foreground hover:text-primary transition-colors"
+              className="block px-3 py-2 text-gray-600 hover:text-blue-700 transition-colors"
             >
               Testimonials
             </Link>

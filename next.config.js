@@ -1,20 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
-  experimental: {
-    // Ensure proper tracing of dependencies
-    outputFileTracingRoot: process.cwd(),
-    outputFileTracingExcludes: {
-      '*': [
-        'node_modules/@swc/core-linux-x64-gnu',
-        'node_modules/@swc/core-linux-x64-musl',
-        'node_modules/@esbuild/darwin-*',
-        'node_modules/@esbuild/linux-*',
-        'node_modules/@esbuild/win32-*',
-        '.git/**',
-      ],
-    },
-  },
   images: {
     domains: [
       // Add your Supabase project domain
@@ -95,6 +80,12 @@ const nextConfig = {
   typescript: {
     // Disable TypeScript errors during build
     ignoreBuildErrors: true,
+  },
+  // Add file tracing excludes at root level
+  outputFileTracingExcludes: {
+    '*': [
+      'node_modules/**/*',
+    ],
   },
   // ... other config options
 };

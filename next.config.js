@@ -87,6 +87,16 @@ const nextConfig = {
       'node_modules/**/*',
     ],
   },
+  // Add webpack configuration
+  webpack: (config, { isServer }) => {
+    // Optional: Attempt to resolve modules that might be missing
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      '@radix-ui/react-accordion': false,
+    };
+    
+    return config;
+  },
   // ... other config options
 };
 

@@ -1,3 +1,5 @@
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -10,66 +12,94 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";
+import { useFinancial } from "@/hooks/use-financial";
 
-const incomeCategories = [
-  {
-    id: "1",
-    name: "Table Rent",
-    total: 4500.00,
-    percentage: 60,
-  },
-  {
-    id: "2",
-    name: "Food & Beverages",
-    total: 2500.00,
-    percentage: 33,
-  },
-  {
-    id: "3",
-    name: "Other Income",
-    total: 500.00,
-    percentage: 7,
-  },
-];
+interface IncomeCategory {
+  id: string;
+  name: string;
+  total: number;
+  percentage: number;
+}
 
-const recentIncome = [
-  {
-    id: "1",
-    date: "2024-03-15",
-    category: "Table Rent",
-    description: "Table 1 - 2 hours",
-    amount: 150.00,
-    status: "Completed",
-  },
-  {
-    id: "2",
-    date: "2024-03-15",
-    category: "Food & Beverages",
-    description: "Snacks and drinks",
-    amount: 75.50,
-    status: "Completed",
-  },
-  {
-    id: "3",
-    date: "2024-03-14",
-    category: "Table Rent",
-    description: "Table 2 - 3 hours",
-    amount: 180.00,
-    status: "Completed",
-  },
-];
+interface Income {
+  id: string;
+  date: string;
+  category: string;
+  description: string;
+  amount: number;
+  status: string;
+}
 
 export function IncomeTracking() {
+  // Use the financial data hook to get real data from the API
+  const { data, loading, error } = useFinancial();
+  
+  // Apply defensive programming patterns - use safe defaults
+  const safeData = data || {
+    totalIncome: 0,
+    totalExpenses: 0,
+    netProfit: 0,
+    activeTables: 0,
+    incomeCategories: [],
+    expenseCategories: [],
+    recentIncome: [],
+    recentExpenses: []
+  };
+  
+  // Ensure categories and income are arrays with defensive programming
+  const safeIncomeCategories = Array.isArray(safeData.incomeCategories) 
+    ? safeData.incomeCategories 
+    : [];
+    
+  const safeRecentIncome = Array.isArray(safeData.recentIncome) 
+    ? safeData.recentIncome 
+    : [];
+  
+  // Format currency with defensive formatting
+  const formatCurrency = (value: number | undefined | null): string => {
+    const safeValue = typeof value === 'number' ? value : 0;
+    return '$' + safeValue.toFixed(2);
+  };
+  
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="grid gap-4 md:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Loading...</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">...</div>
+                <p className="text-xs text-muted-foreground">Loading...</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  
+  if (error) {
+    console.error("Error loading income data:", error);
+    return (
+      <div className="p-4 text-red-500">
+        Error loading income data. Please try again later.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-3">
-        {incomeCategories.map((category) => (
+        {safeIncomeCategories.map((category: IncomeCategory) => (
           <Card key={category.id}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{category.name}</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${category.total.toFixed(2)}</div>
+              <div className="text-2xl font-bold">{formatCurrency(category.total)}</div>
               <p className="text-xs text-muted-foreground">{category.percentage}% of total income</p>
             </CardContent>
           </Card>
@@ -93,28 +123,34 @@ export function IncomeTracking() {
               <CardTitle>Recent Income Transactions</CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentIncome.map((income) => (
-                    <TableRow key={income.id}>
-                      <TableCell>{income.date}</TableCell>
-                      <TableCell>{income.category}</TableCell>
-                      <TableCell>{income.description}</TableCell>
-                      <TableCell className="text-right">${income.amount.toFixed(2)}</TableCell>
-                      <TableCell>{income.status}</TableCell>
+              {safeRecentIncome.length === 0 ? (
+                <div className="py-8 text-center text-muted-foreground">
+                  No recent income available
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                      <TableHead>Status</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {safeRecentIncome.map((income: Income) => (
+                      <TableRow key={income.id}>
+                        <TableCell>{income.date}</TableCell>
+                        <TableCell>{income.category}</TableCell>
+                        <TableCell>{income.description}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(Number(income.amount))}</TableCell>
+                        <TableCell>{income.status}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -124,24 +160,30 @@ export function IncomeTracking() {
               <CardTitle>Income Categories</CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Category</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="text-right">Percentage</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {incomeCategories.map((category) => (
-                    <TableRow key={category.id}>
-                      <TableCell>{category.name}</TableCell>
-                      <TableCell className="text-right">${category.total.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">{category.percentage}%</TableCell>
+              {safeIncomeCategories.length === 0 ? (
+                <div className="py-8 text-center text-muted-foreground">
+                  No income categories available
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Category</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                      <TableHead className="text-right">Percentage</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {safeIncomeCategories.map((category: IncomeCategory) => (
+                      <TableRow key={category.id}>
+                        <TableCell>{category.name}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(Number(category.total))}</TableCell>
+                        <TableCell className="text-right">{category.percentage}%</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

@@ -2,9 +2,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { useFinancial } from "@/hooks/use-financial";
 
-const data = [
+// Sample chart data - will be replaced with real data in future iterations
+const sampleData = [
   { name: "Jan", income: 4000, expenses: 2400 },
   { name: "Feb", income: 3000, expenses: 1398 },
   { name: "Mar", income: 2000, expenses: 9800 },
@@ -13,10 +13,32 @@ const data = [
   { name: "Jun", income: 2390, expenses: 3800 },
 ];
 
-export function Overview() {
-  const { data: financialData, loading, error } = useFinancial();
+interface OverviewProps {
+  data: {
+    totalIncome: number;
+    totalExpenses: number;
+    netProfit: number;
+    incomeCategories: any[];
+    expenseCategories: any[];
+    recentIncome: any[];
+    recentExpenses: any[];
+  };
+  isLoading: boolean;
+}
 
-  if (loading) {
+export function Overview({ data, isLoading }: OverviewProps) {
+  // Apply defensive programming patterns
+  const safeData = data || {
+    totalIncome: 0,
+    totalExpenses: 0,
+    netProfit: 0,
+    incomeCategories: [],
+    expenseCategories: [],
+    recentIncome: [],
+    recentExpenses: []
+  };
+
+  if (isLoading) {
     return (
       <Card className="col-span-4">
         <CardHeader>
@@ -31,20 +53,16 @@ export function Overview() {
     );
   }
 
-  if (error) {
-    return (
-      <Card className="col-span-4">
-        <CardHeader>
-          <CardTitle>Financial Overview</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[350px] flex items-center justify-center text-red-500">
-            Error loading financial data
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  // Prepare chart data - using sample data for chart layout, will be replaced with real data
+  // This can be expanded in future iterations to show real monthly trends
+  const chartData = sampleData.map(item => ({
+    ...item,
+    // Use actual totals for the last month to give some real data
+    ...(item.name === "Jun" ? { 
+      income: safeData.totalIncome,
+      expenses: safeData.totalExpenses
+    } : {})
+  }));
 
   return (
     <Card className="col-span-4">
@@ -54,7 +72,7 @@ export function Overview() {
       <CardContent className="pl-2">
         <ResponsiveContainer width="100%" height={350}>
           <LineChart
-            data={data}
+            data={chartData}
             margin={{
               top: 5,
               right: 10,

@@ -2,10 +2,10 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
-import { useFinancial } from "@/hooks/use-financial";
 
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28"];
+const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
 
+// Sample monthly data for trend display
 const monthlyProfit = [
   { month: "Jan", profit: 3200 },
   { month: "Feb", profit: 2800 },
@@ -15,10 +15,44 @@ const monthlyProfit = [
   { month: "Jun", profit: 4500 },
 ];
 
-export function ProfitSummary() {
-  const { data, loading, error } = useFinancial();
+interface CategoryItem {
+  id: string;
+  name: string;
+  total: number;
+  percentage: number;
+}
 
-  if (loading) {
+interface ProfitSummaryProps {
+  data: {
+    incomeCategories: CategoryItem[];
+    expenseCategories: CategoryItem[];
+    totalIncome: number;
+    totalExpenses: number;
+    netProfit: number;
+  };
+  isLoading: boolean;
+}
+
+export function ProfitSummary({ data, isLoading }: ProfitSummaryProps) {
+  // Apply defensive programming from section 7
+  const safeData = data || {
+    incomeCategories: [],
+    expenseCategories: [],
+    totalIncome: 0,
+    totalExpenses: 0,
+    netProfit: 0
+  };
+  
+  // Ensure categories are arrays
+  const safeIncomeCategories = Array.isArray(safeData.incomeCategories) 
+    ? safeData.incomeCategories 
+    : [];
+  
+  const safeExpenseCategories = Array.isArray(safeData.expenseCategories) 
+    ? safeData.expenseCategories 
+    : [];
+
+  if (isLoading) {
     return (
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
@@ -33,7 +67,7 @@ export function ProfitSummary() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Monthly Profit Trend</CardTitle>
+            <CardTitle>Expense Distribution</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-[300px] flex items-center justify-center">
@@ -45,32 +79,17 @@ export function ProfitSummary() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Income Distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px] flex items-center justify-center text-red-500">
-              Error loading data
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Monthly Profit Trend</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px] flex items-center justify-center text-red-500">
-              Error loading data
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
+  // Update the last month's profit with actual data
+  const updatedMonthlyProfit = [...monthlyProfit];
+  if (updatedMonthlyProfit.length > 0) {
+    updatedMonthlyProfit[updatedMonthlyProfit.length - 1].profit = 
+      safeData.netProfit > 0 ? safeData.netProfit : updatedMonthlyProfit[updatedMonthlyProfit.length - 1].profit;
   }
+
+  // Format for safe currency display
+  const formatCurrency = (value: number): string => {
+    return '$' + value.toFixed(2);
+  };
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
@@ -79,51 +98,69 @@ export function ProfitSummary() {
           <CardTitle>Income Distribution</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={data?.incomeCategories}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="total"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                >
-                  {data?.incomeCategories.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+          {safeIncomeCategories.length === 0 ? (
+            <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+              No income data available
+            </div>
+          ) : (
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={safeIncomeCategories}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="total"
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {safeIncomeCategories.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </CardContent>
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle>Monthly Profit Trend</CardTitle>
+          <CardTitle>Expense Distribution</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {monthlyProfit.map((item) => (
-              <div key={item.month} className="flex items-center justify-between">
-                <span className="text-sm font-medium">{item.month}</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">${item.profit}</span>
-                  <div className="h-2 w-24 rounded-full bg-gray-200">
-                    <div
-                      className="h-2 rounded-full bg-blue-600"
-                      style={{ width: `${(item.profit / 5000) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          {safeExpenseCategories.length === 0 ? (
+            <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+              No expense data available
+            </div>
+          ) : (
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={safeExpenseCategories}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius={80}
+                    fill="#FF8042"
+                    dataKey="total"
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {safeExpenseCategories.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[(index + 2) % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

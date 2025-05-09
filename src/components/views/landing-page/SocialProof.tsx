@@ -1,47 +1,46 @@
 "use client";
 
-import React from "react";
-import { Trophy, Target, Award, Star, Users, Bookmark } from "lucide-react";
-import { BlurFade } from "@/components/magicui/blur-fade";
-
-const partners = [
-  { name: "Pro League", icon: Trophy },
-  { name: "Eight Ball Association", icon: Target },
-  { name: "National Pool Tours", icon: Award },
-  { name: "Champions Club", icon: Star },
-  { name: "Pool Players Network", icon: Users },
-  { name: "Premium Tables", icon: Bookmark },
-];
+import { MotionSection, MotionStagger } from "@/components/magicui/motion-section";
+import { motion } from "framer-motion";
 
 export default function SocialProof() {
-  return (
-    <section className="py-20 bg-white relative overflow-hidden">
-      {/* Subtle background pattern */}
-      <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-25" />
+  const partners = [
+    "/logos/partner1.svg",
+    "/logos/partner2.svg", 
+    "/logos/partner3.svg",
+    "/logos/partner4.svg",
+    "/logos/partner5.svg",
+    "/logos/partner6.svg",
+  ];
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
-        <BlurFade>
-          <div className="text-center mb-12">
-            <p className="text-sm font-medium text-primary uppercase tracking-wider">
-              Trusted by organizations worldwide
+  return (
+    <section className="py-12 bg-gray-50 border-t border-gray-100">
+      <div className="container mx-auto px-4">
+        <MotionSection delay={0.2} type="fade" duration={0.7}>
+          <div className="text-center mb-8">
+            <p className="text-gray-500 text-sm font-medium">
+              TRUSTED BY LEADING BILLAR BUSINESSES WORLDWIDE
             </p>
           </div>
-        </BlurFade>
+        </MotionSection>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-10">
-          {partners.map((partner, i) => (
-            <BlurFade key={partner.name} delay={i * 0.1}>
-              <div className="flex flex-col items-center justify-center group">
-                <div className="w-16 h-16 rounded-full bg-primary/5 flex items-center justify-center mb-4 group-hover:bg-primary/10 transition-colors">
-                  <partner.icon className="h-8 w-8 text-primary/70 group-hover:text-primary transition-colors" />
-                </div>
-                <span className="text-sm font-medium text-gray-600">
-                  {partner.name}
-                </span>
-              </div>
-            </BlurFade>
+        <MotionStagger 
+          className="flex flex-wrap justify-center items-center gap-x-12 gap-y-8"
+          staggerChildren={0.1}
+          delay={0.3}
+          duration={0.5}
+        >
+          {partners.map((logo, index) => (
+            <motion.div 
+              key={index} 
+              className="grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition duration-300"
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+            >
+              <div className="h-10 w-32 bg-gray-300 rounded animate-pulse"></div>
+            </motion.div>
           ))}
-        </div>
+        </MotionStagger>
       </div>
     </section>
   );

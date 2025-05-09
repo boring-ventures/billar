@@ -6,6 +6,7 @@ const nextConfig = {
       "swfgvfhpmicwptupjyko.supabase.co",
       "xqakfzhkeiongvzgbhji.supabase.co",
     ],
+    unoptimized: true, // Allow unoptimized images during development
   },
   output: "standalone",
   // Security headers configuration
@@ -72,6 +73,11 @@ const nextConfig = {
         ],
       },
     ];
+  },
+  experimental: {
+    serverActions: {
+      allowedOrigins: ["localhost:3000"],
+    },
   },
   // ... other config options
 };

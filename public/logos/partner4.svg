@@ -1,0 +1,4 @@
+<svg width="120" height="40" xmlns="http://www.w3.org/2000/svg">
+    <rect width="120" height="40" fill="hsl(240, 70%, 80%)" rx="8" />
+    <text x="60" y="25" font-family="Arial" font-size="12" text-anchor="middle" fill="#555">Partner 4</text>
+  </svg>

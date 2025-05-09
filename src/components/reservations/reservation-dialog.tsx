@@ -28,7 +28,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useReservations } from "@/hooks/use-reservations";
+import { 
+  useCustomers, 
+  useCreateReservation, 
+  useUpdateReservation 
+} from "@/hooks/use-reservations";
 import { useTables } from "@/hooks/use-tables";
 import { CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
@@ -72,9 +76,12 @@ export function ReservationDialog({
   onOpenChange,
   reservation,
 }: ReservationDialogProps) {
-  const { createReservation, updateReservation, customers, fetchCustomers } =
-    useReservations();
-  const { tables, fetchTables } = useTables();
+  // Use our new React Query hooks
+  const { data: customers = [] } = useCustomers();
+  const { data: tables = [] } = useTables();
+  const createReservationMutation = useCreateReservation();
+  const updateReservationMutation = useUpdateReservation(reservation?.id || "");
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<ReservationFormValues>({
@@ -88,11 +95,6 @@ export function ReservationDialog({
       notes: "",
     },
   });
-
-  useEffect(() => {
-    fetchCustomers();
-    fetchTables();
-  }, [fetchCustomers, fetchTables]);
 
   useEffect(() => {
     if (reservation) {
@@ -120,9 +122,9 @@ export function ReservationDialog({
     setIsSubmitting(true);
     try {
       if (reservation) {
-        await updateReservation(reservation.id, data);
+        await updateReservationMutation.mutateAsync(data);
       } else {
-        await createReservation(data);
+        await createReservationMutation.mutateAsync(data);
       }
       onOpenChange(false);
     } catch (error) {

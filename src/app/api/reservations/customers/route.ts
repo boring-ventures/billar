@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateRequest } from '@/lib/auth';
-import prisma from '@/lib/prisma'; // Prisma client import
-import { z } from 'zod'; // Add zod import for validation
+import prisma from '@/lib/prisma';
+import { z } from 'zod';
 
-// Validation schema for maintenance record
-const maintenanceSchema = z.object({
-  description: z.string().min(1, "Description is required"),
-  maintenanceAt: z.string(), // Date string that will be converted to Date
-  cost: z.number().optional().nullable(),
-  tableId: z.string().min(1, "Table ID is required"),
+// Validation schema for customer
+const customerSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().min(1, "Phone number is required"),
+  address: z.string().optional(),
+  notes: z.string().optional(),
   companyId: z.string().optional(), // Optional for superadmin operations
 });
 
-// GET all maintenance data
+// GET all customers
 export async function GET(req: NextRequest) {
   try {
     // Authenticate request - enforcing SUPERADMIN role as per section 6
@@ -26,24 +27,50 @@ export async function GET(req: NextRequest) {
     });
     
     // For SUPERADMIN, no company filter is applied
-    const queryFilter = {};
+    let queryFilter: any = {};
     console.log("Using SUPERADMIN access pattern - no company filter applied");
     
-    // Get maintenance data from database using Prisma
-    const maintenanceRecords = await prisma.tableMaintenance.findMany({
+    // Parse query parameters
+    const searchParams = req.nextUrl.searchParams;
+    const query = searchParams.get('query');
+    
+    // Add search filter if query parameter exists
+    if (query) {
+      queryFilter = {
+        OR: [
+          { name: { contains: query, mode: 'insensitive' } },
+          { email: { contains: query, mode: 'insensitive' } },
+          { phone: { contains: query, mode: 'insensitive' } },
+          { address: { contains: query, mode: 'insensitive' } },
+          { notes: { contains: query, mode: 'insensitive' } }
+        ]
+      };
+    }
+    
+    // Get customers from database using Prisma
+    const customers = await prisma.customer.findMany({
       where: queryFilter,
-      orderBy: { maintenanceAt: 'desc' },
+      orderBy: { name: 'asc' },
       include: {
-        table: true,
-      },
+        _count: {
+          select: { reservations: true }
+        }
+      }
     });
+    
+    // Map the results to include reservation count
+    const customersWithCount = customers.map(customer => ({
+      ...customer,
+      reservationCount: customer._count.reservations,
+      _count: undefined // Remove the _count field from the result
+    }));
     
     // Return response with empty array as fallback
     return NextResponse.json({ 
-      data: Array.isArray(maintenanceRecords) ? maintenanceRecords : [] 
+      data: Array.isArray(customersWithCount) ? customersWithCount : [] 
     });
   } catch (error: any) {
-    console.error("Error in maintenance API:", error);
+    console.error("Error in customers API:", error);
     // Return empty array instead of error object as per section 7
     return NextResponse.json(
       { data: [] },
@@ -52,7 +79,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST to create new maintenance record
+// POST to create new customer
 export async function POST(req: NextRequest) {
   try {
     // Authenticate request - enforcing SUPERADMIN role
@@ -63,7 +90,7 @@ export async function POST(req: NextRequest) {
     
     try {
       // Validate with zod schema
-      const validatedData = maintenanceSchema.parse(body);
+      const validatedData = customerSchema.parse(body);
       
       // Determine company context for superadmin operations
       let operationCompanyId: string;
@@ -91,32 +118,33 @@ export async function POST(req: NextRequest) {
         operationCompanyId = defaultCompany.id;
       }
       
-      // Get table to ensure it exists and belongs to the company
-      const table = await prisma.table.findFirst({
-        where: {
-          id: validatedData.tableId,
-          companyId: operationCompanyId
-        }
+      // Check if customer with the same email already exists
+      const existingCustomer = await prisma.customer.findFirst({
+        where: { email: validatedData.email }
       });
       
-      if (!table) {
-        return NextResponse.json({ error: "Table not found or doesn't belong to the company" }, { status: 400 });
+      if (existingCustomer) {
+        return NextResponse.json({ error: "A customer with this email already exists" }, { status: 400 });
       }
       
-      // Create new maintenance record using Prisma transaction
-      const newMaintenanceRecord = await prisma.$transaction(async (tx) => {
-        // Create the record
-        return tx.tableMaintenance.create({
+      // Create new customer using Prisma transaction
+      const newCustomer = await prisma.$transaction(async (tx) => {
+        // Create the customer
+        return tx.customer.create({
           data: {
-            description: validatedData.description,
-            maintenanceAt: new Date(validatedData.maintenanceAt),
-            cost: validatedData.cost ? parseFloat(validatedData.cost.toString()) : null,
-            tableId: validatedData.tableId,
-          },
+            name: validatedData.name,
+            email: validatedData.email,
+            phone: validatedData.phone,
+            address: validatedData.address,
+            notes: validatedData.notes,
+            company: {
+              connect: { id: operationCompanyId }
+            }
+          }
         });
       });
       
-      return NextResponse.json({ data: newMaintenanceRecord }, { status: 201 });
+      return NextResponse.json({ data: newCustomer }, { status: 201 });
     } catch (zodError) {
       if (zodError instanceof z.ZodError) {
         return NextResponse.json({ error: zodError.errors }, { status: 400 });
@@ -124,7 +152,7 @@ export async function POST(req: NextRequest) {
       throw zodError; // Re-throw if it's another type of error
     }
   } catch (error: any) {
-    console.error("Error creating maintenance record:", error);
+    console.error("Error creating customer:", error);
     return NextResponse.json(
       { error: error.message || "Internal server error", data: null },
       { status: error.status || 500 }

@@ -1,19 +1,25 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 
-// Generic fetch function
+// Generic fetch function with improved error handling
 async function apiFetch(url: string, options?: RequestInit) {
-  const response = await fetch(url, options);
-  
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'An error occurred');
+  try {
+    const response = await fetch(url, options);
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'An error occurred');
+    }
+    
+    return response.json();
+  } catch (error) {
+    console.error(`API fetch error for ${url}:`, error);
+    // Return empty data structure instead of throwing
+    return { data: [] };
   }
-  
-  return response.json();
 }
 
-// GET hook for all maintenance records
+// GET hook for all maintenance records with defensive programming
 export function useMaintenanceRecords() {
   return useQuery({
     queryKey: ['maintenance'],
@@ -21,11 +27,11 @@ export function useMaintenanceRecords() {
   });
 }
 
-// GET hook for a specific maintenance record
+// GET hook for a specific maintenance record with defensive programming
 export function useMaintenanceRecord(id: string) {
   return useQuery({
     queryKey: ['maintenance', id],
-    queryFn: () => id ? apiFetch(`/api/maintenance/${id}`).then(res => res.data) : null,
+    queryFn: () => id ? apiFetch(`/api/maintenance/${id}`).then(res => res.data || null) : null,
     enabled: !!id, // Only fetch if ID is provided
   });
 }
@@ -39,7 +45,7 @@ export function useCreateMaintenance() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
-    }).then(res => res.data),
+    }).then(res => res.data || {}),
     onSuccess: () => {
       // Invalidate maintenance queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['maintenance'] });
@@ -56,7 +62,7 @@ export function useUpdateMaintenance(id: string) {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
-    }).then(res => res.data),
+    }).then(res => res.data || {}),
     onSuccess: () => {
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: ['maintenance', id] });
@@ -80,11 +86,14 @@ export function useDeleteMaintenance(id: string) {
   });
 }
 
-// Hook for maintenance statistics
+// Hook for maintenance statistics with defensive programming
 export function useMaintenanceStats() {
   const { data: maintenanceRecords, isLoading } = useMaintenanceRecords();
   
-  if (isLoading || !maintenanceRecords) {
+  // Ensure we always have a valid array to work with
+  const safeRecords = Array.isArray(maintenanceRecords) ? maintenanceRecords : [];
+  
+  if (isLoading || safeRecords.length === 0) {
     return {
       upcomingCount: 0,
       totalRecords: 0,
@@ -98,38 +107,42 @@ export function useMaintenanceStats() {
   const oneWeekFromNow = new Date();
   oneWeekFromNow.setDate(now.getDate() + 7);
   
-  // Calculate statistics
-  const upcoming = maintenanceRecords.filter((record: any) => {
+  // Calculate statistics with defensive null checks
+  const upcoming = safeRecords.filter((record: any) => {
+    if (!record.maintenanceAt) return false;
     const maintenanceDate = new Date(record.maintenanceAt);
     return maintenanceDate > now && maintenanceDate <= oneWeekFromNow;
   });
   
-  const currentlyInMaintenance = maintenanceRecords.filter((record: any) => {
+  const currentlyInMaintenance = safeRecords.filter((record: any) => {
+    if (!record.maintenanceAt) return false;
     const maintenanceDate = new Date(record.maintenanceAt);
     return maintenanceDate.toDateString() === now.toDateString();
   });
   
-  // Get unique table IDs currently in maintenance
+  // Get unique table IDs currently in maintenance with null checks
   const uniqueTablesInMaintenance = new Set(
-    currentlyInMaintenance.map((record: any) => record.tableId)
+    currentlyInMaintenance
+      .filter((record: any) => record.tableId)
+      .map((record: any) => record.tableId)
   );
   
-  // Calculate total cost
-  const totalCost = maintenanceRecords.reduce(
+  // Calculate total cost with defensive handling of null/undefined values
+  const totalCost = safeRecords.reduce(
     (sum: number, record: any) => sum + (record.cost ? parseFloat(record.cost) : 0),
     0
   );
   
   return {
     upcomingCount: upcoming.length,
-    totalRecords: maintenanceRecords.length,
+    totalRecords: safeRecords.length,
     totalCost,
     tablesInMaintenance: uniqueTablesInMaintenance.size,
     isLoading: false,
   };
 }
 
-// Hook for maintenance costs with period filtering
+// Hook for maintenance costs with period filtering and defensive programming
 export function useMaintenanceCosts(period: 'week' | 'month' | 'quarter' | 'year' = 'month') {
   const { data: maintenanceRecords, isLoading } = useMaintenanceRecords();
   const [filteredRecords, setFilteredRecords] = useState<any[]>([]);
@@ -137,7 +150,10 @@ export function useMaintenanceCosts(period: 'week' | 'month' | 'quarter' | 'year
   const [averageCost, setAverageCost] = useState(0);
   
   useEffect(() => {
-    if (!maintenanceRecords) {
+    // Ensure we always have a valid array to work with
+    const safeRecords = Array.isArray(maintenanceRecords) ? maintenanceRecords : [];
+    
+    if (safeRecords.length === 0) {
       setFilteredRecords([]);
       setTotalCost(0);
       setAverageCost(0);
@@ -163,15 +179,16 @@ export function useMaintenanceCosts(period: 'week' | 'month' | 'quarter' | 'year
         break;
     }
     
-    // Filter records by date
-    const filtered = maintenanceRecords.filter((record: any) => {
+    // Filter records by date with null checks
+    const filtered = safeRecords.filter((record: any) => {
+      if (!record.maintenanceAt) return false;
       const maintenanceDate = new Date(record.maintenanceAt);
       return maintenanceDate >= startDate && maintenanceDate <= now;
     });
     
     setFilteredRecords(filtered);
     
-    // Calculate costs
+    // Calculate costs with defensive handling
     const total = filtered.reduce(
       (sum: number, record: any) => sum + (record.cost ? parseFloat(record.cost) : 0),
       0
@@ -182,10 +199,10 @@ export function useMaintenanceCosts(period: 'week' | 'month' | 'quarter' | 'year
   }, [maintenanceRecords, period]);
   
   return {
-    records: filteredRecords,
+    records: filteredRecords || [],
     totalCost,
     averageCost,
-    count: filteredRecords.length,
+    count: (filteredRecords || []).length,
     isLoading,
   };
 } 

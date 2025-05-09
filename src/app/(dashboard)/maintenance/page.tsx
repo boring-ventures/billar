@@ -9,12 +9,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function MaintenancePage() {
   const { 
-    upcomingCount, 
-    totalRecords, 
-    totalCost, 
-    tablesInMaintenance, 
+    upcomingCount = 0, 
+    totalRecords = 0, 
+    totalCost = 0, 
+    tablesInMaintenance = 0, 
     isLoading 
-  } = useMaintenanceStats();
+  } = useMaintenanceStats() || {}; // Apply defensive pattern with default empty object
 
   return (
     <div className="container mx-auto p-6">
@@ -72,7 +72,7 @@ export default function MaintenancePage() {
             {isLoading ? (
               <Skeleton className="h-8 w-20" />
             ) : (
-              <div className="text-2xl font-bold">${totalCost.toFixed(2)}</div>
+              <div className="text-2xl font-bold">${(totalCost || 0).toFixed(2)}</div>
             )}
             <p className="text-xs text-muted-foreground">
               Total cost this month

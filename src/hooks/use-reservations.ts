@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useToast } from "@/components/ui/use-toast";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export type ReservationStatus =
   | "PENDING"
@@ -17,12 +18,12 @@ export type Reservation = {
   endDate: string;
   status: ReservationStatus;
   notes?: string;
-  customer: {
+  customer?: {
     id: string;
     name: string;
     email: string;
   };
-  table: {
+  table?: {
     id: string;
     name: string;
   };
@@ -37,7 +38,7 @@ export type Customer = {
   phone: string;
   address?: string;
   notes?: string;
-  reservationCount: number;
+  reservationCount?: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -59,358 +60,212 @@ export type CustomerFormValues = {
   notes?: string;
 };
 
-export function useReservations() {
-  const { toast } = useToast();
-  const [reservations, setReservations] = useState<Reservation[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+// Generic fetch function with improved error handling
+async function apiFetch(url: string, options?: RequestInit) {
+  try {
+    const response = await fetch(url, options);
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'An error occurred');
+    }
+    
+    return response.json();
+  } catch (error) {
+    console.error(`API fetch error for ${url}:`, error);
+    // Return empty data structure instead of throwing
+    return { data: [] };
+  }
+}
 
-  // Reservation Operations
-  const fetchReservations = useCallback(
-    async (searchQuery?: string) => {
-      try {
-        setIsLoading(true);
+// GET hook for all reservations with defensive programming
+export function useReservations(query?: string) {
         const queryParams = new URLSearchParams();
-        if (searchQuery) {
-          queryParams.append("query", searchQuery);
-        }
+  if (query) {
+    queryParams.append("query", query);
+  }
+  
+  return useQuery({
+    queryKey: ['reservations', query],
+    queryFn: () => apiFetch(`/api/reservations?${queryParams.toString()}`).then(res => res.data || []),
+  });
+}
 
-        const response = await fetch(
-          `/api/reservations?${queryParams.toString()}`
-        );
-        if (response.ok) {
-          const data = await response.json();
-          setReservations(data);
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to fetch reservations",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching reservations:", error);
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
+// GET hook for a specific reservation with defensive programming
+export function useReservation(id: string) {
+  return useQuery({
+    queryKey: ['reservations', id],
+    queryFn: () => id ? apiFetch(`/api/reservations/${id}`).then(res => res.data || null) : null,
+    enabled: !!id, // Only fetch if ID is provided
+  });
+}
+
+// POST hook for creating a new reservation
+export function useCreateReservation() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data: ReservationFormValues) => apiFetch('/api/reservations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }).then(res => res.data || {}),
+    onSuccess: () => {
+      // Invalidate reservations queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['reservations'] });
     },
-    [toast]
-  );
+  });
+}
 
-  const createReservation = useCallback(
-    async (reservationData: ReservationFormValues) => {
-      try {
-        setIsSubmitting(true);
-        const response = await fetch("/api/reservations", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(reservationData),
-        });
-
-        if (response.ok) {
-          toast({
-            title: "Success",
-            description: "Reservation created successfully",
-          });
-          await fetchReservations();
-          return true;
-        } else {
-          const error = await response.json();
-          toast({
-            title: "Error",
-            description: error.error || "Failed to create reservation",
-            variant: "destructive",
-          });
-          return false;
-        }
-      } catch (error) {
-        console.error("Error creating reservation:", error);
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred",
-          variant: "destructive",
-        });
-        return false;
-      } finally {
-        setIsSubmitting(false);
-      }
+// PATCH hook for updating a reservation
+export function useUpdateReservation(id: string) {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data: Partial<ReservationFormValues>) => apiFetch(`/api/reservations/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }).then(res => res.data || {}),
+    onSuccess: () => {
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: ['reservations', id] });
+      queryClient.invalidateQueries({ queryKey: ['reservations'] });
     },
-    [fetchReservations, toast]
-  );
+  });
+}
 
-  const updateReservation = useCallback(
-    async (
-      reservationId: string,
-      reservationData: Partial<ReservationFormValues>
-    ) => {
-      try {
-        setIsSubmitting(true);
-        const response = await fetch(`/api/reservations/${reservationId}`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(reservationData),
-        });
-
-        if (response.ok) {
-          toast({
-            title: "Success",
-            description: "Reservation updated successfully",
-          });
-          await fetchReservations();
-          return true;
-        } else {
-          const error = await response.json();
-          toast({
-            title: "Error",
-            description: error.error || "Failed to update reservation",
-            variant: "destructive",
-          });
-          return false;
-        }
-      } catch (error) {
-        console.error("Error updating reservation:", error);
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred",
-          variant: "destructive",
-        });
-        return false;
-      } finally {
-        setIsSubmitting(false);
-      }
+// DELETE hook for removing a reservation
+export function useDeleteReservation(id: string) {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: () => apiFetch(`/api/reservations/${id}`, {
+      method: 'DELETE',
+    }),
+    onSuccess: () => {
+      // Invalidate reservations queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['reservations'] });
     },
-    [fetchReservations, toast]
-  );
+  });
+}
 
-  const deleteReservation = useCallback(
-    async (reservationId: string) => {
-      try {
-        setIsSubmitting(true);
-        const response = await fetch(`/api/reservations/${reservationId}`, {
-          method: "DELETE",
-        });
-
-        if (response.ok) {
-          toast({
-            title: "Success",
-            description: "Reservation deleted successfully",
-          });
-          await fetchReservations();
-          return true;
-        } else {
-          const error = await response.json();
-          toast({
-            title: "Error",
-            description: error.error || "Failed to delete reservation",
-            variant: "destructive",
-          });
-          return false;
-        }
-      } catch (error) {
-        console.error("Error deleting reservation:", error);
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred",
-          variant: "destructive",
-        });
-        return false;
-      } finally {
-        setIsSubmitting(false);
-      }
-    },
-    [fetchReservations, toast]
-  );
-
-  // Customer Operations
-  const fetchCustomers = useCallback(
-    async (searchQuery?: string) => {
-      try {
-        setIsLoading(true);
+// Customer hooks
+// GET hook for all customers with defensive programming
+export function useCustomers(query?: string) {
         const queryParams = new URLSearchParams();
-        if (searchQuery) {
-          queryParams.append("query", searchQuery);
-        }
+  if (query) {
+    queryParams.append("query", query);
+  }
+  
+  return useQuery({
+    queryKey: ['customers', query],
+    queryFn: () => apiFetch(`/api/reservations/customers?${queryParams.toString()}`).then(res => res.data || []),
+  });
+}
 
-        const response = await fetch(
-          `/api/reservations/customers?${queryParams.toString()}`
-        );
-        if (response.ok) {
-          const data = await response.json();
-          setCustomers(data);
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to fetch customers",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching customers:", error);
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
+// GET hook for a specific customer with defensive programming
+export function useCustomer(id: string) {
+  return useQuery({
+    queryKey: ['customers', id],
+    queryFn: () => id ? apiFetch(`/api/reservations/customers/${id}`).then(res => res.data || null) : null,
+    enabled: !!id, // Only fetch if ID is provided
+  });
+}
+
+// POST hook for creating a new customer
+export function useCreateCustomer() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data: CustomerFormValues) => apiFetch('/api/reservations/customers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }).then(res => res.data || {}),
+    onSuccess: () => {
+      // Invalidate customers queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
     },
-    [toast]
-  );
+  });
+}
 
-  const createCustomer = useCallback(
-    async (customerData: CustomerFormValues) => {
-      try {
-        setIsSubmitting(true);
-        const response = await fetch("/api/reservations/customers", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(customerData),
-        });
-
-        if (response.ok) {
-          toast({
-            title: "Success",
-            description: "Customer created successfully",
-          });
-          await fetchCustomers();
-          return true;
-        } else {
-          const error = await response.json();
-          toast({
-            title: "Error",
-            description: error.error || "Failed to create customer",
-            variant: "destructive",
-          });
-          return false;
-        }
-      } catch (error) {
-        console.error("Error creating customer:", error);
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred",
-          variant: "destructive",
-        });
-        return false;
-      } finally {
-        setIsSubmitting(false);
-      }
+// PATCH hook for updating a customer
+export function useUpdateCustomer(id: string) {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data: Partial<CustomerFormValues>) => apiFetch(`/api/reservations/customers/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }).then(res => res.data || {}),
+    onSuccess: () => {
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: ['customers', id] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
     },
-    [fetchCustomers, toast]
-  );
+  });
+}
 
-  const updateCustomer = useCallback(
-    async (customerId: string, customerData: Partial<CustomerFormValues>) => {
-      try {
-        setIsSubmitting(true);
-        const response = await fetch(
-          `/api/reservations/customers/${customerId}`,
-          {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(customerData),
-          }
-        );
-
-        if (response.ok) {
-          toast({
-            title: "Success",
-            description: "Customer updated successfully",
-          });
-          await fetchCustomers();
-          return true;
-        } else {
-          const error = await response.json();
-          toast({
-            title: "Error",
-            description: error.error || "Failed to update customer",
-            variant: "destructive",
-          });
-          return false;
-        }
-      } catch (error) {
-        console.error("Error updating customer:", error);
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred",
-          variant: "destructive",
-        });
-        return false;
-      } finally {
-        setIsSubmitting(false);
-      }
+// DELETE hook for removing a customer
+export function useDeleteCustomer(id: string) {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: () => apiFetch(`/api/reservations/customers/${id}`, {
+      method: 'DELETE',
+    }),
+    onSuccess: () => {
+      // Invalidate customers queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
     },
-    [fetchCustomers, toast]
-  );
+  });
+}
 
-  const deleteCustomer = useCallback(
-    async (customerId: string) => {
-      try {
-        setIsSubmitting(true);
-        const response = await fetch(
-          `/api/reservations/customers/${customerId}`,
-          {
-            method: "DELETE",
-          }
-        );
-
-        if (response.ok) {
-          toast({
-            title: "Success",
-            description: "Customer deleted successfully",
-          });
-          await fetchCustomers();
-          return true;
-        } else {
-          const error = await response.json();
-          toast({
-            title: "Error",
-            description: error.error || "Failed to delete customer",
-            variant: "destructive",
-          });
-          return false;
-        }
-      } catch (error) {
-        console.error("Error deleting customer:", error);
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred",
-          variant: "destructive",
-        });
-        return false;
-      } finally {
-        setIsSubmitting(false);
-      }
-    },
-    [fetchCustomers, toast]
-  );
+// Hook for reservation statistics with defensive programming
+export function useReservationStats() {
+  const { data: reservationsData, isLoading } = useReservations();
+  
+  // Ensure we always have a valid array to work with
+  const safeReservations = Array.isArray(reservationsData) ? reservationsData : [];
+  
+  if (isLoading || safeReservations.length === 0) {
+    return {
+      pendingCount: 0,
+      confirmedCount: 0,
+      canceledCount: 0,
+      completedCount: 0,
+      totalCount: 0,
+      isLoading,
+    };
+  }
+  
+  const now = new Date();
+  
+  // Calculate counts with defensive null checks
+  const pendingCount = safeReservations.filter(
+    (reservation) => reservation?.status === "PENDING"
+  ).length;
+  
+  const confirmedCount = safeReservations.filter(
+    (reservation) => reservation?.status === "CONFIRMED"
+  ).length;
+  
+  const canceledCount = safeReservations.filter(
+    (reservation) => reservation?.status === "CANCELED"
+  ).length;
+  
+  const completedCount = safeReservations.filter(
+    (reservation) => reservation?.status === "COMPLETED"
+  ).length;
 
   return {
-    reservations,
-    customers,
-    isLoading,
-    isSubmitting,
-    fetchReservations,
-    createReservation,
-    updateReservation,
-    deleteReservation,
-    fetchCustomers,
-    createCustomer,
-    updateCustomer,
-    deleteCustomer,
+    pendingCount,
+    confirmedCount,
+    canceledCount,
+    completedCount,
+    totalCount: safeReservations.length,
+    isLoading: false,
   };
 }

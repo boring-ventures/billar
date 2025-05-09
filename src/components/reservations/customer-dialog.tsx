@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useReservations } from "@/hooks/use-reservations";
+import { useCreateCustomer, useUpdateCustomer } from "@/hooks/use-reservations";
 
 const customerFormSchema = z.object({
   name: z.string().min(2, {
@@ -50,7 +50,8 @@ export function CustomerDialog({
   onOpenChange,
   customer,
 }: CustomerDialogProps) {
-  const { createCustomer, updateCustomer } = useReservations();
+  const createCustomerMutation = useCreateCustomer();
+  const updateCustomerMutation = useUpdateCustomer(customer?.id || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<CustomerFormValues>({
@@ -88,9 +89,9 @@ export function CustomerDialog({
     setIsSubmitting(true);
     try {
       if (customer) {
-        await updateCustomer(customer.id, data);
+        await updateCustomerMutation.mutateAsync(data);
       } else {
-        await createCustomer(data);
+        await createCustomerMutation.mutateAsync(data);
       }
       onOpenChange(false);
     } catch (error) {

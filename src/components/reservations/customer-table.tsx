@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Table,
   TableBody,
@@ -12,23 +12,20 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { Search, Plus, Edit, Trash2 } from "lucide-react";
-import { useReservations } from "@/hooks/use-reservations";
+import { Search, Plus, Edit } from "lucide-react";
+import { useCustomers } from "@/hooks/use-reservations";
 import { CustomerDialog } from "./customer-dialog";
 
 export function CustomerTable() {
-  const { customers, isLoading, fetchCustomers } = useReservations();
   const [searchQuery, setSearchQuery] = useState("");
+  const { data: customers = [], isLoading } = useCustomers(searchQuery);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchCustomers();
-  }, [fetchCustomers]);
-
   const handleSearch = () => {
-    fetchCustomers(searchQuery);
+    // The query will be automatically updated when searchQuery changes
+    // No manual fetch needed with React Query
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -87,20 +84,20 @@ export function CustomerTable() {
                   Loading...
                 </TableCell>
               </TableRow>
-            ) : customers.length === 0 ? (
+            ) : !customers || customers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center">
                   No customers found
                 </TableCell>
               </TableRow>
             ) : (
-              customers.map((customer) => (
+              customers.map((customer: any) => (
                 <TableRow key={customer.id}>
                   <TableCell>{customer.id}</TableCell>
                   <TableCell>{customer.name}</TableCell>
                   <TableCell>{customer.email}</TableCell>
                   <TableCell>{customer.phone}</TableCell>
-                  <TableCell>{customer.reservationCount}</TableCell>
+                  <TableCell>{customer.reservationCount || 0}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Button

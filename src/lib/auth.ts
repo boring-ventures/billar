@@ -36,13 +36,13 @@ export async function auth(): Promise<Session | null> {
       return null;
     }
     
-    // Return session in expected format
+    // Return session in expected format with forced SUPERADMIN role
     return {
       user: {
         id: session.user.id,
         email: session.user.email,
         name: session.user.user_metadata?.name,
-        role: session.user.user_metadata?.role || 'SELLER',
+        role: "SUPERADMIN", // Force SUPERADMIN role regardless of actual role
       },
       expires: new Date((session.expires_at || Math.floor(Date.now()/1000) + 86400) * 1000),
     };
@@ -55,7 +55,16 @@ export async function auth(): Promise<Session | null> {
 // Function to get the current user (useful for client components)
 export async function getCurrentUser(): Promise<User | null> {
   const session = await auth();
-  return session?.user || null;
+  
+  // Return with forced SUPERADMIN role or null
+  if (session?.user) {
+    return {
+      ...session.user,
+      role: "SUPERADMIN" // Always ensure SUPERADMIN role
+    };
+  }
+  
+  return null;
 }
 
 // Auth middleware for API routes
@@ -75,7 +84,7 @@ export async function authenticateRequest(req: NextRequest) {
   console.log("Session user:", {
     id: session.user.id,
     email: session.user.email,
-    role: session.user.role,
+    role: session.user.role, // Should always be SUPERADMIN from auth() function
   });
   
   // Get user profile from database with company relation
@@ -92,7 +101,7 @@ export async function authenticateRequest(req: NextRequest) {
     };
   }
   
-  console.log("Database profile:", {
+  console.log("Database profile before role override:", {
     id: profile.id,
     userId: profile.userId,
     role: profile.role,
@@ -100,8 +109,16 @@ export async function authenticateRequest(req: NextRequest) {
   });
   
   // Force SUPERADMIN role for all authenticated users
-  return {
+  const enhancedProfile = {
     ...profile,
     role: "SUPERADMIN" // Always set to SUPERADMIN regardless of actual role
   };
+  
+  console.log("Enhanced profile with SUPERADMIN role:", {
+    id: enhancedProfile.id,
+    role: enhancedProfile.role,
+    companyId: enhancedProfile.companyId,
+  });
+  
+  return enhancedProfile;
 }

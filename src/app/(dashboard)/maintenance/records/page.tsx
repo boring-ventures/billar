@@ -18,17 +18,20 @@ import { format } from "date-fns"
 import Link from "next/link"
 
 export default function MaintenanceRecordsPage() {
-  const { data: maintenanceRecords, isLoading } = useMaintenanceRecords();
+  const { data: maintenanceRecords = [], isLoading } = useMaintenanceRecords() || {};
   const [searchQuery, setSearchQuery] = useState("");
   
-  // Filter records by search query
-  const filteredRecords = maintenanceRecords ? maintenanceRecords.filter((record: any) => {
-    const searchLower = searchQuery.toLowerCase();
-    return (
-      record.table?.name?.toLowerCase().includes(searchLower) ||
-      record.description?.toLowerCase().includes(searchLower)
-    );
-  }) : [];
+  // Filter records by search query with defensive programming
+  const filteredRecords = Array.isArray(maintenanceRecords) 
+    ? maintenanceRecords.filter((record: any) => {
+        if (!record) return false;
+        const searchLower = searchQuery.toLowerCase();
+        return (
+          (record.table?.name || "").toLowerCase().includes(searchLower) ||
+          (record.description || "").toLowerCase().includes(searchLower)
+        );
+      })
+    : [];
 
   return (
     <div className="container mx-auto p-6">
@@ -56,7 +59,7 @@ export default function MaintenanceRecordsPage() {
             <div className="flex justify-center items-center h-40">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          ) : maintenanceRecords && maintenanceRecords.length > 0 ? (
+          ) : filteredRecords && filteredRecords.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -69,16 +72,22 @@ export default function MaintenanceRecordsPage() {
               </TableHeader>
               <TableBody>
                 {filteredRecords.map((record: any) => (
-                  <TableRow key={record.id}>
-                    <TableCell>{record.table?.name || 'Unknown Table'}</TableCell>
+                  <TableRow key={record?.id || Math.random()}>
+                    <TableCell>{record?.table?.name || 'Unknown Table'}</TableCell>
                     <TableCell>
-                      {record.maintenanceAt ? format(new Date(record.maintenanceAt), 'yyyy-MM-dd') : 'N/A'}
+                      {record?.maintenanceAt 
+                        ? format(new Date(record.maintenanceAt), 'yyyy-MM-dd') 
+                        : 'N/A'}
                     </TableCell>
-                    <TableCell>{record.description || 'No description'}</TableCell>
-                    <TableCell>${record.cost ? parseFloat(record.cost).toFixed(2) : '0.00'}</TableCell>
+                    <TableCell>{record?.description || 'No description'}</TableCell>
                     <TableCell>
-                      <Link href={`/maintenance/records/${record.id}`}>
-                        <Button variant="ghost" size="sm">
+                      ${record?.cost 
+                          ? parseFloat(record.cost).toFixed(2) 
+                          : '0.00'}
+                    </TableCell>
+                    <TableCell>
+                      <Link href={`/maintenance/records/${record?.id || ''}`}>
+                        <Button variant="ghost" size="sm" disabled={!record?.id}>
                           View Details
                         </Button>
                       </Link>

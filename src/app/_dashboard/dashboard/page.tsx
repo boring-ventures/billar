@@ -6,6 +6,7 @@ import { usePOS } from "@/hooks/use-pos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, DollarSign, Package, Table2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DashboardPage() {
   const { data: financialData, loading: financialLoading } = useFinancial();
@@ -25,6 +26,14 @@ export default function DashboardPage() {
     ?.filter(movement => movement.type === "SALE")
     .slice(0, 5) || [];
 
+  // Loading state components
+  const LoadingSkeleton = () => (
+    <div className="space-y-3">
+      <Skeleton className="h-6 w-1/3" />
+      <Skeleton className="h-12 w-1/2" />
+    </div>
+  );
+
   return (
     <div className="p-6 space-y-6">
       <h1 className="text-3xl font-bold">Dashboard</h1>
@@ -37,9 +46,13 @@ export default function DashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              ${financialData?.totalIncome.toFixed(2) || "0.00"}
-            </div>
+            {financialLoading ? (
+              <Skeleton className="h-8 w-24" />
+            ) : (
+              <div className="text-2xl font-bold">
+                ${financialData?.totalIncome?.toFixed(2) || "0.00"}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -49,7 +62,7 @@ export default function DashboardPage() {
             <Table2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{activeTables.length}</div>
+            <div className="text-2xl font-bold">{activeTables?.length || 0}</div>
           </CardContent>
         </Card>
 
@@ -59,7 +72,7 @@ export default function DashboardPage() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{lowStockItems.length}</div>
+            <div className="text-2xl font-bold">{lowStockItems?.length || 0}</div>
           </CardContent>
         </Card>
 
@@ -69,15 +82,19 @@ export default function DashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              ${financialData?.netProfit.toFixed(2) || "0.00"}
-            </div>
+            {financialLoading ? (
+              <Skeleton className="h-8 w-24" />
+            ) : (
+              <div className="text-2xl font-bold">
+                ${financialData?.netProfit?.toFixed(2) || "0.00"}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
       {/* Alerts Section */}
-      {lowStockItems.length > 0 && (
+      {lowStockItems && lowStockItems.length > 0 && (
         <div className="space-y-4">
           <h2 className="text-xl font-semibold">Alerts</h2>
           {lowStockItems.map((item) => (
@@ -95,25 +112,33 @@ export default function DashboardPage() {
       {/* Recent Sales */}
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Recent Sales</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {recentSales.map((sale) => (
-            <Card key={sale.id}>
-              <CardHeader>
-                <CardTitle className="text-sm font-medium">
-                  {sale.item?.name || "Unknown Item"}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-sm text-muted-foreground">
-                  Quantity: {sale.quantity}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Date: {new Date(sale.createdAt).toLocaleDateString()}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        {recentSales && recentSales.length > 0 ? (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {recentSales.map((sale) => (
+              <Card key={sale.id}>
+                <CardHeader>
+                  <CardTitle className="text-sm font-medium">
+                    {sale.item?.name || "Unknown Item"}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-sm text-muted-foreground">
+                    Quantity: {sale.quantity}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Date: {new Date(sale.createdAt).toLocaleDateString()}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-muted-foreground">No recent sales data available</p>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Financial Summary */}
@@ -125,14 +150,20 @@ export default function DashboardPage() {
               <CardTitle>Income Categories</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                {financialData?.incomeCategories.map((category) => (
-                  <div key={category.id} className="flex justify-between">
-                    <span>{category.name}</span>
-                    <span>${category.total.toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
+              {financialLoading ? (
+                <LoadingSkeleton />
+              ) : financialData?.incomeCategories?.length ? (
+                <div className="space-y-2">
+                  {financialData.incomeCategories.map((category) => (
+                    <div key={category.id} className="flex justify-between">
+                      <span>{category.name}</span>
+                      <span>${category.total.toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">No income data available</p>
+              )}
             </CardContent>
           </Card>
 
@@ -141,14 +172,20 @@ export default function DashboardPage() {
               <CardTitle>Expense Categories</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                {financialData?.expenseCategories.map((category) => (
-                  <div key={category.id} className="flex justify-between">
-                    <span>{category.name}</span>
-                    <span>${category.total.toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
+              {financialLoading ? (
+                <LoadingSkeleton />
+              ) : financialData?.expenseCategories?.length ? (
+                <div className="space-y-2">
+                  {financialData.expenseCategories.map((category) => (
+                    <div key={category.id} className="flex justify-between">
+                      <span>{category.name}</span>
+                      <span>${category.total.toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">No expense data available</p>
+              )}
             </CardContent>
           </Card>
         </div>

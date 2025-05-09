@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone', // Add standalone output for serverless environments
   images: {
     domains: [
       // Add your Supabase project domain

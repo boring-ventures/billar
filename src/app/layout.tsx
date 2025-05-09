@@ -48,13 +48,15 @@ export const metadata: Metadata = {
 };
 
 const inter = Inter({
-  variable: "--font-geist-sans",
   subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
 });
 
 const robotoMono = Roboto_Mono({
-  variable: "--font-geist-mono",
   subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap",
 });
 
 export default function RootLayout({
@@ -63,10 +65,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${inter.variable} ${robotoMono.variable} antialiased`}
-      >
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${robotoMono.variable}`}>
+      <body className="min-h-screen bg-background font-sans antialiased">
         <ThemeProvider defaultTheme="system" storageKey="app-theme">
           <QueryProvider>
             <AuthProvider>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Hourglass, AlertTriangle, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -48,11 +48,11 @@ export function ActiveSession({ sessionId, initialData }: ActiveSessionProps) {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   // Load session data on mount if not provided
-  useEffect(() => {
-    if (sessionId) {
+  useState(() => {
+    if (!initialData && sessionId) {
       fetchSessionById(sessionId);
     }
-  }, [sessionId, fetchSessionById]);
+  });
 
   const session = activeSession || initialData;
 

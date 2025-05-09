@@ -8,8 +8,6 @@ const nextConfig = {
     ],
     unoptimized: true, // Allow unoptimized images during development
   },
-  // Specify packages that should be transpiled
-  transpilePackages: ['@prisma/client'],
   // Security headers configuration
   async headers() {
     return [
@@ -49,7 +47,7 @@ const nextConfig = {
           {
             key: "Content-Security-Policy",
             value:
-              "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.supabase.co https://* blob:; font-src 'self' data: https://fonts.gstatic.com; frame-src 'self' https://js.stripe.com; object-src 'none'",
+              "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.supabase.co https://* blob:; font-src 'self' data:; frame-src 'self' https://js.stripe.com; object-src 'none'",
           },
         ],
       },
@@ -83,25 +81,11 @@ const nextConfig = {
     // Disable TypeScript errors during build
     ignoreBuildErrors: true,
   },
-  // Add webpack configuration
-  webpack: (config, { isServer }) => {
-    // Optional: Attempt to resolve modules that might be missing
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      '@radix-ui/react-accordion': false,
-    };
-    
-    // Handle Prisma client in browser
-    if (!isServer) {
-      // Replace .prisma/client/index-browser with an empty module
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        '.prisma/client/index-browser': require.resolve('./src/lib/prisma-browser.ts'),
-        '@prisma/client/runtime/library': require.resolve('./src/lib/prisma-browser.ts'),
-      };
-    }
-    
-    return config;
+  // Add file tracing excludes at root level
+  outputFileTracingExcludes: {
+    '*': [
+      'node_modules/**/*',
+    ],
   },
   // ... other config options
 };

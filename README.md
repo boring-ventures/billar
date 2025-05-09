@@ -81,7 +81,7 @@ Your app will be available at `http://localhost:3000`
 ├── app/                   # Next.js App Router
 │   ├── api/              # API routes
 │   ├── auth/             # Auth routes
-│   └── _dashboard/       # Protected routes
+│   └── (dashboard)/       # Protected routes
 ├── components/           # React components
 │   ├── ui/              # UI components
 │   └── settings/        # Settings components

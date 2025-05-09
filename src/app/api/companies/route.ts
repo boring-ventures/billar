@@ -4,7 +4,6 @@ import prisma from "@/lib/prisma";
 // GET /api/companies - Get all companies
 export async function GET(request: NextRequest) {
   try {
-    console.log("GET /api/companies - Fetching companies");
     const searchParams = request.nextUrl.searchParams;
     const query = searchParams.get("query") || "";
 
@@ -33,21 +32,8 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Ensure we always return a valid array with properly structured objects
-    const safeCompanies = Array.isArray(companies) 
-      ? companies
-          .filter(company => company && typeof company === 'object')
-          .map(company => ({
-            id: company.id || "",
-            name: company.name || "",
-            address: company.address,
-            phone: company.phone,
-            _count: company._count || { profiles: 0, tables: 0 }
-          }))
-      : [];
-      
-    console.log(`GET /api/companies - Found ${safeCompanies.length} companies`);
-    return NextResponse.json(safeCompanies);
+    // Ensure we always return an array
+    return NextResponse.json(companies || []);
   } catch (error) {
     console.error("Error fetching companies:", error);
     // Return empty array instead of error object in case of errors

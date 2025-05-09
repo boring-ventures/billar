@@ -34,10 +34,7 @@ export function useCompanies() {
         );
         if (response.ok) {
           const data = await response.json();
-          const validData = Array.isArray(data) 
-            ? data.filter(item => item && typeof item === 'object' && 'id' in item && 'name' in item) 
-            : [];
-          setCompanies(validData);
+          setCompanies(Array.isArray(data) ? data : []);
         } else {
           setCompanies([]);
           toast({

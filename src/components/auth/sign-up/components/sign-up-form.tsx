@@ -285,7 +285,7 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
             )}
           />
 
-          <Button 
+          <Button
             type="submit" 
             className="w-full bg-primary hover:bg-primary/90 text-white" 
             disabled={isLoading}

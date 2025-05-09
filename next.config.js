@@ -83,12 +83,6 @@ const nextConfig = {
     // Disable TypeScript errors during build
     ignoreBuildErrors: true,
   },
-  // Add file tracing excludes at root level
-  outputFileTracingExcludes: {
-    '*': [
-      'node_modules/**/*',
-    ],
-  },
   // Add webpack configuration
   webpack: (config, { isServer }) => {
     // Optional: Attempt to resolve modules that might be missing

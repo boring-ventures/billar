@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Check, ChevronsUpDown, Building } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -20,19 +19,36 @@ import { useCompanies } from "@/hooks/use-companies";
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 
-export function CompanySelector() {
-  const router = useRouter();
+interface CompanySelectorProps {
+  onChange?: () => void;
+}
+
+export function CompanySelector({ onChange }: CompanySelectorProps) {
   const { toast } = useToast();
   const { companies, isLoading, fetchCompanies } = useCompanies();
   const [open, setOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
+  const [hasFetchedCompanies, setHasFetchedCompanies] = useState(false);
 
+  // Fetch companies only once on mount
   useEffect(() => {
-    fetchCompanies();
-  }, [fetchCompanies]);
+    if (!hasFetchedCompanies) {
+      fetchCompanies();
+      setHasFetchedCompanies(true);
+    }
+  }, [fetchCompanies, hasFetchedCompanies]);
 
   const handleCompanyChange = async (companyId: string) => {
     try {
+      // Don't update if it's the same company
+      if (companyId === selectedCompany) {
+        setOpen(false);
+        return;
+      }
+      
+      setSelectedCompany(companyId);
+      setOpen(false);
+      
       const response = await fetch("/api/users/select-company", {
         method: "POST",
         headers: {
@@ -42,15 +58,15 @@ export function CompanySelector() {
       });
 
       if (response.ok) {
-        setSelectedCompany(companyId);
-        setOpen(false);
         toast({
           title: "Company Selected",
-          description: "Successfully switched company. Refreshing data...",
+          description: "Successfully switched company.",
         });
         
-        // Refresh the page to update all data
-        router.refresh();
+        // Call the onChange callback if provided
+        if (onChange) {
+          onChange();
+        }
       } else {
         const error = await response.json();
         toast({
@@ -69,7 +85,7 @@ export function CompanySelector() {
     }
   };
 
-  // Fetch current user's company when component mounts
+  // Fetch current user's company only once on component mount
   useEffect(() => {
     const fetchCurrentCompany = async () => {
       try {

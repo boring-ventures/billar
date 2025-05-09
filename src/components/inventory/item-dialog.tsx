@@ -30,7 +30,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useInventory } from "@/hooks/use-inventory";
+import { 
+  useInventoryCategories, 
+  useCreateItem, 
+  useUpdateItem, 
+  ItemFormValues 
+} from "@/hooks/use-inventory";
 
 const itemFormSchema = z.object({
   name: z.string().min(1, "Item name is required"),
@@ -48,7 +53,7 @@ const itemFormSchema = z.object({
   stockAlerts: z.boolean().default(true),
 });
 
-type ItemFormValues = z.infer<typeof itemFormSchema>;
+type FormValues = z.infer<typeof itemFormSchema>;
 
 interface ItemDialogProps {
   open: boolean;
@@ -57,21 +62,18 @@ interface ItemDialogProps {
 }
 
 export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
-  const { createItem, updateItem, categories, fetchCategories } =
-    useInventory();
+  const { data: categoriesData } = useInventoryCategories();
+  const createItemMutation = useCreateItem();
+  const updateItemMutation = useUpdateItem();
+  const categories = categoriesData?.data || [];
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (open) {
-      fetchCategories();
-    }
-  }, [open, fetchCategories]);
-
-  const form = useForm<ItemFormValues>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(itemFormSchema),
     defaultValues: {
       name: "",
-      categoryId: "",
+      categoryId: "none",
       sku: "",
       quantity: 0,
       criticalThreshold: 5,
@@ -84,7 +86,7 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
     if (item) {
       form.reset({
         name: item.name,
-        categoryId: item.categoryId || "",
+        categoryId: item.categoryId || "none",
         sku: item.sku || "",
         quantity: item.quantity,
         criticalThreshold: item.criticalThreshold,
@@ -94,7 +96,7 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
     } else {
       form.reset({
         name: "",
-        categoryId: "",
+        categoryId: "none",
         sku: "",
         quantity: 0,
         criticalThreshold: 5,
@@ -104,13 +106,22 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
     }
   }, [item, form]);
 
-  const onSubmit = async (data: ItemFormValues) => {
+  const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true);
     try {
+      // Convert "none" to null/empty for the API
+      const formattedData = {
+        ...data,
+        categoryId: data.categoryId === "none" ? null : data.categoryId
+      };
+      
       if (item) {
-        await updateItem(item.id, data);
+        await updateItemMutation.mutateAsync({ 
+          id: item.id, 
+          data: formattedData 
+        });
       } else {
-        await createItem(data);
+        await createItemMutation.mutateAsync(formattedData);
       }
       onOpenChange(false);
     } catch (error) {
@@ -159,7 +170,7 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                       {categories?.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
                           {category.name}

@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { TableStatus } from "@prisma/client";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useTables } from "@/hooks/use-tables";
+import { 
+  useCreateTable, 
+  useUpdateTable, 
+  tableFormSchema,
+  type TableFormValues 
+} from "@/hooks/use-tables";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,17 +33,8 @@ import { Table } from "@/types/table";
 import { Loader2 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 
-const formSchema = z.object({
-  name: z.string().min(1, "Table name is required"),
-  status: z.enum(["AVAILABLE", "OCCUPIED", "RESERVED", "MAINTENANCE"]),
-  hourlyRate: z.coerce
-    .number()
-    .min(0, "Hourly rate must be a positive number")
-    .optional(),
-  companyId: z.string().uuid().optional(),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+// Use the schema and types from our hooks
+type FormValues = z.infer<typeof tableFormSchema>;
 
 interface TableFormProps {
   initialData?: Table;
@@ -48,37 +42,54 @@ interface TableFormProps {
 }
 
 export function TableForm({ initialData, isEditMode = false }: TableFormProps) {
-  const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { createTable, updateTable } = useTables();
-  const { currentUser, profile } = useCurrentUser();
+  const [submitSuccess, setSubmitSuccess] = useState(false);
   
-  // Use either profile or currentUser for compatibility
+  // Use the dedicated hooks for table operations
+  const createMutation = useCreateTable();
+  const updateMutation = isEditMode && initialData?.id ? useUpdateTable(initialData.id) : null;
+  
+  // Determine if the form is submitting
+  const isSubmitting = createMutation.isPending || updateMutation?.isPending;
+  
+  // Get user data
+  const { currentUser, profile } = useCurrentUser();
   const userRole = currentUser?.role || profile?.role;
   const userCompanyId = currentUser?.companyId || profile?.companyId;
 
+  // Setup form with default values
   const defaultValues: Partial<FormValues> = {
     name: initialData?.name || "",
     status: initialData?.status || "AVAILABLE",
     hourlyRate: initialData?.hourlyRate || undefined,
-    companyId: undefined, // Will be set automatically
+    companyId: initialData?.companyId || undefined,
   };
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(tableFormSchema),
     defaultValues,
   });
 
-  // Set companyId when form is submitted
+  // Set companyId when profile/user data loads
   useEffect(() => {
     if (userCompanyId) {
       form.setValue("companyId", userCompanyId);
     }
   }, [userCompanyId, form]);
+  
+  // Handle navigation after successful submission
+  useEffect(() => {
+    if (submitSuccess) {
+      const redirectUrl = isEditMode && initialData?.id 
+        ? `/tables/${initialData.id}` 
+        : "/tables";
+      
+      // Use direct URL navigation to avoid React Router issues
+      window.location.href = redirectUrl;
+    }
+  }, [submitSuccess, isEditMode, initialData?.id]);
 
+  // Form submission handler
   const onSubmit = async (values: FormValues) => {
-    setIsSubmitting(true);
-
     // For superadmins without a company selected, show error
     if (!values.companyId && userRole === "SUPERADMIN") {
       toast({
@@ -86,26 +97,41 @@ export function TableForm({ initialData, isEditMode = false }: TableFormProps) {
         description: "Please select a company before creating a table.",
         variant: "destructive",
       });
-      setIsSubmitting(false);
       return;
     }
 
     try {
-      if (isEditMode && initialData) {
-        const success = await updateTable(initialData.id, values);
-        if (success) {
-          router.push(`/tables/${initialData.id}`);
-        }
+      if (isEditMode && initialData?.id && updateMutation) {
+        // Update existing table
+        await updateMutation.mutateAsync(values);
+        toast({ title: "Success", description: "Table updated successfully" });
       } else {
-        const success = await createTable(values);
-        if (success) {
-          router.push("/tables");
-        }
+        // Create new table
+        await createMutation.mutateAsync(values);
+        toast({ title: "Success", description: "Table created successfully" });
       }
-    } finally {
-      setIsSubmitting(false);
+      
+      // Mark submission as successful to trigger navigation
+      setSubmitSuccess(true);
+    } catch (error) {
+      console.error("Error with table operation:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive",
+      });
     }
   };
+
+  // Don't allow further interaction if the submission was successful
+  if (submitSuccess) {
+    return (
+      <div className="p-8 text-center">
+        <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+        <p className="mt-4">Redirecting...</p>
+      </div>
+    );
+  }
 
   return (
     <Form {...form}>
@@ -159,34 +185,30 @@ export function TableForm({ initialData, isEditMode = false }: TableFormProps) {
           name="hourlyRate"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Hourly Rate</FormLabel>
+              <FormLabel>Hourly Rate (Optional)</FormLabel>
               <FormControl>
                 <Input
                   type="number"
-                  placeholder="0.00"
                   step="0.01"
                   min="0"
+                  placeholder="0.00"
                   {...field}
+                  value={field.value === undefined || field.value === null ? "" : String(field.value)}
                   onChange={(e) => {
-                    const value =
-                      e.target.value === "" ? undefined : e.target.value;
+                    const value = e.target.value === "" ? undefined : parseFloat(e.target.value);
                     field.onChange(value);
                   }}
-                  value={field.value ?? ""}
                 />
               </FormControl>
               <FormDescription>
-                Set the hourly rate for renting this table (optional).
+                Set the hourly rate for this table, or leave blank for variable pricing.
               </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <div className="flex gap-4 justify-end">
-          <Button type="button" variant="outline" onClick={() => router.back()}>
-            Cancel
-          </Button>
+        <div className="flex justify-end">
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isEditMode ? "Update Table" : "Create Table"}

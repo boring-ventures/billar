@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
+import { authenticateRequest } from "@/lib/auth";
 import { z } from "zod";
 
+// Validation schema for status updates
 const statusUpdateSchema = z.object({
   status: z.enum(["AVAILABLE", "OCCUPIED", "RESERVED", "MAINTENANCE"]),
   notes: z.string().optional(),
@@ -14,40 +14,10 @@ export async function PATCH(
   { params }: { params: { tableId: string } }
 ) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-
-    // Get the current user's session
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession();
-
-    if (sessionError || !session) {
-      return new NextResponse(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-      });
-    }
-
+    // Authenticate request using middleware
+    const profile = await authenticateRequest(req);
+    
     const { tableId } = params;
-
-    // Get user profile
-    const userProfile = await prisma.profile.findUnique({
-      where: {
-        userId: session.user.id,
-      },
-      select: {
-        id: true,
-        companyId: true,
-        role: true,
-      },
-    });
-
-    if (!userProfile) {
-      return new NextResponse(
-        JSON.stringify({ error: "User profile not found" }),
-        { status: 404 }
-      );
-    }
 
     // Find the table to check company access
     const table = await prisma.table.findUnique({
@@ -57,97 +27,90 @@ export async function PATCH(
     });
 
     if (!table) {
-      return new NextResponse(JSON.stringify({ error: "Table not found" }), {
-        status: 404,
-      });
+      return NextResponse.json(
+        { error: "Table not found" },
+        { status: 404 }
+      );
     }
 
+    // Role-based access control pattern
     // Check if user has access to this table's company
     if (
-      userProfile.companyId !== table.companyId &&
-      userProfile.role !== "SUPERADMIN"
+      (profile.role !== "SUPERADMIN" && profile.companyId !== table.companyId) ||
+      (profile.role === "SUPERADMIN" && profile.companyId && profile.companyId !== table.companyId)
     ) {
-      return new NextResponse(
-        JSON.stringify({ error: "Access denied to this table" }),
+      return NextResponse.json(
+        { error: "Access denied to this table" },
         { status: 403 }
       );
     }
 
-    const json = await req.json();
-    const validationResult = statusUpdateSchema.safeParse(json);
+    // Parse and validate request body
+    const body = await req.json();
+    const validationResult = statusUpdateSchema.safeParse(body);
 
     if (!validationResult.success) {
-      return new NextResponse(
-        JSON.stringify({
+      return NextResponse.json(
+        {
           error: "Validation error",
           details: validationResult.error.errors,
-        }),
+        },
         { status: 400 }
       );
     }
 
     const { status, notes } = validationResult.data;
+    const previousStatus = table.status;
 
-    // If the status is the same, no need to update
-    if (status === table.status) {
-      return new NextResponse(
-        JSON.stringify({ message: "Status is already set to " + status }),
-        { status: 200 }
-      );
+    // Don't update if status hasn't changed
+    if (status === previousStatus) {
+      return NextResponse.json({
+        message: "Status unchanged",
+        table: table,
+      });
     }
 
-    // Check status transition permissions based on role
-    if (userProfile.role === "SELLER") {
-      // Sellers can only change between AVAILABLE and OCCUPIED
-      const allowedTransitions = {
-        AVAILABLE: ["OCCUPIED"],
-        OCCUPIED: ["AVAILABLE"],
-      };
-
-      const currentStatusTransitions =
-        allowedTransitions[table.status as keyof typeof allowedTransitions];
-
-      if (
-        !currentStatusTransitions ||
-        !currentStatusTransitions.includes(status)
-      ) {
-        return new NextResponse(
-          JSON.stringify({
-            error: `Sellers cannot change table status from ${table.status} to ${status}`,
-          }),
-          { status: 403 }
-        );
-      }
-    }
-
-    // Create activity log in a transaction with the table update
-    const updatedTable = await prisma.$transaction(async (tx) => {
+    // Update table status and create activity log in a transaction
+    const result = await prisma.$transaction(async (tx) => {
       // Update the table status
       const updatedTable = await tx.table.update({
-        where: { id: tableId },
-        data: { status },
+        where: {
+          id: tableId,
+        },
+        data: {
+          status,
+        },
       });
 
-      // Create activity log
-      await tx.tableActivityLog.create({
+      // Create activity log entry
+      const activityLog = await tx.tableActivityLog.create({
         data: {
           tableId,
-          previousStatus: table.status,
+          previousStatus,
           newStatus: status,
-          changedById: userProfile.id,
+          changedById: profile.id,
           notes,
         },
       });
 
-      return updatedTable;
+      return { table: updatedTable, activityLog };
     });
 
-    return new NextResponse(JSON.stringify(updatedTable));
-  } catch (error) {
+    return NextResponse.json(result);
+  } catch (error: any) {
     console.error("Error updating table status:", error);
-    return new NextResponse(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500 }
+    
+    // Specific error handling for common cases
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Validation error", details: error.errors },
+        { status: 400 }
+      );
+    }
+    
+    return NextResponse.json(
+      { error: error.message || "Internal server error" },
+      { status: error.status || 500 }
     );
   }
 }

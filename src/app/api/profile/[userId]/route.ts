@@ -9,7 +9,9 @@ export async function GET(
   { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
+    console.log("=== Profile GET Request ===");
     const userId = (await params).userId;
+    console.log("Requested profile for userId:", userId);
 
     // Create Supabase client with awaited cookies
     const supabase = createRouteHandlerClient({ cookies });
@@ -21,14 +23,22 @@ export async function GET(
     } = await supabase.auth.getSession();
 
     if (sessionError || !session) {
+      console.log("No session found or session error:", sessionError?.message);
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
+
+    console.log("Session user:", {
+      id: session.user.id,
+      email: session.user.email,
+    });
 
     // Only allow users to view their own profile (or admin users to view any profile)
     const currentUser = session.user;
     const userProfile = await prisma.profile.findUnique({
       where: { userId: currentUser.id },
     });
+
+    console.log("Current user profile:", userProfile || "Not found");
 
     // If current user is requesting their own profile but it doesn't exist,
     // create it automatically as a recovery mechanism
@@ -42,7 +52,7 @@ export async function GET(
             active: true,
           },
         });
-        console.log("Profile successfully created:", newProfile.id);
+        console.log("Profile successfully created:", newProfile.id, "with role:", newProfile.role);
         return NextResponse.json({ profile: newProfile });
       } catch (createError) {
         console.error("Failed to auto-create profile:", createError);
@@ -54,6 +64,7 @@ export async function GET(
     }
 
     if (userId !== currentUser.id && userProfile?.role !== "SUPERADMIN") {
+      console.log("Unauthorized access attempt: Not requesting own profile and not superadmin");
       return NextResponse.json(
         { error: "Unauthorized to view this profile" },
         { status: 403 }
@@ -65,8 +76,17 @@ export async function GET(
     });
 
     if (!profile) {
+      console.log("Profile not found for userId:", userId);
       return NextResponse.json({ error: "Profile not found" }, { status: 404 });
     }
+
+    console.log("Returning profile for userId:", userId, "with role:", profile.role);
+    
+    // For testing: Force SUPERADMIN role if needed
+    // if (userId === currentUser.id) {
+    //   profile.role = UserRole.SUPERADMIN;
+    //   console.log("FORCED SUPERADMIN role for testing");
+    // }
 
     return NextResponse.json({ profile });
   } catch (error) {

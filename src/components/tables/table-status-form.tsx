@@ -5,7 +5,7 @@ import { TableStatus } from "@prisma/client";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useTables } from "@/hooks/use-tables";
+import { useUpdateTableStatus, tableStatusSchema } from "@/hooks/use-tables";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,14 +26,10 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
-import { TABLE_STATUS_LABELS, TABLE_STATUS_COLORS } from "@/types/table";
+import { TABLE_STATUS_LABELS } from "@/types/table";
 
-const formSchema = z.object({
-  status: z.enum(["AVAILABLE", "OCCUPIED", "RESERVED", "MAINTENANCE"]),
-  notes: z.string().optional(),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+// Use the schema from hooks for consistency
+type FormValues = z.infer<typeof tableStatusSchema>;
 
 interface TableStatusFormProps {
   tableId: string;
@@ -49,8 +45,7 @@ export function TableStatusForm({
   onSuccess,
 }: TableStatusFormProps) {
   const { currentUser, profile } = useCurrentUser();
-  const { updateTableStatus } = useTables();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { updateTableStatus, isSubmitting } = useUpdateTableStatus();
 
   // Use either profile or currentUser for compatibility
   const userRole = currentUser?.role || profile?.role;
@@ -68,7 +63,7 @@ export function TableStatusForm({
   };
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(tableStatusSchema),
     defaultValues: {
       status: currentStatus,
       notes: "",
@@ -79,8 +74,6 @@ export function TableStatusForm({
     if (values.status === currentStatus) {
       return; // No change, don't submit
     }
-
-    setIsSubmitting(true);
 
     try {
       const success = await updateTableStatus(
@@ -96,8 +89,8 @@ export function TableStatusForm({
           onSuccess();
         }
       }
-    } finally {
-      setIsSubmitting(false);
+    } catch (error) {
+      console.error("Error updating table status:", error);
     }
   };
 

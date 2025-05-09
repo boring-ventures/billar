@@ -81,49 +81,24 @@ export type StockMovementFormValues = {
   reference?: string;
 };
 
-// Types for inventory reports
-export type InventoryReport = {
-  totalProducts: number;
-  lowStockItems: number;
-  totalValue: number;
-  stockMovements: {
-    purchases: number;
-    sales: number;
-    adjustments: number;
-  };
-  topProducts: Array<{
-    name: string;
-    quantity: number;
-    value: number;
-  }>;
-  dateRange: {
-    start: string;
-    end: string;
-  };
-  reportType: string;
-};
-
-// Types for inventory overview
-export type InventoryOverview = {
-  totalProducts: number;
-  lowStockItems: number;
-  recentMovements: number;
-  pendingOrders: number;
-};
-
 // Generic fetch function for API calls
 async function apiFetch<T>(
   url: string,
   options?: RequestInit
 ): Promise<{ data: T }> {
-  const response = await fetch(url, options);
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "An error occurred");
+  try {
+    const response = await fetch(url, options);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: "Invalid JSON response" }));
+      throw new Error(errorData.error || `API Error: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error(`API Fetch Error:`, error);
+    throw error;
   }
-
-  return response.json();
 }
 
 // Compatibility hook to provide the same API as the old useInventory hook
@@ -278,10 +253,22 @@ export function useInventoryItems(filters?: {
 
   return useQuery({
     queryKey: ["inventoryItems", filters],
-    queryFn: () =>
-      apiFetch<InventoryItem[]>(
-        `/api/inventory/items?${queryParams.toString()}`
-      ),
+    queryFn: async () => {
+      try {
+        // Add cache-busting parameter to prevent stale cache issues
+        queryParams.append("_t", Date.now().toString());
+        
+        const result = await apiFetch<InventoryItem[]>(
+          `/api/inventory/items?${queryParams.toString()}`
+        );
+        return result;
+      } catch (error) {
+        console.error("Error fetching inventory items:", error);
+        throw error;
+      }
+    },
+    refetchOnWindowFocus: true, // Ensure fresh data on window focus
+    retry: 2, // Retry failed requests
   });
 }
 
@@ -436,25 +423,5 @@ export function useCreateStockMovement() {
         variant: "destructive",
       });
     },
-  });
-}
-
-// Inventory Reports Hooks
-export function useInventoryReport(reportType: string, date: string) {
-  return useQuery({
-    queryKey: ["inventoryReport", reportType, date],
-    queryFn: () =>
-      apiFetch<InventoryReport>(
-        `/api/inventory/reports?reportType=${reportType}&date=${date}`
-      ),
-    enabled: !!reportType && !!date,
-  });
-}
-
-// Inventory Overview Hook
-export function useInventoryOverview() {
-  return useQuery({
-    queryKey: ["inventoryOverview"],
-    queryFn: () => apiFetch<InventoryOverview>(`/api/inventory/overview`),
   });
 }

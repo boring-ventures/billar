@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Table,
   TableBody,
@@ -53,11 +53,19 @@ export function InventoryProductTable() {
   })
 
   // Fetch data using React Query hooks
-  const { data: itemsResponse, isLoading: isLoadingItems } = useInventoryItems()
+  const { data: itemsResponse, isLoading: isLoadingItems, error: itemsError } = useInventoryItems()
   const { data: categoriesResponse, isLoading: isLoadingCategories } = useInventoryCategories()
   const createItemMutation = useCreateItem()
   const updateItemMutation = useUpdateItem()
   const deleteItemMutation = useDeleteItem()
+
+  // Debug logging for data fetching
+  useEffect(() => {
+    console.log("Items response:", itemsResponse);
+    console.log("Items loading:", isLoadingItems);
+    console.log("Items error:", itemsError);
+    console.log("Categories response:", categoriesResponse);
+  }, [itemsResponse, isLoadingItems, itemsError, categoriesResponse]);
 
   // Extract data from responses
   const items = itemsResponse?.data || []

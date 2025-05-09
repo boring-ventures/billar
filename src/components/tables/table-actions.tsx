@@ -20,7 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { TableStatusForm } from "@/components/tables/table-status-form";
-import { useTables } from "@/hooks/use-tables";
+import { useDeleteTable } from "@/hooks/use-tables";
 import { useSessions } from "@/hooks/use-sessions";
 import { Table } from "@/types/table";
 import { useCurrentUser } from "@/hooks/use-current-user";
@@ -31,22 +31,20 @@ interface TableActionsProps {
 
 export function TableActions({ table }: TableActionsProps) {
   const router = useRouter();
-  const { deleteTable } = useTables();
+  // Use the dedicated hook for table deletion
+  const { deleteTable, isSubmitting: isDeleteSubmitting } = useDeleteTable();
   const { createSession, isSubmitting: isSessionSubmitting } = useSessions();
   const { currentUser, profile } = useCurrentUser();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleDelete = async () => {
-    setIsSubmitting(true);
     try {
       const success = await deleteTable(table.id);
       if (success) {
         router.push("/tables");
       }
     } finally {
-      setIsSubmitting(false);
       setShowDeleteDialog(false);
     }
   };
@@ -134,14 +132,14 @@ export function TableActions({ table }: TableActionsProps) {
             <Button
               variant="outline"
               onClick={() => setShowDeleteDialog(false)}
-              disabled={isSubmitting}
+              disabled={isDeleteSubmitting}
             >
               Cancel
             </Button>
             <Button
               variant="destructive"
               onClick={handleDelete}
-              disabled={isSubmitting}
+              disabled={isDeleteSubmitting}
             >
               Delete
             </Button>

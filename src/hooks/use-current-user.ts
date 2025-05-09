@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useApiQuery } from "./use-api";
 import { User, UserRoleType } from "@/types/user";
 
 interface EnhancedUser extends Omit<User, 'role'> {
@@ -18,31 +18,16 @@ interface EnhancedUser extends Omit<User, 'role'> {
 }
 
 export function useCurrentUser() {
-  const [currentUser, setCurrentUser] = useState<EnhancedUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const fetchCurrentUser = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch("/api/me");
-      if (response.ok) {
-        const data = await response.json();
-        setCurrentUser(data);
-      } else {
-        setCurrentUser(null);
-      }
-    } catch (error) {
-      console.error("Error fetching current user:", error);
-      setCurrentUser(null);
-    } finally {
-      setIsLoading(false);
+  const { data, isLoading, refetch } = useApiQuery<EnhancedUser | null>(
+    ["currentUser"],
+    "/api/me",
+    {
+      // Don't auto-retry on error
+      // This is handled by the QueryProvider now
     }
-  }, []);
+  );
 
-  useEffect(() => {
-    fetchCurrentUser();
-  }, [fetchCurrentUser]);
-
+  const currentUser = data;
   // For backward compatibility
   const profile = currentUser;
 
@@ -50,6 +35,6 @@ export function useCurrentUser() {
     currentUser,
     profile, // Provide profile for backward compatibility
     isLoading,
-    refreshUser: fetchCurrentUser,
+    refreshUser: refetch,
   };
 }

@@ -12,30 +12,41 @@ const categorySchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
+    console.log("=== Inventory Categories GET Request ===");
+    
     // Authenticate request using the middleware
     const profile = await authenticateRequest(req);
-    console.log("GET - Profile role:", profile.role); // Debug log
     
-    // Initialize where clause based on user role and company
-    let whereClause: any = {};
+    console.log("Profile from auth middleware:", {
+      id: profile.id,
+      role: profile.role,
+      companyId: profile.companyId,
+      isSuperAdmin: profile.role === "SUPERADMIN"
+    });
     
-    // For SUPERADMIN, show all categories regardless of companyId
+    // Initialize query filter based on role
+    let queryFilter: any = {};
+    
+    // Role-based access control pattern
     if (profile.role === "SUPERADMIN") {
-      // No filter needed - show all categories
-      whereClause = {};
+      // Superadmins can access all records across companies
+      console.log("User is SUPERADMIN - no company filter applied");
+      queryFilter = {}; // No company filter
     } else if (profile.companyId) {
-      // Regular user or admin with company can only see their company's categories
-      whereClause = { companyId: profile.companyId };
+      // Regular users can only access their company's data
+      console.log("Regular user - filtering by company:", profile.companyId);
+      queryFilter = { companyId: profile.companyId };
     } else {
-      // User has no company association and is not a superadmin
-      return NextResponse.json({ data: [] }); // Return empty array instead of error
+      // Edge case: User without company association
+      console.log("User has no company association - returning empty array");
+      return NextResponse.json({ data: [] });
     }
     
     // Process search query if provided
     const searchQuery = req.nextUrl.searchParams.get("query");
     if (searchQuery) {
-      whereClause = {
-        ...whereClause,
+      queryFilter = {
+        ...queryFilter,
         OR: [
           { name: { contains: searchQuery, mode: "insensitive" } },
           { description: { contains: searchQuery, mode: "insensitive" } },
@@ -43,20 +54,24 @@ export async function GET(req: NextRequest) {
       };
     }
 
-    console.log("Using where clause:", JSON.stringify(whereClause)); // Debug log
+    console.log("Final query filter:", JSON.stringify(queryFilter));
+
+    // Check database contents first to verify data exists
+    const totalCategories = await prisma.inventoryCategory.count();
+    console.log(`Total categories in database: ${totalCategories}`);
 
     // Query database using Prisma
     const categories = await prisma.inventoryCategory.findMany({
-      where: whereClause,
+      where: queryFilter,
       orderBy: { name: "asc" },
     });
 
-    console.log(`Found ${categories.length} categories`); // Debug log
+    console.log(`Found ${categories.length} categories matching the filter`);
 
     // Return success response with consistent format
     return NextResponse.json({ data: categories });
   } catch (error: any) {
-    console.error("Error fetching categories:", error);
+    console.error("Error in inventory categories GET:", error);
     return NextResponse.json(
       { error: error.message || "Internal server error" },
       { status: error.status || 500 }
@@ -68,7 +83,6 @@ export async function POST(req: NextRequest) {
   try {
     // Authenticate request using the middleware
     const profile = await authenticateRequest(req);
-    console.log("Profile role:", profile.role); // Debug log
 
     // Parse and validate request body
     const body = await req.json();
@@ -77,49 +91,55 @@ export async function POST(req: NextRequest) {
       // Validate the input data
       const validatedData = categorySchema.parse(body);
       
-      // Determine which companyId to use
-      let companyId: string;
+      // Determine company context for the operation
+      let operationCompanyId: string;
       
-      // Case 1: User has a company associated with their profile
+      // Company resolution pattern
       if (profile.companyId) {
-        companyId = profile.companyId;
+        // Use the user's assigned company
+        operationCompanyId = profile.companyId;
       } 
-      // Case 2: User is SUPERADMIN (simplified for testing)
+      // Superadmin special handling
       else if (profile.role === "SUPERADMIN") {
-        console.log("Superadmin detected"); // Debug log
-        
-        // Get or create a default company
-        let defaultCompany = await prisma.company.findFirst({
-          orderBy: { name: 'asc' }
-        });
-        
-        if (!defaultCompany) {
-          console.log("Creating default company"); // Debug log
-          defaultCompany = await prisma.company.create({
-            data: {
-              name: "Default Company",
-            }
+        // Option 1: Use company ID from request if provided
+        if (validatedData.companyId) {
+          // Verify the company exists
+          const companyExists = await prisma.company.findUnique({
+            where: { id: validatedData.companyId },
           });
+          
+          if (!companyExists) {
+            return NextResponse.json({ error: "Company not found" }, { status: 400 });
+          }
+          
+          operationCompanyId = validatedData.companyId;
+        } 
+        // Option 2: Find a suitable default company
+        else {
+          // Get the first available company or create one if needed
+          const defaultCompany = await prisma.company.findFirst({
+            orderBy: { name: 'asc' }
+          }) || await prisma.company.create({
+            data: { name: "Default Company" }
+          });
+          
+          operationCompanyId = defaultCompany.id;
         }
-        
-        companyId = defaultCompany.id;
       }
-      // Case 3: No company available
+      // Handle edge case
       else {
         return NextResponse.json(
-          { error: "No company associated with profile. Please specify a companyId." },
+          { error: "No company context available for this operation" },
           { status: 400 }
         );
       }
-      
-      console.log("Using company ID:", companyId); // Debug log
 
       // Create category using Prisma
       const category = await prisma.inventoryCategory.create({
         data: {
           name: validatedData.name,
           description: validatedData.description,
-          companyId: companyId,
+          companyId: operationCompanyId,
         },
       });
 
@@ -135,7 +155,6 @@ export async function POST(req: NextRequest) {
       throw validationError;
     }
   } catch (error: any) {
-    console.error("Error creating category:", error);
     return NextResponse.json(
       { error: error.message || "Internal server error" },
       { status: error.status || 500 }

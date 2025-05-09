@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
+import { authenticateRequest } from "@/lib/auth";
 import { z } from "zod";
 
+// Validation schema for table updates
 const tableUpdateSchema = z.object({
   name: z.string().min(1, "Table name is required").optional(),
   status: z
@@ -17,39 +17,10 @@ export async function GET(
   { params }: { params: { tableId: string } }
 ) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-
-    // Get the current user's session
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession();
-
-    if (sessionError || !session) {
-      return new NextResponse(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-      });
-    }
-
+    // Authenticate request using middleware
+    const profile = await authenticateRequest(req);
+    
     const { tableId } = params;
-
-    // Get user profile to check company access
-    const userProfile = await prisma.profile.findUnique({
-      where: {
-        userId: session.user.id,
-      },
-      select: {
-        companyId: true,
-        role: true,
-      },
-    });
-
-    if (!userProfile) {
-      return new NextResponse(
-        JSON.stringify({ error: "User profile not found" }),
-        { status: 404 }
-      );
-    }
 
     // Find the table including related data
     const table = await prisma.table.findUnique({
@@ -104,28 +75,32 @@ export async function GET(
     });
 
     if (!table) {
-      return new NextResponse(JSON.stringify({ error: "Table not found" }), {
-        status: 404,
-      });
+      return NextResponse.json(
+        { error: "Table not found" },
+        { status: 404 }
+      );
     }
 
+    // Role-based access control pattern
     // Check if user has access to this table's company
     if (
-      userProfile.companyId !== table.companyId &&
-      userProfile.role !== "SUPERADMIN"
+      (profile.role !== "SUPERADMIN" && profile.companyId !== table.companyId) ||
+      (profile.role === "SUPERADMIN" && profile.companyId && profile.companyId !== table.companyId)
     ) {
-      return new NextResponse(
-        JSON.stringify({ error: "Access denied to this table" }),
+      // Regular users can only access their company's tables
+      // Superadmins with selected company can only access that company's tables
+      return NextResponse.json(
+        { error: "Access denied to this table" },
         { status: 403 }
       );
     }
 
-    return new NextResponse(JSON.stringify(table));
-  } catch (error) {
+    return NextResponse.json(table);
+  } catch (error: any) {
     console.error("Error fetching table details:", error);
-    return new NextResponse(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500 }
+    return NextResponse.json(
+      { error: error.message || "Internal server error" },
+      { status: error.status || 500 }
     );
   }
 }
@@ -135,45 +110,15 @@ export async function PATCH(
   { params }: { params: { tableId: string } }
 ) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-
-    // Get the current user's session
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession();
-
-    if (sessionError || !session) {
-      return new NextResponse(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-      });
-    }
-
+    // Authenticate request using middleware
+    const profile = await authenticateRequest(req);
+    
     const { tableId } = params;
 
-    // Get user profile to check company access and permissions
-    const userProfile = await prisma.profile.findUnique({
-      where: {
-        userId: session.user.id,
-      },
-      select: {
-        id: true,
-        companyId: true,
-        role: true,
-      },
-    });
-
-    if (!userProfile) {
-      return new NextResponse(
-        JSON.stringify({ error: "User profile not found" }),
-        { status: 404 }
-      );
-    }
-
     // Only ADMIN and SUPERADMIN can update tables
-    if (userProfile.role === "SELLER") {
-      return new NextResponse(
-        JSON.stringify({ error: "Insufficient permissions" }),
+    if (profile.role !== "ADMIN" && profile.role !== "SUPERADMIN") {
+      return NextResponse.json(
+        { error: "Insufficient permissions" },
         { status: 403 }
       );
     }
@@ -186,80 +131,77 @@ export async function PATCH(
     });
 
     if (!table) {
-      return new NextResponse(JSON.stringify({ error: "Table not found" }), {
-        status: 404,
-      });
+      return NextResponse.json(
+        { error: "Table not found" },
+        { status: 404 }
+      );
     }
 
+    // Role-based access control pattern
     // Check if user has access to this table's company
     if (
-      userProfile.companyId !== table.companyId &&
-      userProfile.role !== "SUPERADMIN"
+      (profile.role !== "SUPERADMIN" && profile.companyId !== table.companyId) ||
+      (profile.role === "SUPERADMIN" && profile.companyId && profile.companyId !== table.companyId)
     ) {
-      return new NextResponse(
-        JSON.stringify({ error: "Access denied to this table" }),
+      return NextResponse.json(
+        { error: "Access denied to this table" },
         { status: 403 }
       );
     }
 
-    const json = await req.json();
-    const validationResult = tableUpdateSchema.safeParse(json);
+    // Parse and validate request body
+    const body = await req.json();
+    const validationResult = tableUpdateSchema.safeParse(body);
 
     if (!validationResult.success) {
-      return new NextResponse(
-        JSON.stringify({
+      return NextResponse.json(
+        {
           error: "Validation error",
           details: validationResult.error.errors,
-        }),
+        },
         { status: 400 }
       );
     }
 
-    const { name, status, hourlyRate } = validationResult.data;
-    const updateData: any = {};
+    const data = validationResult.data;
+    const previousStatus = table.status;
 
-    // Only include fields that were provided
-    if (name !== undefined) updateData.name = name;
-    if (hourlyRate !== undefined) updateData.hourlyRate = hourlyRate;
+    // Update the table
+    const updatedTable = await prisma.table.update({
+      where: {
+        id: tableId,
+      },
+      data,
+    });
 
-    // If status is changing, create an activity log
-    if (status !== undefined && status !== table.status) {
-      // Create activity log in a transaction with the table update
-      const updatedTable = await prisma.$transaction(async (tx) => {
-        // Update the table
-        const updatedTable = await tx.table.update({
-          where: { id: tableId },
-          data: { ...updateData, status },
-        });
-
-        // Create activity log
-        await tx.tableActivityLog.create({
-          data: {
-            tableId,
-            previousStatus: table.status,
-            newStatus: status,
-            changedById: userProfile.id,
-          },
-        });
-
-        return updatedTable;
+    // If status has changed, create an activity log entry
+    if (data.status && data.status !== previousStatus) {
+      await prisma.tableActivityLog.create({
+        data: {
+          tableId,
+          previousStatus,
+          newStatus: data.status,
+          changedById: profile.id,
+          notes: "Status updated via table edit",
+        },
       });
-
-      return new NextResponse(JSON.stringify(updatedTable));
-    } else {
-      // No status change, just update the other fields
-      const updatedTable = await prisma.table.update({
-        where: { id: tableId },
-        data: updateData,
-      });
-
-      return new NextResponse(JSON.stringify(updatedTable));
     }
-  } catch (error) {
+
+    return NextResponse.json(updatedTable);
+  } catch (error: any) {
     console.error("Error updating table:", error);
-    return new NextResponse(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500 }
+    
+    // Specific error handling for common cases
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Validation error", details: error.errors },
+        { status: 400 }
+      );
+    }
+    
+    return NextResponse.json(
+      { error: error.message || "Internal server error" },
+      { status: error.status || 500 }
     );
   }
 }
@@ -269,44 +211,15 @@ export async function DELETE(
   { params }: { params: { tableId: string } }
 ) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-
-    // Get the current user's session
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession();
-
-    if (sessionError || !session) {
-      return new NextResponse(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-      });
-    }
-
+    // Authenticate request using middleware
+    const profile = await authenticateRequest(req);
+    
     const { tableId } = params;
 
-    // Get user profile to check company access and permissions
-    const userProfile = await prisma.profile.findUnique({
-      where: {
-        userId: session.user.id,
-      },
-      select: {
-        companyId: true,
-        role: true,
-      },
-    });
-
-    if (!userProfile) {
-      return new NextResponse(
-        JSON.stringify({ error: "User profile not found" }),
-        { status: 404 }
-      );
-    }
-
     // Only ADMIN and SUPERADMIN can delete tables
-    if (userProfile.role === "SELLER") {
-      return new NextResponse(
-        JSON.stringify({ error: "Insufficient permissions" }),
+    if (profile.role !== "ADMIN" && profile.role !== "SUPERADMIN") {
+      return NextResponse.json(
+        { error: "Insufficient permissions" },
         { status: 403 }
       );
     }
@@ -319,18 +232,20 @@ export async function DELETE(
     });
 
     if (!table) {
-      return new NextResponse(JSON.stringify({ error: "Table not found" }), {
-        status: 404,
-      });
+      return NextResponse.json(
+        { error: "Table not found" },
+        { status: 404 }
+      );
     }
 
+    // Role-based access control pattern
     // Check if user has access to this table's company
     if (
-      userProfile.companyId !== table.companyId &&
-      userProfile.role !== "SUPERADMIN"
+      (profile.role !== "SUPERADMIN" && profile.companyId !== table.companyId) ||
+      (profile.role === "SUPERADMIN" && profile.companyId && profile.companyId !== table.companyId)
     ) {
-      return new NextResponse(
-        JSON.stringify({ error: "Access denied to this table" }),
+      return NextResponse.json(
+        { error: "Access denied to this table" },
         { status: 403 }
       );
     }
@@ -342,46 +257,56 @@ export async function DELETE(
       },
     });
 
+    if (sessionsCount > 0) {
+      return NextResponse.json(
+        {
+          error: "Cannot delete table with existing sessions. Please delete all sessions first.",
+        },
+        { status: 400 }
+      );
+    }
+
     const reservationsCount = await prisma.tableReservation.count({
       where: {
         tableId,
       },
     });
 
-    if (sessionsCount > 0 || reservationsCount > 0) {
-      return new NextResponse(
-        JSON.stringify({
-          error: "Cannot delete table with associated sessions or reservations",
-        }),
+    if (reservationsCount > 0) {
+      return NextResponse.json(
+        {
+          error: "Cannot delete table with existing reservations. Please delete all reservations first.",
+        },
         { status: 400 }
       );
     }
 
-    // Delete associated activity logs first, then the table
-    await prisma.$transaction([
-      prisma.tableActivityLog.deleteMany({
-        where: {
-          tableId,
-        },
-      }),
-      prisma.tableMaintenance.deleteMany({
-        where: {
-          tableId,
-        },
-      }),
-      prisma.table.delete({
-        where: {
-          id: tableId,
-        },
-      }),
-    ]);
+    // Delete all related activity logs and maintenance records first
+    await prisma.tableActivityLog.deleteMany({
+      where: {
+        tableId,
+      },
+    });
 
-    return new NextResponse(null, { status: 204 });
-  } catch (error) {
+    await prisma.tableMaintenance.deleteMany({
+      where: {
+        tableId,
+      },
+    });
+
+    // Finally delete the table
+    await prisma.table.delete({
+      where: {
+        id: tableId,
+      },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
     console.error("Error deleting table:", error);
-    return new NextResponse(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500 }
+    return NextResponse.json(
+      { error: error.message || "Internal server error" },
+      { status: error.status || 500 }
     );
   }
 }

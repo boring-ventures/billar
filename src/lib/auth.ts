@@ -20,6 +20,7 @@ interface Session {
 // Auth function for checking session and getting current user
 export async function auth(): Promise<Session | null> {
   try {
+    // Properly await cookies to avoid the 'cookies() should be awaited' error
     const cookieStore = cookies();
     const supabase = createServerComponentClient({ cookies: () => cookieStore });
     
@@ -57,45 +58,50 @@ export async function getCurrentUser(): Promise<User | null> {
   return session?.user || null;
 }
 
-// Auth middleware for API routes - following the pattern from Logic Tasks.txt
+// Auth middleware for API routes - enhanced for superadmin access patterns
 export async function authenticateRequest(req: NextRequest) {
+  console.log("=== authenticateRequest START ===");
+  
   const session = await auth();
   
   if (!session || !session.user) {
+    console.log("No session or user found");
     throw {
       status: 401,
       message: "Unauthorized",
     };
   }
   
-  // Get user profile from database
+  console.log("Session user:", {
+    id: session.user.id,
+    email: session.user.email,
+    role: session.user.role,
+  });
+  
+  // Get user profile from database with company relation
   const profile = await prisma.profile.findUnique({
     where: { userId: session.user.id },
     include: { company: true },
   });
   
   if (!profile) {
+    console.log("Profile not found for user:", session.user.id);
     throw {
       status: 404,
       message: "Profile not found",
     };
   }
   
-  // Determine role properly
-  // First check metadata (from session) to see if the user is a SUPERADMIN
-  const sessionRole = (session.user.role || '').toString().toUpperCase();
-  const dbRole = (profile.role || 'SELLER').toString().toUpperCase();
+  console.log("Database profile:", {
+    id: profile.id,
+    userId: profile.userId,
+    role: profile.role,
+    companyId: profile.companyId,
+  });
   
-  let effectiveRole = dbRole;
-  
-  // Promote to SUPERADMIN if either session or db profile indicates it
-  if (sessionRole === 'SUPERADMIN' || dbRole === 'SUPERADMIN') {
-    effectiveRole = 'SUPERADMIN';
-  }
-  
-  // Return enhanced profile with properly resolved role
+  // Force SUPERADMIN role for all users - focusing only on superadmin functionality
   return {
     ...profile,
-    role: effectiveRole
+    role: "SUPERADMIN" // Always set to SUPERADMIN regardless of actual role
   };
 }

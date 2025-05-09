@@ -1,205 +1,216 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { z } from "zod";
-
-// Validation schema for report query parameters
-const reportParamsSchema = z.object({
-  reportType: z.enum(["DAILY", "WEEKLY", "MONTHLY", "QUARTERLY", "ANNUAL"]),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
-});
 
 export async function GET(req: NextRequest) {
   try {
     // Authenticate request using the middleware
     const profile = await authenticateRequest(req);
-    console.log("GET Inventory Report - Profile role:", profile.role); // Debug log
-
-    // Extract and validate query parameters
-    const reportType = req.nextUrl.searchParams.get("reportType");
-    const date = req.nextUrl.searchParams.get("date");
-
-    if (!reportType || !date) {
-      return NextResponse.json(
-        { error: "Missing required parameters: reportType and date" },
-        { status: 400 }
-      );
-    }
-
-    try {
-      reportParamsSchema.parse({ reportType, date });
-    } catch (validationError) {
-      if (validationError instanceof z.ZodError) {
+    
+    // Get report type from query params
+    const reportType = req.nextUrl.searchParams.get("type") || "stock";
+    
+    // Different query approach based on role
+    if (profile.role === "SUPERADMIN") {
+      // Superadmins can access reports across all companies
+      
+      if (reportType === "stock") {
+        // Stock level report
+        const stockReport = await prisma.inventoryItem.findMany({
+          orderBy: [
+            { quantity: "asc" },
+            { name: "asc" },
+          ],
+          include: {
+            category: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            company: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        });
+        
+        return NextResponse.json({ data: stockReport });
+      } 
+      else if (reportType === "movements") {
+        // Stock movements report
+        const startDate = req.nextUrl.searchParams.get("startDate") 
+          ? new Date(req.nextUrl.searchParams.get("startDate") as string) 
+          : new Date(new Date().setDate(new Date().getDate() - 30)); // Last 30 days
+          
+        const endDate = req.nextUrl.searchParams.get("endDate")
+          ? new Date(req.nextUrl.searchParams.get("endDate") as string)
+          : new Date();
+        
+        const movementsReport = await prisma.stockMovement.findMany({
+          where: {
+            createdAt: {
+              gte: startDate,
+              lte: endDate,
+            },
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+          include: {
+            item: {
+              select: {
+                id: true,
+                name: true,
+                company: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+        
+        return NextResponse.json({ data: movementsReport });
+      }
+      else if (reportType === "categories") {
+        // Categories report
+        const categoriesReport = await prisma.inventoryCategory.findMany({
+          include: {
+            company: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            _count: {
+              select: {
+                items: true,
+              },
+            },
+          },
+          orderBy: {
+            name: "asc",
+          },
+        });
+        
+        return NextResponse.json({ data: categoriesReport });
+      }
+      else {
         return NextResponse.json(
-          { error: validationError.errors },
+          { error: "Invalid report type" },
           { status: 400 }
         );
       }
-      throw validationError;
+    } 
+    else if (profile.companyId) {
+      // Regular users can only access their company's reports
+      
+      if (reportType === "stock") {
+        // Stock level report
+        const stockReport = await prisma.inventoryItem.findMany({
+          where: {
+            companyId: profile.companyId,
+          },
+          orderBy: [
+            { quantity: "asc" },
+            { name: "asc" },
+          ],
+          include: {
+            category: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        });
+        
+        return NextResponse.json({ data: stockReport });
+      } 
+      else if (reportType === "movements") {
+        // Stock movements report
+        const startDate = req.nextUrl.searchParams.get("startDate") 
+          ? new Date(req.nextUrl.searchParams.get("startDate") as string) 
+          : new Date(new Date().setDate(new Date().getDate() - 30)); // Last 30 days
+          
+        const endDate = req.nextUrl.searchParams.get("endDate")
+          ? new Date(req.nextUrl.searchParams.get("endDate") as string)
+          : new Date();
+        
+        // First, get all the inventory items that belong to the company
+        const companyItems = await prisma.inventoryItem.findMany({
+          where: {
+            companyId: profile.companyId,
+          },
+          select: {
+            id: true,
+          },
+        });
+        
+        const companyItemIds = companyItems.map(item => item.id);
+        
+        const movementsReport = await prisma.stockMovement.findMany({
+          where: {
+            itemId: {
+              in: companyItemIds,
+            },
+            createdAt: {
+              gte: startDate,
+              lte: endDate,
+            },
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+          include: {
+            item: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        });
+        
+        return NextResponse.json({ data: movementsReport });
+      }
+      else if (reportType === "categories") {
+        // Categories report
+        const categoriesReport = await prisma.inventoryCategory.findMany({
+          where: {
+            companyId: profile.companyId,
+          },
+          include: {
+            _count: {
+              select: {
+                items: true,
+              },
+            },
+          },
+          orderBy: {
+            name: "asc",
+          },
+        });
+        
+        return NextResponse.json({ data: categoriesReport });
+      }
+      else {
+        return NextResponse.json(
+          { error: "Invalid report type" },
+          { status: 400 }
+        );
+      }
+    } 
+    else {
+      // Edge case: User without company association
+      return NextResponse.json({ data: [] });
     }
-
-    // Calculate date range based on report type
-    const startDate = new Date(date);
-    let endDate = new Date(date);
-
-    switch (reportType) {
-      case "DAILY":
-        // Start and end are the same day
-        endDate.setHours(23, 59, 59, 999);
-        break;
-      case "WEEKLY":
-        // End date is 7 days after start
-        endDate.setDate(endDate.getDate() + 6);
-        endDate.setHours(23, 59, 59, 999);
-        break;
-      case "MONTHLY":
-        // End date is last day of the month
-        endDate.setMonth(endDate.getMonth() + 1);
-        endDate.setDate(0); // Set to last day of previous month
-        endDate.setHours(23, 59, 59, 999);
-        break;
-      case "QUARTERLY":
-        // End date is 3 months after start
-        endDate.setMonth(endDate.getMonth() + 3);
-        endDate.setDate(0); // Set to last day of previous month
-        endDate.setHours(23, 59, 59, 999);
-        break;
-      case "ANNUAL":
-        // End date is 1 year after start
-        endDate.setFullYear(endDate.getFullYear() + 1);
-        endDate.setDate(0); // Set to last day of previous month
-        endDate.setHours(23, 59, 59, 999);
-        break;
-    }
-
-    // Initialize company filter based on user role
-    let companyFilter: any = {};
-    
-    // For SUPERADMIN, show data across all companies
-    if (profile.role === "SUPERADMIN") {
-      // No company filter needed
-    } else if (profile.companyId) {
-      // Regular user can only see their company's data
-      companyFilter = { companyId: profile.companyId };
-    } else {
-      // User has no company association and is not a superadmin
-      return NextResponse.json(
-        { error: "No company associated with profile" },
-        { status: 400 }
-      );
-    }
-
-    // Generate report data
-    // 1. Get total number of products
-    const totalProducts = await prisma.inventoryItem.count({
-      where: companyFilter,
-    });
-
-    // 2. Get low stock items count
-    const lowStockItems = await prisma.inventoryItem.count({
-      where: {
-        ...companyFilter,
-        quantity: {
-          lte: prisma.inventoryItem.fields.criticalThreshold,
-        },
-        stockAlerts: true,
-      },
-    });
-
-    // 3. Calculate total inventory value
-    const inventoryValueResult = await prisma.inventoryItem.aggregate({
-      where: companyFilter,
-      _sum: {
-        price: true,
-      },
-    });
-    
-    const totalValue = inventoryValueResult._sum.price || 0;
-
-    // 4. Get stock movement counts by type within date range
-    const purchaseCount = await prisma.stockMovement.count({
-      where: {
-        type: "PURCHASE",
-        createdAt: {
-          gte: startDate,
-          lte: endDate,
-        },
-        item: {
-          ...companyFilter,
-        },
-      },
-    });
-
-    const salesCount = await prisma.stockMovement.count({
-      where: {
-        type: "SALE",
-        createdAt: {
-          gte: startDate,
-          lte: endDate,
-        },
-        item: {
-          ...companyFilter,
-        },
-      },
-    });
-
-    const adjustmentsCount = await prisma.stockMovement.count({
-      where: {
-        type: "ADJUSTMENT",
-        createdAt: {
-          gte: startDate,
-          lte: endDate,
-        },
-        item: {
-          ...companyFilter,
-        },
-      },
-    });
-
-    // 5. Get top products by value
-    const topProducts = await prisma.inventoryItem.findMany({
-      where: companyFilter,
-      select: {
-        id: true,
-        name: true,
-        quantity: true,
-        price: true,
-      },
-      orderBy: {
-        price: "desc",
-      },
-      take: 5,
-    });
-
-    // Format top products data
-    const formattedTopProducts = topProducts.map((product) => ({
-      name: product.name,
-      quantity: product.quantity,
-      value: product.price ? Number(product.quantity) * Number(product.price) : 0,
-    }));
-
-    // Construct final report data
-    const reportData = {
-      totalProducts,
-      lowStockItems,
-      totalValue,
-      stockMovements: {
-        purchases: purchaseCount,
-        sales: salesCount,
-        adjustments: adjustmentsCount,
-      },
-      topProducts: formattedTopProducts,
-      dateRange: {
-        start: startDate,
-        end: endDate,
-      },
-      reportType,
-    };
-
-    // Return success response
-    return NextResponse.json({ data: reportData });
   } catch (error: any) {
-    console.error("Error generating inventory report:", error);
     return NextResponse.json(
       { error: error.message || "Internal server error" },
       { status: error.status || 500 }

@@ -7,21 +7,8 @@ import { InventoryCategoryTable } from "@/components/inventory/category-table";
 import { InventoryProductTable } from "@/components/inventory/product-table";
 import { StockMovementTable } from "@/components/inventory/stock-movement-table";
 import { InventoryReports } from "@/components/inventory/inventory-reports";
-import { useInventoryOverview } from "@/hooks/use-inventory";
-import { Skeleton } from "@/components/ui/skeleton";
 
 export default function InventoryPage() {
-  // Fetch overview data using the hook
-  const { data: overviewResponse, isLoading: isLoadingOverview } = useInventoryOverview();
-  
-  // Extract data from response
-  const overviewData = overviewResponse?.data || {
-    totalProducts: 0,
-    lowStockItems: 0,
-    recentMovements: 0,
-    pendingOrders: 0
-  };
-  
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
@@ -43,16 +30,10 @@ export default function InventoryPage() {
                 <Package className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                {isLoadingOverview ? (
-                  <Skeleton className="h-8 w-20" />
-                ) : (
-                  <>
-                    <div className="text-2xl font-bold">{overviewData.totalProducts}</div>
-                    <p className="text-xs text-muted-foreground">
-                      Active inventory items
-                    </p>
-                  </>
-                )}
+                <div className="text-2xl font-bold">0</div>
+                <p className="text-xs text-muted-foreground">
+                  Active inventory items
+                </p>
               </CardContent>
             </Card>
             <Card>
@@ -61,16 +42,10 @@ export default function InventoryPage() {
                 <AlertTriangle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                {isLoadingOverview ? (
-                  <Skeleton className="h-8 w-20" />
-                ) : (
-                  <>
-                    <div className="text-2xl font-bold">{overviewData.lowStockItems}</div>
-                    <p className="text-xs text-muted-foreground">
-                      Items below threshold
-                    </p>
-                  </>
-                )}
+                <div className="text-2xl font-bold">0</div>
+                <p className="text-xs text-muted-foreground">
+                  Items below threshold
+                </p>
               </CardContent>
             </Card>
             <Card>
@@ -79,16 +54,10 @@ export default function InventoryPage() {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                {isLoadingOverview ? (
-                  <Skeleton className="h-8 w-20" />
-                ) : (
-                  <>
-                    <div className="text-2xl font-bold">{overviewData.recentMovements}</div>
-                    <p className="text-xs text-muted-foreground">
-                      Recent movements
-                    </p>
-                  </>
-                )}
+                <div className="text-2xl font-bold">0</div>
+                <p className="text-xs text-muted-foreground">
+                  Recent movements
+                </p>
               </CardContent>
             </Card>
             <Card>
@@ -97,16 +66,10 @@ export default function InventoryPage() {
                 <ListOrdered className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                {isLoadingOverview ? (
-                  <Skeleton className="h-8 w-20" />
-                ) : (
-                  <>
-                    <div className="text-2xl font-bold">{overviewData.pendingOrders}</div>
-                    <p className="text-xs text-muted-foreground">
-                      Pending orders
-                    </p>
-                  </>
-                )}
+                <div className="text-2xl font-bold">0</div>
+                <p className="text-xs text-muted-foreground">
+                  Pending orders
+                </p>
               </CardContent>
             </Card>
           </div>

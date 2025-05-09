@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useApiQuery } from "./use-api";
 
 interface Product {
   id: string;
@@ -6,6 +7,10 @@ interface Product {
   price: number;
   image?: string;
   category: string;
+  sku?: string;
+  quantity?: number;
+  companyId?: string;
+  companyName?: string;
 }
 
 interface Table {
@@ -15,6 +20,8 @@ interface Table {
   hourlyRate: number;
   durationInHours?: number;
   endSession?: boolean;
+  companyId?: string;
+  companyName?: string;
   currentSession?: {
     id: string;
     startTime: string;
@@ -31,85 +38,60 @@ interface OrderItem {
   notes?: string;
 }
 
-// Mock data for testing
-const mockProducts: Product[] = [
-  {
-    id: "1",
-    name: "Beer",
-    price: 5.99,
-    category: "Drinks",
-  },
-  {
-    id: "2",
-    name: "Wine",
-    price: 8.99,
-    category: "Drinks",
-  },
-  {
-    id: "3",
-    name: "Cocktail",
-    price: 12.99,
-    category: "Drinks",
-  },
-  {
-    id: "4",
-    name: "Snacks",
-    price: 4.99,
-    category: "Food",
-  },
-];
-
-const mockTables: Table[] = [
-  {
-    id: "1",
-    number: "1",
-    status: "available",
-    hourlyRate: 10.00,
-  },
-  {
-    id: "2",
-    number: "2",
-    status: "available",
-    hourlyRate: 15.00,
-  },
-  {
-    id: "3",
-    number: "3",
-    status: "occupied",
-    hourlyRate: 20.00,
-    currentSession: {
-      id: "session1",
-      startTime: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-      orderCount: 2,
-    },
-  },
-];
-
+// Use real API instead of mock data
 export function usePOS() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [tables, setTables] = useState<Table[]>([]);
+  // Maintain local state for mutations
+  const [localTables, setLocalTables] = useState<Table[]>([]);
   const [currentOrder, setCurrentOrder] = useState<OrderItem[]>([]);
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sessionTimers, setSessionTimers] = useState<{ [key: string]: NodeJS.Timeout }>({});
 
-  // Initialize with mock data
+  // Use our new API hooks for data fetching
+  const { 
+    data: inventoryData,
+    isLoading: isLoadingInventory,
+    error: inventoryError
+  } = useApiQuery<{ data: Product[] }>(['posInventory'], '/api/pos/inventory');
+
+  const {
+    data: tablesData,
+    isLoading: isLoadingTables,
+    error: tablesError,
+    refetch: refetchTables
+  } = useApiQuery<{ data: Table[] }>(['posTables'], '/api/pos/tables');
+
+  // Extract products from the response data
+  const products = inventoryData?.data || [];
+  
+  // Update local tables when API data changes
   useEffect(() => {
-    setLoading(true);
-    try {
-      setProducts(mockProducts);
-      setTables(mockTables);
-    } catch (err) {
-      setError("Failed to initialize POS data");
+    if (tablesData?.data) {
+      setLocalTables(tablesData.data);
     }
-    setLoading(false);
-  }, []);
+  }, [tablesData]);
+  
+  // Use local tables for UI
+  const tables = localTables;
+  
+  // Combine loading states
+  const loading = isLoadingInventory || isLoadingTables;
+  
+  // Handle errors from API calls
+  useEffect(() => {
+    if (inventoryError) {
+      setError("Failed to fetch inventory: " + (inventoryError as Error).message);
+    } else if (tablesError) {
+      setError("Failed to fetch tables: " + (tablesError as Error).message);
+    } else {
+      setError(null);
+    }
+  }, [inventoryError, tablesError]);
 
   // Update session costs every minute
   useEffect(() => {
     const interval = setInterval(() => {
-      setTables((prev) =>
+      setLocalTables((prev) =>
         prev.map((table) => {
           if (table.currentSession && !table.currentSession.endTime) {
             const startTime = new Date(table.currentSession.startTime).getTime();
@@ -138,32 +120,49 @@ export function usePOS() {
   // Start a new table session
   const startTableSession = async (tableId: string, durationInHours?: number) => {
     try {
-      const startTime = new Date();
-      const endTime = durationInHours
-        ? new Date(startTime.getTime() + durationInHours * 3600000)
-        : undefined;
+      // Call the API to start a new session
+      const response = await fetch(`/api/sessions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tableId,
+          duration: durationInHours,
+        }),
+      });
 
-      const newSession = {
-        id: `session-${Date.now()}`,
-        startTime: startTime.toISOString(),
-        endTime: endTime?.toISOString(),
-        orderCount: 0,
-        totalTime: 0,
-        totalCost: 0,
-      };
+      if (!response.ok) {
+        throw new Error('Failed to start table session');
+      }
 
-      setTables((prev) =>
+      const sessionData = await response.json();
+      
+      // Update local tables data
+      setLocalTables((prev) =>
         prev.map((table) =>
           table.id === tableId
-            ? { ...table, status: "occupied", currentSession: newSession }
+            ? { 
+                ...table, 
+                status: "occupied", 
+                currentSession: {
+                  id: sessionData.id,
+                  startTime: sessionData.startedAt,
+                  endTime: sessionData.endedAt,
+                  orderCount: 0,
+                  totalTime: 0,
+                  totalCost: 0,
+                }
+              }
             : table
         )
       );
 
-      // If there's a duration, set up a timer to end the session
+      // If there's a duration, set up a timer to refresh tables
       if (durationInHours) {
         const timer = setTimeout(() => {
-          endTableSession(tableId);
+          // Refresh tables data after the session should have ended
+          refetchTables();
         }, durationInHours * 3600000);
 
         setSessionTimers((prev) => ({
@@ -172,45 +171,57 @@ export function usePOS() {
         }));
       }
     } catch (err) {
+      console.error('Error starting session:', err);
       setError("Failed to start table session");
     }
   };
 
   // End a table session
-  const endTableSession = (tableId: string) => {
-    setTables((prev) =>
-      prev.map((table) => {
-        if (table.id === tableId) {
-          // Calculate final cost if there's an active session
-          let finalCost = 0;
-          if (table.currentSession) {
-            const startTime = new Date(table.currentSession.startTime).getTime();
-            const endTime = Date.now();
-            const minutesPassed = Math.floor((endTime - startTime) / (1000 * 60));
-            finalCost = (minutesPassed / 60) * table.hourlyRate;
-          }
-
-          // Return a completely new table object with session cleared
-          return {
-            ...table,
-            status: "available",
-            currentSession: undefined,
-            durationInHours: undefined,
-            endSession: undefined,
-          };
-        }
-        return table;
-      })
-    );
-
-    // Clear the timer if it exists
-    if (sessionTimers[tableId]) {
-      clearTimeout(sessionTimers[tableId]);
-      setSessionTimers((prev) => {
-        const newTimers = { ...prev };
-        delete newTimers[tableId];
-        return newTimers;
+  const endTableSession = async (tableId: string) => {
+    try {
+      // Find the session ID
+      const table = tables.find(t => t.id === tableId);
+      if (!table || !table.currentSession) {
+        throw new Error("No active session found");
+      }
+      
+      // Call the API to end the session
+      const response = await fetch(`/api/sessions/${table.currentSession.id}/end`, {
+        method: 'POST',
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to end table session');
+      }
+      
+      // Update local tables data
+      setLocalTables((prev) =>
+        prev.map((table) => {
+          if (table.id === tableId) {
+            return {
+              ...table,
+              status: "available",
+              currentSession: undefined,
+              durationInHours: undefined,
+              endSession: undefined,
+            };
+          }
+          return table;
+        })
+      );
+
+      // Clear the timer if it exists
+      if (sessionTimers[tableId]) {
+        clearTimeout(sessionTimers[tableId]);
+        setSessionTimers((prev) => {
+          const newTimers = { ...prev };
+          delete newTimers[tableId];
+          return newTimers;
+        });
+      }
+    } catch (err) {
+      console.error('Error ending session:', err);
+      setError("Failed to end table session");
     }
   };
 
@@ -238,6 +249,11 @@ export function usePOS() {
 
   // Update item quantity
   const updateItemQuantity = (productId: string, quantity: number) => {
+    if (quantity === 0) {
+      removeFromOrder(productId);
+      return;
+    }
+    
     setCurrentOrder((prev) =>
       prev.map((item) =>
         item.product.id === productId ? { ...item, quantity } : item
@@ -253,41 +269,48 @@ export function usePOS() {
     );
   };
 
-  // Complete order
+  // Complete the current order
   const completeOrder = async () => {
-    if (!currentOrder.length) return;
+    if (currentOrder.length === 0) return;
 
     try {
+      // Call the API to create an order
+      const response = await fetch('/api/pos/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tableId: selectedTable?.id,
+          items: currentOrder.map(item => ({
+            productId: item.product.id,
+            quantity: item.quantity,
+            notes: item.notes,
+          })),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to complete order');
+      }
+
+      // Clear the current order
       setCurrentOrder([]);
-      if (selectedTable) {
-        setTables((prev) =>
-          prev.map((table) =>
-            table.id === selectedTable.id
-              ? {
-                  ...table,
-                  currentSession: {
-                    ...table.currentSession!,
-                    orderCount: (table.currentSession?.orderCount || 0) + 1,
-                  },
-                }
-              : table
-          )
-        );
+
+      // Update the selected table if needed
+      if (selectedTable?.currentSession) {
+        // Fetch updated table data
+        refetchTables();
+        
+        // Find and update the selected table
+        const updatedTable = tables.find(t => t.id === selectedTable.id);
+        if (updatedTable) {
+          setSelectedTable(updatedTable);
+        }
       }
     } catch (err) {
+      console.error('Error completing order:', err);
       setError("Failed to complete order");
-    }
-  };
-
-  // Handle table selection
-  const handleTableSelect = (table: Table) => {
-    if (table.endSession) {
-      endTableSession(table.id);
-      setSelectedTable(null); // Clear selected table when ending session
-    } else if (table.durationInHours) {
-      startTableSession(table.id, table.durationInHours);
-    } else {
-      setSelectedTable(table);
     }
   };
 
@@ -306,6 +329,5 @@ export function usePOS() {
     completeOrder,
     startTableSession,
     endTableSession,
-    handleTableSelect,
   };
 } 

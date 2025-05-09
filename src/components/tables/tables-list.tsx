@@ -34,7 +34,7 @@ export function TablesList({
   canAddTable = false,
 }: TablesListProps) {
   const router = useRouter();
-  const { tables, isLoading, fetchTables } = useTables();
+  const { tables, isLoading, fetchTables } = useTables(searchQuery);
   const { currentUser, profile } = useCurrentUser();
 
   // Use both currentUser and profile for compatibility

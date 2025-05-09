@@ -4,8 +4,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { PlusCircle, History, AlertCircle, DollarSign } from "lucide-react"
+import { useMaintenanceStats } from "@/hooks/use-maintenance"
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function MaintenancePage() {
+  const { 
+    upcomingCount, 
+    totalRecords, 
+    totalCost, 
+    tablesInMaintenance, 
+    isLoading 
+  } = useMaintenanceStats();
+
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
@@ -25,7 +35,11 @@ export default function MaintenancePage() {
             <AlertCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3</div>
+            {isLoading ? (
+              <Skeleton className="h-8 w-20" />
+            ) : (
+              <div className="text-2xl font-bold">{upcomingCount}</div>
+            )}
             <p className="text-xs text-muted-foreground">
               Scheduled for next 7 days
             </p>
@@ -38,7 +52,11 @@ export default function MaintenancePage() {
             <History className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">24</div>
+            {isLoading ? (
+              <Skeleton className="h-8 w-20" />
+            ) : (
+              <div className="text-2xl font-bold">{totalRecords}</div>
+            )}
             <p className="text-xs text-muted-foreground">
               All time maintenance activities
             </p>
@@ -51,7 +69,11 @@ export default function MaintenancePage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$1,234</div>
+            {isLoading ? (
+              <Skeleton className="h-8 w-20" />
+            ) : (
+              <div className="text-2xl font-bold">${totalCost.toFixed(2)}</div>
+            )}
             <p className="text-xs text-muted-foreground">
               Total cost this month
             </p>
@@ -64,7 +86,11 @@ export default function MaintenancePage() {
             <AlertCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2</div>
+            {isLoading ? (
+              <Skeleton className="h-8 w-20" />
+            ) : (
+              <div className="text-2xl font-bold">{tablesInMaintenance}</div>
+            )}
             <p className="text-xs text-muted-foreground">
               Currently under maintenance
             </p>

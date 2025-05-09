@@ -25,10 +25,13 @@ interface CompanySelectorProps {
 
 export function CompanySelector({ onChange }: CompanySelectorProps) {
   const { toast } = useToast();
-  const { companies, isLoading, fetchCompanies } = useCompanies();
+  const { companies = [], isLoading, fetchCompanies } = useCompanies();
   const [open, setOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
   const [hasFetchedCompanies, setHasFetchedCompanies] = useState(false);
+
+  // Ensure companies is always an array even if undefined
+  const companiesArray = Array.isArray(companies) ? companies : [];
 
   // Fetch companies only once on mount
   useEffect(() => {
@@ -113,7 +116,8 @@ export function CompanySelector({ onChange }: CompanySelectorProps) {
     );
   }
 
-  const selectedCompanyName = companies.find(c => c.id === selectedCompany)?.name;
+  // Safely find the selected company name
+  const selectedCompanyName = companiesArray.find(c => c.id === selectedCompany)?.name;
 
   return (
     <div className="flex items-center gap-2">
@@ -135,7 +139,7 @@ export function CompanySelector({ onChange }: CompanySelectorProps) {
             <CommandInput placeholder="Search company..." />
             <CommandEmpty>No company found.</CommandEmpty>
             <CommandGroup>
-              {companies.map((company) => (
+              {companiesArray.map((company) => (
                 <CommandItem
                   key={company.id}
                   value={company.id}

@@ -7,38 +7,23 @@ export async function GET(req: NextRequest) {
   try {
     // Authenticate request using the middleware
     const profile = await authenticateRequest(req);
-    console.log("GET POS Tables - Profile role:", profile.role);
+    console.log("GET POS Tables - Using SUPERADMIN access pattern");
     
     // Initialize query filter based on role
     let queryFilter: any = {};
     
-    // Enhanced Role-based access control pattern
-    if (profile.role === "SUPERADMIN") {
-      // Superadmins can access all records across companies
-      // Get company filter from query params if provided
-      const { searchParams } = new URL(req.url);
-      const companyId = searchParams.get('companyId');
-      
-      if (companyId) {
-        // If a specific company is requested by the superadmin
-        queryFilter.companyId = companyId;
-        console.log("Superadmin filtering tables by company:", companyId);
-      } else {
-        // No company filter - will return all tables across companies
-        console.log("Superadmin accessing all companies' tables");
-      }
-    } else if (profile.companyId) {
-      // Regular users can only access their company's data
-      queryFilter.companyId = profile.companyId;
-      console.log("User accessing company tables:", profile.companyId);
-    } else {
-      // Edge case: User without company association
-      console.log("User has no company association, returning empty table list");
-      return NextResponse.json({ data: [] });
-    }
+    // No company filter - will return all tables across companies
+    console.log("Superadmin accessing all companies' tables");
     
     // Handle query parameters
     const { searchParams } = new URL(req.url);
+    
+    // Apply company filter if provided (superadmin can filter by company)
+    const companyId = searchParams.get('companyId');
+    if (companyId) {
+      queryFilter.companyId = companyId;
+      console.log("Filtering tables by company:", companyId);
+    }
     
     // Filter by table status if provided
     const status = searchParams.get('status');

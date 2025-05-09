@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/use-toast";
 import { type Table, type TableStatus } from "@prisma/client";
 import { z } from "zod";
@@ -14,13 +14,13 @@ export const tableFormSchema = z.object({
   companyId: z.string().uuid().optional(),
 });
 
-export const tableStatusSchema = z.object({
+export const tableStatusUpdateSchema = z.object({
   status: z.enum(["AVAILABLE", "OCCUPIED", "RESERVED", "MAINTENANCE"]),
   notes: z.string().optional(),
 });
 
 export type TableFormValues = z.infer<typeof tableFormSchema>;
-export type TableStatusUpdateValues = z.infer<typeof tableStatusSchema>;
+export type TableStatusUpdateValues = z.infer<typeof tableStatusUpdateSchema>;
 
 export type TableWithDetails = Table & {
   activityLogs: Array<{
@@ -50,133 +50,93 @@ export type TableWithDetails = Table & {
   }>;
 };
 
+export type TableWithNumberRate = Omit<Table, "hourlyRate"> & {
+  hourlyRate: number | null;
+};
+
 // Utility functions for API requests
-async function fetchTablesList(query?: string) {
-  const queryParams = new URLSearchParams();
-  if (query) {
-    queryParams.append("query", query);
-  }
+async function apiFetch(url: string, options?: RequestInit) {
+  const response = await fetch(url, options);
   
-  const response = await fetch(`/api/tables?${queryParams.toString()}`);
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error || "Failed to fetch tables");
+    throw new Error(error.error || 'An error occurred');
   }
   
   return response.json();
 }
 
-async function fetchTableDetails(tableId: string) {
-  const response = await fetch(`/api/tables/${tableId}`);
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "Failed to fetch table details");
-  }
-  
-  return response.json();
-}
-
-async function createTableRequest(data: TableFormValues) {
-  const response = await fetch("/api/tables", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "Failed to create table");
-  }
-  
-  return response.json();
-}
-
-async function updateTableRequest(tableId: string, data: Partial<TableFormValues>) {
-  const response = await fetch(`/api/tables/${tableId}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "Failed to update table");
-  }
-  
-  return response.json();
-}
-
-async function deleteTableRequest(tableId: string) {
-  const response = await fetch(`/api/tables/${tableId}`, {
-    method: "DELETE",
-  });
-  
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "Failed to delete table");
-  }
-  
-  return response.json();
-}
-
-async function updateTableStatusRequest(
-  tableId: string, 
-  data: TableStatusUpdateValues
-) {
-  const response = await fetch(`/api/tables/${tableId}/status`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "Failed to update table status");
-  }
-  
-  return response.json();
-}
-
-// Custom hooks
+// GET hook
 export function useTables(searchQuery?: string) {
-  const { toast } = useToast();
+  const queryParams = new URLSearchParams();
+  if (searchQuery) {
+    queryParams.append("query", searchQuery);
+  }
   
-  const {
-    data: tables = [],
-    isLoading,
-    error,
-    refetch,
-  } = useQuery({
+  return useQuery({
     queryKey: ["tables", searchQuery],
-    queryFn: () => fetchTablesList(searchQuery),
+    queryFn: () => apiFetch(`/api/tables?${queryParams.toString()}`),
     staleTime: 60 * 1000, // 1 minute
   });
-  
-  // For compatibility with existing components
-  const fetchTables = useCallback(
-    async (query?: string) => {
-      try {
-        refetch();
-      } catch (e) {
-        console.error("Error fetching tables:", e);
-        toast({
-          title: "Error",
-          description: e instanceof Error ? e.message : "An unexpected error occurred",
-          variant: "destructive",
-        });
-      }
-    },
-    [refetch, toast]
-  );
-  
-  return {
-    tables,
-    isLoading,
-    error,
-    fetchTables, // For backward compatibility
-  };
 }
 
+export function useTable(id: string) {
+  return useQuery({
+    queryKey: ["tables", id],
+    queryFn: () => apiFetch(`/api/tables/${id}`),
+    enabled: !!id,
+    staleTime: 60 * 1000, // 1 minute
+  });
+}
+
+export function useCreateTable() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data: TableFormValues) => apiFetch('/api/tables', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }),
+    onSuccess: () => {
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: ['tables'] });
+    },
+  });
+}
+
+export function useUpdateTable(id: string) {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data: Partial<TableFormValues>) => apiFetch(`/api/tables/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }),
+    onSuccess: () => {
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: ['tables'] });
+      queryClient.invalidateQueries({ queryKey: ['tables', id] });
+    },
+  });
+}
+
+export function useDeleteTable() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (id: string) => apiFetch(`/api/tables/${id}`, {
+      method: 'DELETE',
+    }),
+    onSuccess: () => {
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: ['tables'] });
+    },
+  });
+}
+
+// Backward compatibility for existing components
 export function useTableDetails(tableId: string | null) {
   const {
     data: tableDetails,
@@ -185,7 +145,7 @@ export function useTableDetails(tableId: string | null) {
     refetch,
   } = useQuery({
     queryKey: ["tables", tableId, "details"],
-    queryFn: () => (tableId ? fetchTableDetails(tableId) : null),
+    queryFn: () => (tableId ? apiFetch(`/api/tables/${tableId}`) : null),
     enabled: !!tableId,
     staleTime: 60 * 1000, // 1 minute
   });
@@ -208,146 +168,21 @@ export function useTableDetails(tableId: string | null) {
   };
 }
 
-export function useCreateTable() {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  
-  const mutation = useMutation({
-    mutationFn: createTableRequest,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["tables"] });
-      toast({
-        title: "Success",
-        description: "Table created successfully",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create table",
-        variant: "destructive",
-      });
-    },
-  });
-  
-  // Backward compatibility wrapper
-  const createTable = useCallback(
-    async (tableData: TableFormValues) => {
-      try {
-        await mutation.mutateAsync(tableData);
-        return true;
-      } catch (error) {
-        return false;
-      }
-    },
-    [mutation]
-  );
-  
-  return {
-    createTable,
-    isSubmitting: mutation.isPending,
-    ...mutation,
-  };
-}
-
-export function useUpdateTable(tableId?: string) {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  
-  const mutation = useMutation({
-    mutationFn: (data: Partial<TableFormValues>) => 
-      tableId ? updateTableRequest(tableId, data) : Promise.reject("No table ID provided"),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["tables"] });
-      if (tableId) {
-        queryClient.invalidateQueries({ queryKey: ["tables", tableId, "details"] });
-      }
-      toast({
-        title: "Success",
-        description: "Table updated successfully",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update table",
-        variant: "destructive",
-      });
-    },
-  });
-  
-  // Backward compatibility wrapper
-  const updateTable = useCallback(
-    async (id: string, tableData: Partial<TableFormValues>) => {
-      try {
-        await mutation.mutateAsync(tableData);
-        return true;
-      } catch (error) {
-        return false;
-      }
-    },
-    [mutation]
-  );
-  
-  return {
-    updateTable,
-    isSubmitting: mutation.isPending,
-    ...mutation,
-  };
-}
-
-export function useDeleteTable() {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  
-  const mutation = useMutation({
-    mutationFn: deleteTableRequest,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tables"] });
-      toast({
-        title: "Success",
-        description: "Table deleted successfully",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete table",
-        variant: "destructive",
-      });
-    },
-  });
-  
-  // Backward compatibility wrapper
-  const deleteTable = useCallback(
-    async (tableId: string) => {
-      try {
-        await mutation.mutateAsync(tableId);
-        return true;
-      } catch (error) {
-        return false;
-      }
-    },
-    [mutation]
-  );
-  
-  return {
-    deleteTable,
-    isSubmitting: mutation.isPending,
-    ...mutation,
-  };
-}
-
+// Legacy compatibility
 export function useUpdateTableStatus() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
   const mutation = useMutation({
     mutationFn: ({ tableId, data }: { tableId: string; data: TableStatusUpdateValues }) =>
-      updateTableStatusRequest(tableId, data),
+      apiFetch(`/api/tables/${tableId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      }),
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["tables"] });
-      queryClient.invalidateQueries({ queryKey: ["tables", variables.tableId, "details"] });
+      queryClient.invalidateQueries({ queryKey: ["tables", variables.tableId] });
       toast({
         title: "Success",
         description: `Table status updated to ${variables.data.status}`,

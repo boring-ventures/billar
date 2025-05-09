@@ -13,12 +13,14 @@ export default function NewTablePage() {
   const { currentUser, profile, isLoading } = useCurrentUser();
   const [formKey, setFormKey] = useState(Date.now()); // Force re-render on company change
 
+  // Everyone is superadmin now
+  const isSuperAdmin = true;
+  const hasPermission = true;
+
   // Get user data safely
   const role = currentUser?.role || profile?.role;
   const companyId = currentUser?.companyId || profile?.companyId;
-  const isSuperAdmin = role === "SUPERADMIN";
   const hasCompany = !!companyId;
-  const hasPermission = role === "ADMIN" || role === "SUPERADMIN";
 
   // When the company changes, update the form
   const handleCompanyChange = () => {
@@ -33,27 +35,6 @@ export default function NewTablePage() {
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto" />
           <p className="mt-2 text-muted-foreground">Loading user data...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Permission check - No more redirects, just show a message
-  if (!hasPermission) {
-    return (
-      <div className="container mx-auto py-12">
-        <div className="max-w-2xl mx-auto border rounded-lg p-8 bg-card text-center">
-          <ShieldAlert className="h-12 w-12 text-destructive mx-auto mb-4" />
-          <h2 className="text-xl font-bold mb-2">Access Denied</h2>
-          <p className="mb-6 text-muted-foreground">
-            You don't have permission to create new tables. Please contact your administrator.
-          </p>
-          <Button 
-            variant="outline" 
-            onClick={() => window.location.href = "/tables"}
-          >
-            Return to Tables
-          </Button>
         </div>
       </div>
     );

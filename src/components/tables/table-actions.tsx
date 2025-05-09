@@ -20,30 +20,24 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { TableStatusForm } from "@/components/tables/table-status-form";
-import { useDeleteTable } from "@/hooks/use-tables";
+import { useDeleteTable, TableWithNumberRate } from "@/hooks/use-tables";
 import { useSessions } from "@/hooks/use-sessions";
-import { Table } from "@/types/table";
-import { useCurrentUser } from "@/hooks/use-current-user";
 
 interface TableActionsProps {
-  table: Table;
+  table: TableWithNumberRate;
 }
 
 export function TableActions({ table }: TableActionsProps) {
   const router = useRouter();
-  // Use the dedicated hook for table deletion
-  const { deleteTable, isSubmitting: isDeleteSubmitting } = useDeleteTable();
+  const deleteTableMutation = useDeleteTable();
   const { createSession, isSubmitting: isSessionSubmitting } = useSessions();
-  const { currentUser, profile } = useCurrentUser();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
 
   const handleDelete = async () => {
     try {
-      const success = await deleteTable(table.id);
-      if (success) {
-        router.push("/tables");
-      }
+      await deleteTableMutation.mutateAsync(table.id);
+      router.push("/tables");
     } finally {
       setShowDeleteDialog(false);
     }
@@ -53,9 +47,8 @@ export function TableActions({ table }: TableActionsProps) {
     await createSession(table.id);
   };
 
-  // Use both currentUser and profile for compatibility
-  const role = currentUser?.role || profile?.role;
-  const canManageTable = role === "ADMIN" || role === "SUPERADMIN";
+  // Everyone is a superadmin
+  const canManageTable = true;
   const canStartSession = table.status === "AVAILABLE";
 
   // Determine if there are any controls to show
@@ -132,14 +125,14 @@ export function TableActions({ table }: TableActionsProps) {
             <Button
               variant="outline"
               onClick={() => setShowDeleteDialog(false)}
-              disabled={isDeleteSubmitting}
+              disabled={deleteTableMutation.isPending}
             >
               Cancel
             </Button>
             <Button
               variant="destructive"
               onClick={handleDelete}
-              disabled={isDeleteSubmitting}
+              disabled={deleteTableMutation.isPending}
             >
               Delete
             </Button>

@@ -50,8 +50,8 @@ export default function TableDetailsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const { createSession, isSubmitting: isSessionSubmitting } = useSessions();
 
-  const canEditTable =
-    profile?.role === "ADMIN" || profile?.role === "SUPERADMIN";
+  // Everyone is superadmin now
+  const canManageTable = true;
 
   const canStartSession = tableDetails?.status === "AVAILABLE";
 

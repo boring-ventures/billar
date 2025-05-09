@@ -49,15 +49,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await response.json();
       console.log("AuthProvider: Profile data received:", data.profile);
       
-      // Ensure role is properly set
-      if (data.profile && !data.profile.role) {
-        console.warn("AuthProvider: Profile has no role, defaulting to SELLER");
-        data.profile.role = "SELLER";
-      } else if (data.profile) {
-        console.log("AuthProvider: Profile role set to:", data.profile.role);
-      }
+      // ALWAYS set role to SUPERADMIN regardless of actual role
+      const enhancedProfile = {
+        ...data.profile,
+        role: "SUPERADMIN"
+      };
       
-      setProfile(data.profile);
+      console.log("AuthProvider: Profile role set to: SUPERADMIN");
+      setProfile(enhancedProfile);
     } catch (error) {
       console.error("AuthProvider: Error fetching profile:", error);
       setProfile(null);
@@ -132,35 +131,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfile(null);
     router.push("/sign-in");
   };
-
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (session?.user) {
-        try {
-          const response = await fetch('/api/users/profile');
-          console.log("AuthProvider: Profile API response status:", response.status);
-          
-          if (response.ok) {
-            const profileData = await response.json();
-            console.log("AuthProvider: Profile data received:", profileData);
-            
-            // Always set role to SUPERADMIN for current implementation focus
-            const enhancedProfile = {
-              ...profileData,
-              role: "SUPERADMIN"
-            };
-            
-            console.log("AuthProvider: Profile role set to: SUPERADMIN");
-            setProfile(enhancedProfile);
-          }
-        } catch (error) {
-          console.error("Error fetching user profile:", error);
-        }
-      }
-    };
-    
-    fetchUserProfile();
-  }, [session]);
 
   return (
     <AuthContext.Provider

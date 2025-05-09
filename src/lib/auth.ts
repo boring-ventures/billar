@@ -58,7 +58,7 @@ export async function getCurrentUser(): Promise<User | null> {
   return session?.user || null;
 }
 
-// Auth middleware for API routes - enhanced for superadmin access patterns
+// Auth middleware for API routes
 export async function authenticateRequest(req: NextRequest) {
   console.log("=== authenticateRequest START ===");
   
@@ -99,7 +99,7 @@ export async function authenticateRequest(req: NextRequest) {
     companyId: profile.companyId,
   });
   
-  // Force SUPERADMIN role for all users - focusing only on superadmin functionality
+  // Force SUPERADMIN role for all authenticated users
   return {
     ...profile,
     role: "SUPERADMIN" // Always set to SUPERADMIN regardless of actual role

@@ -81,19 +81,8 @@ export async function GET(
       );
     }
 
-    // Role-based access control pattern
-    // Check if user has access to this table's company
-    if (
-      (profile.role !== "SUPERADMIN" && profile.companyId !== table.companyId) ||
-      (profile.role === "SUPERADMIN" && profile.companyId && profile.companyId !== table.companyId)
-    ) {
-      // Regular users can only access their company's tables
-      // Superadmins with selected company can only access that company's tables
-      return NextResponse.json(
-        { error: "Access denied to this table" },
-        { status: 403 }
-      );
-    }
+    // Force SUPERADMIN access pattern - no company restrictions
+    console.log("Using SUPERADMIN access pattern for table details");
 
     return NextResponse.json(table);
   } catch (error: any) {
@@ -115,15 +104,7 @@ export async function PATCH(
     
     const { tableId } = params;
 
-    // Only ADMIN and SUPERADMIN can update tables
-    if (profile.role !== "ADMIN" && profile.role !== "SUPERADMIN") {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
-    }
-
-    // Find the table to check company access
+    // Find the table
     const table = await prisma.table.findUnique({
       where: {
         id: tableId,
@@ -137,17 +118,8 @@ export async function PATCH(
       );
     }
 
-    // Role-based access control pattern
-    // Check if user has access to this table's company
-    if (
-      (profile.role !== "SUPERADMIN" && profile.companyId !== table.companyId) ||
-      (profile.role === "SUPERADMIN" && profile.companyId && profile.companyId !== table.companyId)
-    ) {
-      return NextResponse.json(
-        { error: "Access denied to this table" },
-        { status: 403 }
-      );
-    }
+    // Force SUPERADMIN access pattern - no company restrictions
+    console.log("Using SUPERADMIN access pattern for table update");
 
     // Parse and validate request body
     const body = await req.json();
@@ -174,15 +146,15 @@ export async function PATCH(
       data,
     });
 
-    // If status has changed, create an activity log entry
+    // Log status change if status was updated
     if (data.status && data.status !== previousStatus) {
       await prisma.tableActivityLog.create({
         data: {
-          tableId,
-          previousStatus,
+          tableId: tableId,
+          previousStatus: previousStatus,
           newStatus: data.status,
           changedById: profile.id,
-          notes: "Status updated via table edit",
+          notes: body.notes || "",
         },
       });
     }
@@ -191,12 +163,8 @@ export async function PATCH(
   } catch (error: any) {
     console.error("Error updating table:", error);
     
-    // Specific error handling for common cases
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validation error", details: error.errors },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: error.errors }, { status: 400 });
     }
     
     return NextResponse.json(
@@ -216,15 +184,7 @@ export async function DELETE(
     
     const { tableId } = params;
 
-    // Only ADMIN and SUPERADMIN can delete tables
-    if (profile.role !== "ADMIN" && profile.role !== "SUPERADMIN") {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
-    }
-
-    // Find the table to check company access
+    // Find the table
     const table = await prisma.table.findUnique({
       where: {
         id: tableId,
@@ -238,17 +198,8 @@ export async function DELETE(
       );
     }
 
-    // Role-based access control pattern
-    // Check if user has access to this table's company
-    if (
-      (profile.role !== "SUPERADMIN" && profile.companyId !== table.companyId) ||
-      (profile.role === "SUPERADMIN" && profile.companyId && profile.companyId !== table.companyId)
-    ) {
-      return NextResponse.json(
-        { error: "Access denied to this table" },
-        { status: 403 }
-      );
-    }
+    // Force SUPERADMIN access pattern - no company restrictions
+    console.log("Using SUPERADMIN access pattern for table deletion");
 
     // Check if table has any associated sessions or reservations before deleting
     const sessionsCount = await prisma.tableSession.count({
@@ -281,20 +232,21 @@ export async function DELETE(
       );
     }
 
-    // Delete all related activity logs and maintenance records first
-    await prisma.tableActivityLog.deleteMany({
-      where: {
-        tableId,
-      },
-    });
-
+    // Delete related maintenance records first
     await prisma.tableMaintenance.deleteMany({
       where: {
         tableId,
       },
     });
 
-    // Finally delete the table
+    // Delete activity logs
+    await prisma.tableActivityLog.deleteMany({
+      where: {
+        tableId,
+      },
+    });
+
+    // Finally, delete the table
     await prisma.table.delete({
       where: {
         id: tableId,

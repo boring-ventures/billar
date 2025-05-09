@@ -34,8 +34,9 @@ export function useCompanies() {
         );
         if (response.ok) {
           const data = await response.json();
-          setCompanies(data);
+          setCompanies(Array.isArray(data) ? data : []);
         } else {
+          setCompanies([]);
           toast({
             title: "Error",
             description: "Failed to fetch companies",
@@ -44,6 +45,7 @@ export function useCompanies() {
         }
       } catch (error) {
         console.error("Error fetching companies:", error);
+        setCompanies([]);
         toast({
           title: "Error",
           description: "An unexpected error occurred",

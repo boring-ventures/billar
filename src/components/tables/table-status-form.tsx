@@ -5,8 +5,7 @@ import { TableStatus } from "@prisma/client";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useUpdateTableStatus, tableStatusSchema } from "@/hooks/use-tables";
-import { useCurrentUser } from "@/hooks/use-current-user";
+import { useUpdateTableStatus, tableStatusUpdateSchema } from "@/hooks/use-tables";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -29,7 +28,7 @@ import { Loader2 } from "lucide-react";
 import { TABLE_STATUS_LABELS } from "@/types/table";
 
 // Use the schema from hooks for consistency
-type FormValues = z.infer<typeof tableStatusSchema>;
+type FormValues = z.infer<typeof tableStatusUpdateSchema>;
 
 interface TableStatusFormProps {
   tableId: string;
@@ -44,26 +43,13 @@ export function TableStatusForm({
   onStatusChange,
   onSuccess,
 }: TableStatusFormProps) {
-  const { currentUser, profile } = useCurrentUser();
-  const { updateTableStatus, isSubmitting } = useUpdateTableStatus();
+  const updateStatusMutation = useUpdateTableStatus();
 
-  // Use either profile or currentUser for compatibility
-  const userRole = currentUser?.role || profile?.role;
-
-  // Based on user role, determine which status changes are allowed
-  const allowedStatuses = (): TableStatus[] => {
-    if (userRole === "SELLER") {
-      // Sellers can only change between AVAILABLE and OCCUPIED
-      if (currentStatus === "AVAILABLE") return ["AVAILABLE", "OCCUPIED"];
-      if (currentStatus === "OCCUPIED") return ["AVAILABLE", "OCCUPIED"];
-      return [currentStatus]; // No change allowed for other statuses
-    }
-    // ADMIN and SUPERADMIN can change to any status
-    return ["AVAILABLE", "OCCUPIED", "RESERVED", "MAINTENANCE"];
-  };
+  // All users are superadmins and can change to any status
+  const allowedStatuses = ["AVAILABLE", "OCCUPIED", "RESERVED", "MAINTENANCE"] as TableStatus[];
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(tableStatusSchema),
+    resolver: zodResolver(tableStatusUpdateSchema),
     defaultValues: {
       status: currentStatus,
       notes: "",
@@ -76,25 +62,24 @@ export function TableStatusForm({
     }
 
     try {
-      const success = await updateTableStatus(
+      await updateStatusMutation.mutateAsync({
         tableId,
-        values.status,
-        values.notes
-      );
-      if (success) {
-        if (onStatusChange) {
-          onStatusChange();
-        }
-        if (onSuccess) {
-          onSuccess();
-        }
+        data: values
+      });
+      
+      if (onStatusChange) {
+        onStatusChange();
+      }
+      
+      if (onSuccess) {
+        onSuccess();
       }
     } catch (error) {
       console.error("Error updating table status:", error);
     }
   };
 
-  const permittedStatuses = allowedStatuses();
+  const permittedStatuses = allowedStatuses;
   const canChangeStatus = permittedStatuses.length > 1;
 
   return (
@@ -109,7 +94,7 @@ export function TableStatusForm({
               <Select
                 onValueChange={field.onChange}
                 defaultValue={field.value}
-                disabled={!canChangeStatus || isSubmitting}
+                disabled={!canChangeStatus || updateStatusMutation.isPending}
               >
                 <FormControl>
                   <SelectTrigger>
@@ -125,48 +110,42 @@ export function TableStatusForm({
                 </SelectContent>
               </Select>
               <FormDescription>
-                {canChangeStatus
-                  ? "Change the operational status of this table"
-                  : "You don't have permission to change this status"}
+                Change the operational status of this table
               </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        {canChangeStatus && (
-          <FormField
-            control={form.control}
-            name="notes"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Notes (Optional)</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="Add notes about this status change"
-                    className="h-20 resize-none"
-                    {...field}
-                  />
-                </FormControl>
-                <FormDescription>
-                  Add any relevant notes about why the status is changing
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
+        <FormField
+          control={form.control}
+          name="notes"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Notes (Optional)</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Add notes about this status change"
+                  className="h-20 resize-none"
+                  {...field}
+                />
+              </FormControl>
+              <FormDescription>
+                Add any relevant notes about why the status is changing
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-        {canChangeStatus && (
-          <Button
-            type="submit"
-            disabled={isSubmitting || form.getValues().status === currentStatus}
-            className="w-full"
-          >
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Update Status
-          </Button>
-        )}
+        <Button
+          type="submit"
+          disabled={updateStatusMutation.isPending || form.getValues().status === currentStatus}
+          className="w-full"
+        >
+          {updateStatusMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Update Status
+        </Button>
       </form>
     </Form>
   );

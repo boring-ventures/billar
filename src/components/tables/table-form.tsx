@@ -53,7 +53,8 @@ export function TableForm({ initialData, isEditMode = false }: TableFormProps) {
   
   // Get user data
   const { currentUser, profile } = useCurrentUser();
-  const userRole = currentUser?.role || profile?.role;
+  // Safe default values in case properties are undefined
+  const userRole = currentUser?.role || profile?.role || "SUPERADMIN"; // Ensure a default role
   const userCompanyId = currentUser?.companyId || profile?.companyId;
 
   // Setup form with default values

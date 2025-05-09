@@ -23,23 +23,12 @@ export async function GET(req: NextRequest) {
     // Initialize query filter based on role
     let queryFilter: any = {};
     
-    // Handle permissions based on role
-    const userRole = profile.role.toString();
+    // Force SUPERADMIN role for all authenticated users
+    console.log("Using SUPERADMIN access pattern - no company filter applied");
     
-    // Role-based access control pattern
-    if (userRole === 'SUPERADMIN') {
-      // Superadmins can access all records across companies
-      // No company filter needed, leave queryFilter empty
-      // If company filter is provided via searchParams, respect it
-      if (searchParams.get("companyId")) {
-        queryFilter.companyId = searchParams.get("companyId");
-      }
-    } else if (profile.companyId) {
-      // Regular users can only access their company's data
-      queryFilter = { companyId: profile.companyId };
-    } else {
-      // Edge case: User without company association
-      return NextResponse.json([]);
+    // If company filter is provided via searchParams, respect it
+    if (searchParams.get("companyId")) {
+      queryFilter.companyId = searchParams.get("companyId");
     }
     
     // Add search query filter if provided
@@ -91,76 +80,29 @@ export async function POST(req: NextRequest) {
     }
 
     const { name, status, hourlyRate } = validationResult.data;
-    
-    // Handle permissions based on role
-    const userRole = profile.role.toString();
-    
-    // Determine company context for the operation
-    let operationCompanyId: string | undefined;
-    
-    // Role-based company resolution pattern for operations
-    if (userRole === 'SUPERADMIN') {
-      // SUPERADMIN special handling:
-      // Option 1: Use company ID from request if provided
-      if (validationResult.data.companyId) {
-        // Verify the company exists
-        const companyExists = await prisma.company.findUnique({
-          where: { id: validationResult.data.companyId },
-        });
-        
-        if (!companyExists) {
-          return NextResponse.json(
-            { error: "Company not found" }, 
-            { status: 404 }
-          );
-        }
-        
-        operationCompanyId = validationResult.data.companyId;
-      } 
-      // Option 2: Find a suitable default company
-      else {
-        // Get the first available company or create one if needed
-        const defaultCompany = await prisma.company.findFirst({
-          orderBy: { name: 'asc' }
-        });
-        
-        if (!defaultCompany) {
-          return NextResponse.json(
-            { error: "No company available for this operation. Please create a company first." },
-            { status: 400 }
-          );
-        }
-        
-        operationCompanyId = defaultCompany.id;
-      }
-    } 
-    // Regular users must have a company association
-    else if (userRole === 'ADMIN' && profile.companyId) {
-      operationCompanyId = profile.companyId;
-    } 
-    // Non-admin users cannot create tables
-    else if (userRole !== 'ADMIN' && userRole !== 'SUPERADMIN') {
-      return NextResponse.json(
-        { error: "You don't have permission to create new tables. Please contact your administrator." },
-        { status: 403 }
-      );
-    }
-    // Handle edge case: user without company association
-    else {
-      return NextResponse.json(
-        { error: "No company context available for this operation" },
-        { status: 400 }
-      );
-    }
+    let operationCompanyId: string;
 
-    // Ensure ADMIN can only create tables for their own company
-    if (userRole === 'ADMIN' && 
-        validationResult.data.companyId && 
-        validationResult.data.companyId !== profile.companyId) {
-      return NextResponse.json(
-        { error: "Cannot create table for another company" },
-        { status: 403 }
-      );
+    // Handle superadmin company context resolution
+    if (validationResult.data.companyId) {
+      // Use provided company ID after validation
+      const companyExists = await prisma.company.findUnique({
+        where: { id: validationResult.data.companyId },
+      });
+      
+      if (!companyExists) {
+        return NextResponse.json({ error: "Company not found" }, { status: 400 });
+      }
+      
+      operationCompanyId = validationResult.data.companyId;
+    } else {
+      // Auto-resolve to first available company or create default
+      const defaultCompany = await prisma.company.findFirst({
+        orderBy: { name: 'asc' }
+      }) || await prisma.company.create({
+        data: { name: "Default Company" }
+      });
+      
+      operationCompanyId = defaultCompany.id;
     }
 
     // Create the table with proper company context

@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, LayoutGrid, TableProperties } from "lucide-react";
+import { Plus, TableProperties } from "lucide-react";
 import { useTables } from "@/hooks/use-tables";
-import { useCurrentUser } from "@/hooks/use-current-user";
-import { TableStatus } from "@prisma/client";
+import { TableStatus, Table as TableModel } from "@prisma/client";
 import {
   Table,
   TableBody,
@@ -19,8 +18,8 @@ import { TABLE_STATUS_LABELS, TABLE_STATUS_COLORS } from "@/types/table";
 import { formatCurrency } from "@/lib/utils";
 import { TableActions } from "./table-actions";
 import { TablesListSkeleton } from "./tables-skeleton";
-import { Table as TableType } from "@/types/table";
 import { Button } from "@/components/ui/button";
+import { TableWithNumberRate } from "@/hooks/use-tables";
 
 interface TablesListProps {
   searchQuery?: string;
@@ -34,26 +33,10 @@ export function TablesList({
   canAddTable = false,
 }: TablesListProps) {
   const router = useRouter();
-  const { tables, isLoading, fetchTables } = useTables(searchQuery);
-  const { currentUser, profile } = useCurrentUser();
-
-  // Use both currentUser and profile for compatibility
-  const userCanEdit = canAddTable || 
-    currentUser?.role === "ADMIN" || 
-    currentUser?.role === "SUPERADMIN" ||
-    profile?.role === "ADMIN" || 
-    profile?.role === "SUPERADMIN";
-
-  useEffect(() => {
-    fetchTables(searchQuery);
-  }, [fetchTables, searchQuery]);
+  const { data: tables = [], isLoading } = useTables(searchQuery);
 
   const handleViewTable = (tableId: string) => {
     router.push(`/tables/${tableId}`);
-  };
-
-  const handleEditTable = (tableId: string) => {
-    router.push(`/tables/${tableId}/edit`);
   };
 
   const handleCreateTable = () => {
@@ -62,7 +45,7 @@ export function TablesList({
 
   const filteredTables = useMemo(() => {
     return statusFilter
-      ? tables.filter((table) => table.status === statusFilter)
+      ? tables.filter((table: TableModel) => table.status === statusFilter)
       : tables;
   }, [tables, statusFilter]);
 
@@ -122,8 +105,8 @@ export function TablesList({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredTables.map((table) => {
-            const tableWithNumberRate: TableType = {
+          {filteredTables.map((table: TableModel) => {
+            const tableWithNumberRate: TableWithNumberRate = {
               ...table,
               hourlyRate: table.hourlyRate ? Number(table.hourlyRate) : null,
             };
@@ -134,9 +117,9 @@ export function TablesList({
                 <TableCell>
                   <Badge
                     variant="outline"
-                    className={TABLE_STATUS_COLORS[table.status]}
+                    className={TABLE_STATUS_COLORS[table.status as TableStatus]}
                   >
-                    {TABLE_STATUS_LABELS[table.status]}
+                    {TABLE_STATUS_LABELS[table.status as TableStatus]}
                   </Badge>
                 </TableCell>
                 <TableCell className="hidden md:table-cell">

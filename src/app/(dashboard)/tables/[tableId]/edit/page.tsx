@@ -1,82 +1,65 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, redirect } from "next/navigation";
-import { PageHeader } from "@/components/page-header";
+import { useTable, useTableDetails } from "@/hooks/use-tables";
 import { TableForm } from "@/components/tables/table-form";
-import { useTables } from "@/hooks/use-tables";
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { Table } from "@/types/table";
-import { Loader2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/page-header";
 
 export default function EditTablePage() {
   const params = useParams();
-  const tableId = params.tableId as string;
-  const { profile, isLoading: isLoadingUser } = useCurrentUser();
-  const { fetchTableDetails, isDetailLoading } = useTables();
-  const [table, setTable] = useState<Table | null>(null);
+  const tableId = params?.tableId as string;
+  const { currentUser, profile, isLoading: isLoadingUser } = useCurrentUser();
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check if user has permission to edit tables (ADMIN or SUPERADMIN)
-  if (
-    !isLoadingUser &&
-    profile?.role !== "ADMIN" &&
-    profile?.role !== "SUPERADMIN"
-  ) {
-    redirect("/tables");
-  }
+  // Everyone is superadmin now
+  const hasPermission = true;
+
+  // Use the tableDetails hook for backward compatibility
+  const { tableDetails, isDetailLoading, fetchTableDetails } = useTableDetails(tableId);
 
   useEffect(() => {
-    const loadTableData = async () => {
-      try {
-        setIsLoading(true);
-        const response = await fetch(`/api/tables/${tableId}`);
-
-        if (response.ok) {
-          const data = await response.json();
-          setTable(data);
-        } else {
-          // If table not found or access denied, redirect back to tables list
-          redirect("/tables");
-        }
-      } catch (error) {
-        console.error("Error loading table:", error);
-        redirect("/tables");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     if (tableId) {
-      loadTableData();
+      fetchTableDetails(tableId).then(() => {
+        setIsLoading(false);
+      });
     }
-  }, [tableId]);
+  }, [tableId, fetchTableDetails]);
 
-  if (isLoading || isLoadingUser) {
-    return (
-      <div className="container mx-auto py-12 flex justify-center items-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto" />
-          <p className="mt-2 text-muted-foreground">Loading table data...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!table) {
+  // If table not found or access denied, redirect back to tables list
+  if (!isDetailLoading && !tableDetails) {
     redirect("/tables");
   }
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <PageHeader
-        title={`Edit Table: ${table.name}`}
-        description="Update table information"
+      <PageHeader 
+        title="Edit Table" 
+        description="Update details for this billiard table"
       />
 
-      <div className="max-w-2xl mx-auto border rounded-lg p-6 bg-card">
-        <TableForm initialData={table} isEditMode />
-      </div>
+      {isLoading || isDetailLoading ? (
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-64" />
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-32" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-32" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-32" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <Skeleton className="h-10 w-28" />
+        </div>
+      ) : (
+        <TableForm initialData={tableDetails} isEditMode={true} />
+      )}
     </div>
   );
 }

@@ -19,7 +19,7 @@ export default function CTA() {
   ];
 
   return (
-    <section className="py-24 bg-gray-50 relative overflow-hidden">
+    <section className="py-24 bg-gray-50/80 relative overflow-hidden">
       {/* Animated background accents */}
       <motion.div 
         className="absolute top-20 right-20 w-80 h-80 bg-primary/10 rounded-full blur-3xl -z-0" 
@@ -49,13 +49,13 @@ export default function CTA() {
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
         <MotionSection type="scale" duration={0.7}>
-          <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+          <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-primary/10">
             <div className="flex flex-col lg:flex-row">
               {/* Left content with staggered animation */}
               <div className="p-8 md:p-12 lg:py-16 lg:px-12 lg:w-3/5 flex flex-col justify-center">
                 <MotionSection delay={0.1} duration={0.6}>
                   <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-                    Ready to Transform Your Billar Hall Operations?
+                    Ready to Transform Your <span className="text-primary">Billar Hall</span> Operations?
                   </h2>
                   <p className="text-xl text-gray-600 mb-8">
                     Join thousands of billar hall owners who have increased efficiency, boosted revenue, and enhanced customer satisfaction with our platform.
@@ -75,7 +75,7 @@ export default function CTA() {
                         animate={{ scale: 1 }}
                         transition={{ type: "spring", stiffness: 400, damping: 10 }}
                       >
-                        <Check className="h-5 w-5 text-primary mr-2 flex-shrink-0 mt-0.5" />
+                        <Check className="h-5 w-5 text-accent mr-2 flex-shrink-0 mt-0.5" />
                       </motion.div>
                       <span className="text-gray-600">{benefit}</span>
                     </div>
@@ -88,7 +88,7 @@ export default function CTA() {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      <ShimmerButton>
+                      <ShimmerButton className="bg-accent text-white hover:bg-accent/90 border-none">
                         <Link
                           href="/sign-up"
                           className="inline-flex items-center px-8 py-3 text-lg font-medium"
@@ -109,7 +109,7 @@ export default function CTA() {
               </div>
 
               {/* Right gradient/pattern with subtle animation */}
-              <div className="lg:w-2/5 bg-gradient-to-br from-primary/90 to-primary relative overflow-hidden hidden lg:block">
+              <div className="lg:w-2/5 bg-gradient-to-br from-primary/90 to-primary/80 relative overflow-hidden hidden lg:block">
                 <motion.div 
                   className="absolute inset-0 opacity-20"
                   animate={{

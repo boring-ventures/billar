@@ -179,8 +179,8 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
                   className="rounded-full object-cover"
                 />
               ) : (
-                <div className="flex h-24 w-24 items-center justify-center rounded-full bg-slate-800 border border-slate-600">
-                  <UploadCloud className="h-8 w-8 text-slate-300" />
+                <div className="flex h-24 w-24 items-center justify-center rounded-full bg-card/80 border border-input">
+                  <UploadCloud className="h-8 w-8 text-muted-foreground" />
                 </div>
               )}
             </div>
@@ -188,7 +188,7 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
               type="file"
               accept="image/*"
               onChange={handleAvatarChange}
-              className="w-full max-w-xs bg-slate-800 border border-slate-600 text-white"
+              className="w-full max-w-xs bg-card/80 border border-input text-foreground"
             />
           </div>
 
@@ -197,15 +197,15 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-white">Email</FormLabel>
+                <FormLabel className="text-foreground">Email</FormLabel>
                 <FormControl>
                   <Input 
                     placeholder="name@example.com" 
-                    className="bg-slate-800 border border-slate-600 text-white placeholder:text-slate-400 focus-visible:ring-blue-500"
+                    className="bg-card/80 border border-input text-foreground placeholder:text-muted-foreground focus-visible:ring-primary"
                     {...field} 
                   />
                 </FormControl>
-                <FormMessage className="text-red-400" />
+                <FormMessage className="text-destructive" />
               </FormItem>
             )}
           />
@@ -216,15 +216,15 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
               name="firstName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-white">First Name</FormLabel>
+                  <FormLabel className="text-foreground">First Name</FormLabel>
                   <FormControl>
                     <Input 
                       placeholder="John" 
-                      className="bg-slate-800 border border-slate-600 text-white placeholder:text-slate-400 focus-visible:ring-blue-500"
+                      className="bg-card/80 border border-input text-foreground placeholder:text-muted-foreground focus-visible:ring-primary"
                       {...field} 
                     />
                   </FormControl>
-                  <FormMessage className="text-red-400" />
+                  <FormMessage className="text-destructive" />
                 </FormItem>
               )}
             />
@@ -233,15 +233,15 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
               name="lastName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-white">Last Name</FormLabel>
+                  <FormLabel className="text-foreground">Last Name</FormLabel>
                   <FormControl>
                     <Input 
                       placeholder="Doe" 
-                      className="bg-slate-800 border border-slate-600 text-white placeholder:text-slate-400 focus-visible:ring-blue-500"
+                      className="bg-card/80 border border-input text-foreground placeholder:text-muted-foreground focus-visible:ring-primary"
                       {...field} 
                     />
                   </FormControl>
-                  <FormMessage className="text-red-400" />
+                  <FormMessage className="text-destructive" />
                 </FormItem>
               )}
             />
@@ -252,17 +252,17 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-white">Password</FormLabel>
+                <FormLabel className="text-foreground">Password</FormLabel>
                 <FormControl>
                   <PasswordInput
                     placeholder="********"
-                    className="bg-slate-800 border border-slate-600 text-white placeholder:text-slate-400 focus-visible:ring-blue-500"
+                    className="bg-card/80 border border-input text-foreground placeholder:text-muted-foreground focus-visible:ring-primary"
                     {...field}
                     onChange={handlePasswordChange}
                   />
                 </FormControl>
                 <PasswordStrengthIndicator password={password} />
-                <FormMessage className="text-red-400" />
+                <FormMessage className="text-destructive" />
               </FormItem>
             )}
           />
@@ -272,24 +272,25 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
             name="confirmPassword"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-white">Confirm Password</FormLabel>
+                <FormLabel className="text-foreground">Confirm Password</FormLabel>
                 <FormControl>
                   <PasswordInput 
                     placeholder="********" 
-                    className="bg-slate-800 border border-slate-600 text-white placeholder:text-slate-400 focus-visible:ring-blue-500"
+                    className="bg-card/80 border border-input text-foreground placeholder:text-muted-foreground focus-visible:ring-primary"
                     {...field} 
                   />
                 </FormControl>
-                <FormMessage className="text-red-400" />
+                <FormMessage className="text-destructive" />
               </FormItem>
             )}
           />
 
-          <Button
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white mt-2"
+          <Button 
+            type="submit" 
+            className="w-full bg-primary hover:bg-primary/90 text-white" 
             disabled={isLoading}
           >
-            Create Account
+            {isLoading ? "Creating account..." : "Create account"}
           </Button>
         </form>
       </Form>

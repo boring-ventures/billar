@@ -31,24 +31,24 @@ export default function Hero() {
           src="/images/modern-billar-hall.jpg" 
           alt="Modern billar hall"
           fill
-          className="object-cover opacity-20"
+          className="object-cover opacity-30"
           priority
         />
         <div className="absolute inset-0 bg-gradient-to-b from-white via-white/95 to-white/90"></div>
       </motion.div>
 
       {/* Subtle gradient accents */}
-      <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl -z-10" />
-      <div className="absolute bottom-20 right-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl -z-10" />
+      <div className="absolute top-20 left-10 w-72 h-72 bg-primary/15 rounded-full blur-3xl -z-10" />
+      <div className="absolute bottom-20 right-10 w-72 h-72 bg-primary/15 rounded-full blur-3xl -z-10" />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-24 max-w-7xl mx-auto">
           {/* Hero content with sequential fade-in */}
           <div className="flex-1 space-y-8 text-center lg:text-left">
             <MotionSection delay={0.1} duration={0.7}>
-              <div className="inline-flex items-center rounded-full bg-blue-50 border border-blue-200 px-4 py-1.5 mb-4 shadow-sm">
-                <Gauge className="h-4 w-4 text-blue-700 mr-2" />
-                <span className="text-sm font-medium text-blue-700">
+              <div className="inline-flex items-center rounded-full bg-primary/10 border border-primary/20 px-4 py-1.5 mb-4 shadow-sm">
+                <Gauge className="h-4 w-4 text-primary mr-2" />
+                <span className="text-sm font-medium text-primary">
                   Transform Your Billar Hall Operations
                 </span>
               </div>
@@ -58,7 +58,7 @@ export default function Hero() {
               <AnimatedShinyText>
                 <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 leading-tight tracking-tight">
                   Take Control of Your
-                  <span className="block text-blue-700 mt-2">
+                  <span className="block text-primary mt-2">
                     Billar Business
                   </span>
                 </h1>
@@ -68,12 +68,12 @@ export default function Hero() {
             <MotionSection delay={0.5} duration={0.7}>
               <p className="text-xl text-gray-600 max-w-2xl mx-auto lg:mx-0 mt-6">
                 Simplify scheduling, payments, and reporting to focus on what 
-                <span className="text-blue-700 font-medium"> matters: your players. </span>
+                <span className="text-primary font-medium"> matters: your players. </span>
                 Our comprehensive management platform elevates your billar hall experience.
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 mt-10">
-                <ShimmerButton>
+                <ShimmerButton className="bg-accent text-white hover:bg-accent/90 border-none">
                   <Link
                     href="/sign-up"
                     className="inline-flex items-center px-8 py-3 text-lg font-medium"
@@ -88,7 +88,7 @@ export default function Hero() {
 
                 <Link
                   href="/#features"
-                  className="inline-flex items-center bg-gray-800 text-white hover:bg-gray-700 hover:text-white transition-colors px-8 py-3 rounded-full"
+                  className="inline-flex items-center bg-secondary text-white hover:bg-secondary/90 hover:text-white transition-colors px-8 py-3 rounded-full"
                 >
                   Explore Features
                 </Link>
@@ -116,7 +116,7 @@ export default function Hero() {
                   fill
                   className="object-cover rounded-lg"
                 />
-                <div className="absolute inset-0 bg-gradient-to-tr from-black/20 to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-tr from-black/30 to-transparent"></div>
               </motion.div>
               <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-primary/20 rounded-full blur-2xl"></div>
             </MotionSection>
@@ -138,12 +138,12 @@ export default function Hero() {
           ].map((stat, i) => (
             <div
               key={stat.label}
-              className="flex flex-col items-center p-6 bg-white/50 backdrop-blur-sm rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:transform hover:scale-105 transition-all duration-300"
+              className="flex flex-col items-center p-6 bg-white/60 backdrop-blur-sm rounded-xl border border-primary/10 shadow-sm hover:shadow-md hover:transform hover:scale-105 transition-all duration-300"
             >
-              <div className="text-3xl font-bold text-blue-700 mb-1">
+              <div className="text-3xl font-bold text-accent mb-1">
                 {stat.value}
               </div>
-              <div className="text-sm text-gray-500">{stat.label}</div>
+              <div className="text-sm text-gray-600 font-medium">{stat.label}</div>
             </div>
           ))}
         </MotionStagger>

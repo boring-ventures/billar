@@ -9,6 +9,7 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandList,
 } from "@/components/ui/command";
 import {
   Popover,
@@ -29,9 +30,17 @@ export function CompanySelector({ onChange }: CompanySelectorProps) {
   const [open, setOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
   const [hasFetchedCompanies, setHasFetchedCompanies] = useState(false);
+  const [inputValue, setInputValue] = useState("");
 
-  // Ensure companies is always an array even if undefined
-  const companiesArray = Array.isArray(companies) ? companies : [];
+  // Ensure companies is always an array of valid objects with id and name
+  const companiesArray = Array.isArray(companies) 
+    ? companies.filter(company => 
+        company && 
+        typeof company === 'object' && 
+        company.id && 
+        typeof company.name === 'string'
+      ) 
+    : [];
 
   // Fetch companies only once on mount
   useEffect(() => {
@@ -117,7 +126,21 @@ export function CompanySelector({ onChange }: CompanySelectorProps) {
   }
 
   // Safely find the selected company name
-  const selectedCompanyName = companiesArray.find(c => c.id === selectedCompany)?.name;
+  const selectedCompanyName = selectedCompany 
+    ? companiesArray.find(c => c.id === selectedCompany)?.name 
+    : null;
+
+  // If no companies are available, show a disabled button
+  if (companiesArray.length === 0) {
+    return (
+      <div className="flex items-center gap-2">
+        <Building className="h-4 w-4 text-muted-foreground" />
+        <Button variant="outline" disabled className="w-52 justify-between">
+          <span>No companies available</span>
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center gap-2">
@@ -135,28 +158,38 @@ export function CompanySelector({ onChange }: CompanySelectorProps) {
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-52 p-0">
-          <Command>
-            <CommandInput placeholder="Search company..." />
-            <CommandEmpty>No company found.</CommandEmpty>
-            <CommandGroup>
-              {companiesArray.map((company) => (
-                <CommandItem
-                  key={company.id}
-                  value={company.id}
-                  onSelect={() => handleCompanyChange(company.id)}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      selectedCompany === company.id
-                        ? "opacity-100"
-                        : "opacity-0"
-                    )}
-                  />
-                  {company.name}
-                </CommandItem>
-              ))}
-            </CommandGroup>
+          <Command shouldFilter={false}>
+            <CommandInput 
+              placeholder="Search company..." 
+              value={inputValue}
+              onValueChange={setInputValue}
+            />
+            <CommandList>
+              <CommandEmpty>No company found.</CommandEmpty>
+              <CommandGroup>
+                {companiesArray
+                  .filter(company => 
+                    company.name.toLowerCase().includes(inputValue.toLowerCase())
+                  )
+                  .map((company) => (
+                    <CommandItem
+                      key={company.id}
+                      value={company.id}
+                      onSelect={() => handleCompanyChange(company.id)}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          selectedCompany === company.id
+                            ? "opacity-100"
+                            : "opacity-0"
+                        )}
+                      />
+                      {company.name}
+                    </CommandItem>
+                  ))}
+              </CommandGroup>
+            </CommandList>
           </Command>
         </PopoverContent>
       </Popover>

@@ -21,13 +21,13 @@ export function AuthHeader() {
     <div className="flex items-center space-x-4">
       <Link
         href="/sign-in"
-        className="text-blue-700 hover:text-white hover:bg-blue-700 px-4 py-2 rounded-md transition-colors"
+        className="text-primary hover:text-white hover:bg-primary/90 px-4 py-2 rounded-md transition-colors"
       >
         Sign In
       </Link>
       <Link
         href="/sign-up"
-        className="bg-blue-700 text-white px-4 py-2 rounded-md hover:bg-blue-800 transition-colors"
+        className="bg-accent text-white px-4 py-2 rounded-md hover:bg-accent/90 transition-colors"
       >
         Sign Up
       </Link>

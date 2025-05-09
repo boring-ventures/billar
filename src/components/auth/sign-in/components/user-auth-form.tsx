@@ -73,15 +73,15 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
               name="email"
               render={({ field }) => (
                 <FormItem className="space-y-1">
-                  <FormLabel className="text-white">Email</FormLabel>
+                  <FormLabel className="text-foreground">Email</FormLabel>
                   <FormControl>
                     <Input 
                       placeholder="name@example.com"
-                      className="bg-slate-800 border border-slate-600 text-white placeholder:text-slate-400 focus-visible:ring-blue-500" 
+                      className="bg-card/80 border border-input text-foreground placeholder:text-muted-foreground focus-visible:ring-primary" 
                       {...field} 
                     />
                   </FormControl>
-                  <FormMessage className="text-red-400" />
+                  <FormMessage className="text-destructive" />
                 </FormItem>
               )}
             />
@@ -91,10 +91,10 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
               render={({ field }) => (
                 <FormItem className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <FormLabel className="text-white">Password</FormLabel>
+                    <FormLabel className="text-foreground">Password</FormLabel>
                     <Link
                       href="/forgot-password"
-                      className="text-sm font-medium text-slate-300 hover:text-blue-400"
+                      className="text-sm font-medium text-muted-foreground hover:text-primary"
                     >
                       Forgot password?
                     </Link>
@@ -102,16 +102,16 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
                   <FormControl>
                     <PasswordInput 
                       placeholder="********" 
-                      className="bg-slate-800 border border-slate-600 text-white placeholder:text-slate-400 focus-visible:ring-blue-500"
+                      className="bg-card/80 border border-input text-foreground placeholder:text-muted-foreground focus-visible:ring-primary"
                       {...field} 
                     />
                   </FormControl>
-                  <FormMessage className="text-red-400" />
+                  <FormMessage className="text-destructive" />
                 </FormItem>
               )}
             />
             <Button 
-              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white" 
+              className="mt-4 bg-primary hover:bg-primary/90 text-white" 
               disabled={isLoading}
             >
               Login

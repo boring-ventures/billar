@@ -52,7 +52,7 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="bg-gray-900 text-gray-300">
+    <footer className="bg-primary text-gray-300">
       {/* Main footer content */}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-10">
@@ -63,13 +63,13 @@ export default function Footer() {
                 whileHover={{ rotate: 360 }}
                 transition={{ duration: 0.6 }}
               >
-                <CircleDot className="h-8 w-8 text-primary" />
+                <CircleDot className="h-8 w-8 text-accent" />
               </motion.div>
               <Link href="/" className="text-2xl font-bold text-white">
                 Billar
               </Link>
             </div>
-            <p className="text-gray-400 mb-6">
+            <p className="text-gray-300 mb-6">
               The complete management solution for billar hall owners and operators.
             </p>
             <div className="space-y-4">
@@ -78,7 +78,7 @@ export default function Footer() {
                 whileHover={{ x: 4 }}
                 transition={{ duration: 0.2 }}
               >
-                <MapPin className="h-5 w-5 text-primary mr-3 mt-0.5" />
+                <MapPin className="h-5 w-5 text-accent mr-3 mt-0.5" />
                 <div>123 Business Avenue, Suite 400<br />San Francisco, CA 94107</div>
               </motion.div>
               <motion.div 
@@ -86,7 +86,7 @@ export default function Footer() {
                 whileHover={{ x: 4 }}
                 transition={{ duration: 0.2 }}
               >
-                <Phone className="h-5 w-5 text-primary mr-3" />
+                <Phone className="h-5 w-5 text-accent mr-3" />
                 <a href="tel:+1-555-123-4567" className="hover:text-white transition-colors">+1-555-123-4567</a>
               </motion.div>
               <motion.div 
@@ -94,7 +94,7 @@ export default function Footer() {
                 whileHover={{ x: 4 }}
                 transition={{ duration: 0.2 }}
               >
-                <Mail className="h-5 w-5 text-primary mr-3" />
+                <Mail className="h-5 w-5 text-accent mr-3" />
                 <a href="mailto:info@billarapp.com" className="hover:text-white transition-colors">info@billarapp.com</a>
               </motion.div>
             </div>
@@ -122,7 +122,7 @@ export default function Footer() {
                   >
                     <Link
                       href={link.href}
-                      className="text-gray-400 hover:text-white transition-colors"
+                      className="text-gray-300 hover:text-white transition-colors"
                     >
                       {link.label}
                     </Link>
@@ -135,11 +135,11 @@ export default function Footer() {
       </div>
 
       {/* Social links and copyright */}
-      <div className="border-t border-gray-800">
+      <div className="border-t border-white/10">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row items-center justify-between">
             <MotionSection delay={0.6} type="fade" duration={0.6}>
-              <div className="text-gray-500 text-sm mb-4 md:mb-0">
+              <div className="text-gray-300 text-sm mb-4 md:mb-0">
                 © {currentYear} Billar. All rights reserved.
               </div>
             </MotionSection>
@@ -158,7 +158,7 @@ export default function Footer() {
                 <motion.a
                   key={i}
                   href={social.href}
-                  className="text-gray-400 hover:text-primary transition-colors"
+                  className="text-gray-300 hover:text-accent transition-colors"
                   aria-label={`Follow us on ${social.icon.name}`}
                   whileHover={{ y: -3, scale: 1.2 }}
                   whileTap={{ y: 0, scale: 1 }}

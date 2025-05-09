@@ -6,7 +6,7 @@
     "dev": "next dev --turbopack",
     "dev:standard": "next dev",
     "dev:turbo": "next dev --turbopack",
-    "build": "next build",
+    "build": "pnpm exec prisma generate && pnpm exec next build",
     "start": "next start",
     "lint": "next lint"
   },

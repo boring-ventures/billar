@@ -15,10 +15,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { Badge } from "@/components/ui/badge";
-import { UserRole } from "@prisma/client";
+import { UserRoleEnum } from "@/types/user";
 
 export function ProfileDropdown() {
-  const { profile, user, isLoading } = useCurrentUser();
+  const { profile, isLoading } = useCurrentUser();
 
   if (isLoading) {
     return (
@@ -28,7 +28,7 @@ export function ProfileDropdown() {
     );
   }
 
-  if (!profile || !user) return null;
+  if (!profile) return null;
 
   const displayName = [profile.firstName, profile.lastName]
     .filter(Boolean)
@@ -42,11 +42,11 @@ export function ProfileDropdown() {
         .join("")
         .toUpperCase();
     }
-    return user.email?.[0]?.toUpperCase() || "U";
+    return profile.email?.[0]?.toUpperCase() || "U";
   };
 
   // Get role display name
-  const getRoleDisplay = (role: UserRole) => {
+  const getRoleDisplay = (role: string) => {
     return role
       .toString()
       .replace("_", " ")
@@ -60,7 +60,7 @@ export function ProfileDropdown() {
           <Avatar className="h-8 w-8 ring-2 ring-primary/10">
             <AvatarImage
               src={profile.avatarUrl || ""}
-              alt={displayName || user.email || "User"}
+              alt={displayName || profile.email || "User"}
             />
             <AvatarFallback className="bg-primary/10">
               {getInitials()}
@@ -73,14 +73,14 @@ export function ProfileDropdown() {
           <div className="flex flex-col space-y-1">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium leading-none">
-                {displayName || user.email?.split("@")[0]}
+                {displayName || profile.email?.split("@")[0]}
               </p>
               <Badge variant="outline" className="ml-2 text-xs">
                 {getRoleDisplay(profile.role)}
               </Badge>
             </div>
             <p className="text-xs leading-none text-muted-foreground">
-              {user.email}
+              {profile.email}
             </p>
           </div>
         </DropdownMenuLabel>
@@ -98,7 +98,7 @@ export function ProfileDropdown() {
               Settings
             </Link>
           </DropdownMenuItem>
-          {profile.role === UserRole.SUPERADMIN && (
+          {profile.role === UserRoleEnum.SUPERADMIN && (
             <DropdownMenuItem asChild>
               <Link href="/admin">
                 <BadgeCheck className="mr-2 h-4 w-4" />

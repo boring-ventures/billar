@@ -1,5 +1,12 @@
 import { UserRole } from "@prisma/client";
 
+// Create a client-side version of UserRole to avoid importing from Prisma in the browser
+export enum UserRoleEnum {
+  SELLER = "SELLER",
+  ADMIN = "ADMIN",
+  SUPERADMIN = "SUPERADMIN"
+}
+
 export type UserRoleType = "SELLER" | "ADMIN" | "SUPERADMIN";
 
 export interface User {

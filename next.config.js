@@ -8,6 +8,8 @@ const nextConfig = {
     ],
     unoptimized: true, // Allow unoptimized images during development
   },
+  // Specify packages that should be transpiled
+  transpilePackages: ['@prisma/client'],
   // Security headers configuration
   async headers() {
     return [
@@ -94,6 +96,16 @@ const nextConfig = {
       ...config.resolve.fallback,
       '@radix-ui/react-accordion': false,
     };
+    
+    // Handle Prisma client in browser
+    if (!isServer) {
+      // Replace .prisma/client/index-browser with an empty module
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        '.prisma/client/index-browser': require.resolve('./src/lib/prisma-browser.ts'),
+        '@prisma/client/runtime/library': require.resolve('./src/lib/prisma-browser.ts'),
+      };
+    }
     
     return config;
   },

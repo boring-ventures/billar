@@ -6,10 +6,11 @@
     "dev": "next dev --turbopack",
     "dev:standard": "next dev",
     "dev:turbo": "next dev --turbopack",
-    "build": "next build",
+    "prisma:generate": "prisma generate",
+    "build": "npm run prisma:generate && next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "pnpm install @radix-ui/react-accordion@1.1.0"
+    "postinstall": "npm run prisma:generate && pnpm install @radix-ui/react-accordion@1.1.0"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.0",

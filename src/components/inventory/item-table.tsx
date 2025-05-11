@@ -21,28 +21,29 @@ import {
   ArrowUpDown,
   AlertTriangle,
 } from "lucide-react";
-import { useInventory } from "@/hooks/use-inventory";
+import { useInventoryItems, InventoryItem } from "@/hooks/use-inventory";
 import { ItemDialog } from "./item-dialog";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { StockMovementDialog } from "./stock-movement-dialog";
 
 export function InventoryItemTable() {
-  const { items, isLoading, fetchItems } = useInventory();
   const [searchQuery, setSearchQuery] = useState("");
+  const [showLowStockOnly, setShowLowStockOnly] = useState(false);
+  const { data, isLoading, refetch } = useInventoryItems({
+    searchQuery: searchQuery || undefined,
+    lowStock: showLowStockOnly,
+  });
+  const items = data?.data || [];
+
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isStockMovementDialogOpen, setIsStockMovementDialogOpen] =
     useState(false);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [showLowStockOnly, setShowLowStockOnly] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchItems(searchQuery, showLowStockOnly);
-  }, [fetchItems, searchQuery, showLowStockOnly]);
-
   const handleSearch = () => {
-    fetchItems(searchQuery, showLowStockOnly);
+    refetch();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -56,17 +57,17 @@ export function InventoryItemTable() {
     setIsCreateDialogOpen(true);
   };
 
-  const handleEditItem = (item: any) => {
+  const handleEditItem = (item: InventoryItem) => {
     setSelectedItem(item);
     setIsCreateDialogOpen(true);
   };
 
-  const handleStockMovement = (item: any) => {
+  const handleStockMovement = (item: InventoryItem) => {
     setSelectedItem(item);
     setIsStockMovementDialogOpen(true);
   };
 
-  const isLowStock = (item: any) => {
+  const isLowStock = (item: InventoryItem) => {
     return item.quantity <= item.criticalThreshold;
   };
 

@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { authenticateRequest } from '@/lib/auth';
-import prisma from '@/lib/prisma';
-import { z } from 'zod';
+import { NextRequest, NextResponse } from "next/server";
+import { authenticateRequest } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+import { z } from "zod";
 
 // Validation schema for updating reservation
 const updateReservationSchema = z.object({
@@ -9,152 +9,159 @@ const updateReservationSchema = z.object({
   tableId: z.string().min(1, "Table ID is required").optional(),
   startDate: z.string().optional(), // Date string that will be converted
   endDate: z.string().optional(), // Date string that will be converted
-  status: z.enum(["PENDING", "CONFIRMED", "CANCELED", "COMPLETED"]).optional(),
-  notes: z.string().optional(),
+  status: z.enum(["PENDING", "CONFIRMED", "CANCELLED", "COMPLETED"]).optional(),
 });
 
 // GET a specific reservation
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate request - enforcing SUPERADMIN role
     const profile = await authenticateRequest(req);
-    
+
     console.log("Profile from auth middleware:", {
       id: profile.id,
       role: profile.role,
       companyId: profile.companyId,
-      isSuperAdmin: profile.role === "SUPERADMIN"
+      isSuperAdmin: profile.role === "SUPERADMIN",
     });
-    
+
     // Get reservation using Prisma
-    const reservation = await prisma.reservation.findUnique({
-      where: { id: params.id },
+    const reservation = await prisma.tableReservation.findUnique({
+      where: { id: (await params).id },
       include: {
         customer: true,
         table: true,
       },
     });
-    
+
     if (!reservation) {
-      return NextResponse.json(
-        { data: null },
-        { status: 404 }
-      );
+      return NextResponse.json({ data: null }, { status: 404 });
     }
-    
+
     // Return response
     return NextResponse.json({ data: reservation });
   } catch (error: any) {
     console.error("Error fetching reservation:", error);
     // Return null data instead of error object as per section 7
-    return NextResponse.json(
-      { data: null },
-      { status: error.status || 500 }
-    );
+    return NextResponse.json({ data: null }, { status: error.status || 500 });
   }
 }
 
 // UPDATE a reservation
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate request - enforcing SUPERADMIN role
     const profile = await authenticateRequest(req);
-    
+
     // Check if reservation exists
-    const existingReservation = await prisma.reservation.findUnique({
-      where: { id: params.id },
+    const existingReservation = await prisma.tableReservation.findUnique({
+      where: { id: (await params).id },
     });
-    
+
     if (!existingReservation) {
       return NextResponse.json(
         { data: null, error: "Reservation not found" },
         { status: 404 }
       );
     }
-    
+
     // Parse and validate request body
     const body = await req.json();
-    
+
     try {
       // Validate with zod schema
       const validatedData = updateReservationSchema.parse(body);
-      
+
       // Check for overlapping reservations if dates or tableId are being updated
-      if (validatedData.startDate || validatedData.endDate || validatedData.tableId) {
-        const startDate = validatedData.startDate 
-          ? new Date(validatedData.startDate) 
-          : existingReservation.startDate;
-        
-        const endDate = validatedData.endDate 
-          ? new Date(validatedData.endDate) 
-          : existingReservation.endDate;
-        
+      if (
+        validatedData.startDate ||
+        validatedData.endDate ||
+        validatedData.tableId
+      ) {
+        const startDate = validatedData.startDate
+          ? new Date(validatedData.startDate)
+          : existingReservation.reservedFrom;
+
+        const endDate = validatedData.endDate
+          ? new Date(validatedData.endDate)
+          : existingReservation.reservedTo;
+
         const tableId = validatedData.tableId || existingReservation.tableId;
-        
+
         // Skip checking for overlap if we're canceling or completing a reservation
-        if (validatedData.status !== "CANCELED" && validatedData.status !== "COMPLETED") {
-          const overlappingReservations = await prisma.reservation.findMany({
-            where: {
-              id: { not: params.id }, // Exclude the current reservation
-              tableId: tableId,
-              status: { in: ["PENDING", "CONFIRMED"] },
-              OR: [
-                {
-                  AND: [
-                    { startDate: { lte: startDate } },
-                    { endDate: { gte: startDate } }
-                  ]
-                },
-                {
-                  AND: [
-                    { startDate: { lte: endDate } },
-                    { endDate: { gte: endDate } }
-                  ]
-                },
-                {
-                  AND: [
-                    { startDate: { gte: startDate } },
-                    { endDate: { lte: endDate } }
-                  ]
-                }
-              ]
-            }
-          });
-          
+        if (
+          validatedData.status !== "CANCELLED" &&
+          validatedData.status !== "COMPLETED"
+        ) {
+          const overlappingReservations =
+            await prisma.tableReservation.findMany({
+              where: {
+                id: { not: (await params).id }, // Exclude the current reservation
+                tableId: tableId,
+                status: { in: ["PENDING", "CONFIRMED"] },
+                OR: [
+                  {
+                    AND: [
+                      { reservedFrom: { lte: startDate } },
+                      { reservedTo: { gte: startDate } },
+                    ],
+                  },
+                  {
+                    AND: [
+                      { reservedFrom: { lte: endDate } },
+                      { reservedTo: { gte: endDate } },
+                    ],
+                  },
+                  {
+                    AND: [
+                      { reservedFrom: { gte: startDate } },
+                      { reservedTo: { lte: endDate } },
+                    ],
+                  },
+                ],
+              },
+            });
+
           if (overlappingReservations.length > 0) {
             return NextResponse.json(
-              { error: "This table is already reserved for the selected time period" }, 
+              {
+                error:
+                  "This table is already reserved for the selected time period",
+              },
               { status: 400 }
             );
           }
         }
       }
-      
+
       // Update reservation using Prisma transaction
       const updatedReservation = await prisma.$transaction(async (tx) => {
-        return tx.reservation.update({
-          where: { id: params.id },
+        return tx.tableReservation.update({
+          where: { id: (await params).id },
           data: {
             customerId: validatedData.customerId,
             tableId: validatedData.tableId,
-            startDate: validatedData.startDate ? new Date(validatedData.startDate) : undefined,
-            endDate: validatedData.endDate ? new Date(validatedData.endDate) : undefined,
+            reservedFrom: validatedData.startDate
+              ? new Date(validatedData.startDate)
+              : undefined,
+            reservedTo: validatedData.endDate
+              ? new Date(validatedData.endDate)
+              : undefined,
             status: validatedData.status,
-            notes: validatedData.notes,
           },
           include: {
             customer: true,
             table: true,
-          }
+          },
         });
       });
-      
+
       return NextResponse.json({ data: updatedReservation });
     } catch (zodError) {
       if (zodError instanceof z.ZodError) {
@@ -174,31 +181,31 @@ export async function PATCH(
 // DELETE a reservation
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate request - enforcing SUPERADMIN role
     const profile = await authenticateRequest(req);
-    
+
     // Check if reservation exists
-    const existingReservation = await prisma.reservation.findUnique({
-      where: { id: params.id },
+    const existingReservation = await prisma.tableReservation.findUnique({
+      where: { id: (await params).id },
     });
-    
+
     if (!existingReservation) {
       return NextResponse.json(
         { error: "Reservation not found" },
         { status: 404 }
       );
     }
-    
+
     // Delete the reservation using Prisma transaction
     await prisma.$transaction(async (tx) => {
-      await tx.reservation.delete({
-        where: { id: params.id },
+      await tx.tableReservation.delete({
+        where: { id: (await params).id },
       });
     });
-    
+
     return NextResponse.json(
       { success: true, message: "Reservation deleted successfully" },
       { status: 200 }
@@ -210,4 +217,4 @@ export async function DELETE(
       { status: error.status || 500 }
     );
   }
-} 
+}

@@ -22,7 +22,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useInventory } from "@/hooks/use-inventory";
+import {
+  useCreateCategory,
+  useUpdateCategory,
+  InventoryCategory,
+} from "@/hooks/use-inventory";
 
 const categoryFormSchema = z.object({
   name: z.string().min(1, "Category name is required"),
@@ -34,7 +38,7 @@ type CategoryFormValues = z.infer<typeof categoryFormSchema>;
 interface CategoryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  category: any | null;
+  category: InventoryCategory | null;
 }
 
 export function CategoryDialog({
@@ -42,7 +46,8 @@ export function CategoryDialog({
   onOpenChange,
   category,
 }: CategoryDialogProps) {
-  const { createCategory, updateCategory } = useInventory();
+  const createCategoryMutation = useCreateCategory();
+  const updateCategoryMutation = useUpdateCategory();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<CategoryFormValues>({
@@ -71,9 +76,12 @@ export function CategoryDialog({
     setIsSubmitting(true);
     try {
       if (category) {
-        await updateCategory(category.id, data);
+        await updateCategoryMutation.mutateAsync({
+          id: category.id,
+          data,
+        });
       } else {
-        await createCategory(data);
+        await createCategoryMutation.mutateAsync(data);
       }
       onOpenChange(false);
     } catch (error) {
@@ -126,7 +134,14 @@ export function CategoryDialog({
             />
 
             <DialogFooter>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button
+                type="submit"
+                disabled={
+                  isSubmitting ||
+                  createCategoryMutation.isPending ||
+                  updateCategoryMutation.isPending
+                }
+              >
                 {category ? "Update" : "Create"}
               </Button>
             </DialogFooter>

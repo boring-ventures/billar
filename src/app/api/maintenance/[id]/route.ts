@@ -14,7 +14,7 @@ const updateMaintenanceSchema = z.object({
 // GET a specific maintenance record
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate request - enforcing SUPERADMIN role
@@ -29,7 +29,7 @@ export async function GET(
     
     // Get maintenance record using Prisma
     const maintenanceRecord = await prisma.tableMaintenance.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
       include: {
         table: true,
       },
@@ -57,7 +57,7 @@ export async function GET(
 // UPDATE a maintenance record
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate request - enforcing SUPERADMIN role
@@ -65,7 +65,7 @@ export async function PUT(
     
     // Check if record exists
     const existingRecord = await prisma.tableMaintenance.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     });
     
     if (!existingRecord) {
@@ -85,7 +85,7 @@ export async function PUT(
       // Update maintenance record using Prisma transaction
       const updatedRecord = await prisma.$transaction(async (tx) => {
         return tx.tableMaintenance.update({
-          where: { id: params.id },
+          where: { id: (await params).id },
           data: {
             description: validatedData.description,
             maintenanceAt: validatedData.maintenanceAt ? new Date(validatedData.maintenanceAt) : undefined,
@@ -114,7 +114,7 @@ export async function PUT(
 // DELETE a maintenance record
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate request - enforcing SUPERADMIN role
@@ -122,7 +122,7 @@ export async function DELETE(
     
     // Check if record exists
     const existingRecord = await prisma.tableMaintenance.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     });
     
     if (!existingRecord) {
@@ -135,7 +135,7 @@ export async function DELETE(
     // Delete the maintenance record using Prisma transaction
     await prisma.$transaction(async (tx) => {
       await tx.tableMaintenance.delete({
-        where: { id: params.id },
+        where: { id: (await params).id },
       });
     });
     

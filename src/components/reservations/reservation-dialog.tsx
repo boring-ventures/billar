@@ -28,10 +28,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  useCustomers, 
-  useCreateReservation, 
-  useUpdateReservation 
+import {
+  useCustomers,
+  useCreateReservation,
+  useUpdateReservation,
+  Customer,
 } from "@/hooks/use-reservations";
 import { useTables } from "@/hooks/use-tables";
 import { CalendarIcon } from "lucide-react";
@@ -43,6 +44,7 @@ import {
 } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { Table } from "@prisma/client";
 
 const reservationFormSchema = z.object({
   customerId: z.string({
@@ -81,7 +83,7 @@ export function ReservationDialog({
   const { data: tables = [] } = useTables();
   const createReservationMutation = useCreateReservation();
   const updateReservationMutation = useUpdateReservation(reservation?.id || "");
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<ReservationFormValues>({
@@ -161,7 +163,7 @@ export function ReservationDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {customers?.map((customer) => (
+                      {customers?.map((customer: Customer) => (
                         <SelectItem key={customer.id} value={customer.id}>
                           {customer.name}
                         </SelectItem>
@@ -190,7 +192,7 @@ export function ReservationDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {tables?.map((table) => (
+                      {tables?.map((table: Table) => (
                         <SelectItem key={table.id} value={table.id}>
                           {table.name}
                         </SelectItem>

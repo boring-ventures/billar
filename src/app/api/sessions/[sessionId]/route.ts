@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import prisma from "@/lib/prisma";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { sessionId: string } }
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
     const currentUser = await getCurrentUser();
@@ -13,7 +14,12 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { sessionId } = params;
+    // Get user profile
+    const userProfile = await prisma.profile.findUnique({
+      where: { userId: currentUser.id },
+    });
+
+    const { sessionId } = await params;
 
     if (!sessionId) {
       return NextResponse.json(
@@ -66,8 +72,8 @@ export async function GET(
 
     // Check if the user has access to this session (company check)
     if (
-      currentUser.profile?.companyId &&
-      session.table.companyId !== currentUser.profile.companyId
+      userProfile?.companyId &&
+      session.table.companyId !== userProfile.companyId
     ) {
       return NextResponse.json(
         { error: "You don't have access to this session" },

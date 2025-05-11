@@ -12,13 +12,13 @@ const tableStatusSchema = z.object({
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { tableId: string } }
+  { params }: { params: Promise<{ tableId: string }> }
 ) {
   try {
     // Authenticate request using middleware
     const profile = await authenticateRequest(req);
     
-    const { tableId } = params;
+    const { tableId } = await params;
 
     // Find the table
     const table = await prisma.table.findUnique({

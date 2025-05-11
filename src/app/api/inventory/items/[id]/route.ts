@@ -17,7 +17,7 @@ const updateItemSchema = z.object({
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate request using the middleware
@@ -28,7 +28,7 @@ export async function GET(
       // Superadmins can access any item
       const item = await prisma.inventoryItem.findUnique({
         where: {
-          id: params.id,
+          id: (await params).id,
         },
         include: {
           category: {
@@ -55,7 +55,7 @@ export async function GET(
       // Get item with permissions check
       const item = await prisma.inventoryItem.findUnique({
         where: {
-          id: params.id,
+          id: (await params).id,
           companyId: profile.companyId,
         },
         include: {
@@ -95,7 +95,7 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate request using the middleware
@@ -112,7 +112,7 @@ export async function PATCH(
         // Superadmin can update any item
         // Check if item exists
         const existingItem = await prisma.inventoryItem.findUnique({
-          where: { id: params.id },
+          where: { id: (await params).id },
         });
 
         if (!existingItem) {
@@ -157,7 +157,7 @@ export async function PATCH(
         const updatedItem = await prisma.$transaction(async (tx) => {
           // Update the item
           const item = await tx.inventoryItem.update({
-            where: { id: params.id },
+            where: { id: (await params).id },
             data: {
               name: validatedData.name,
               categoryId: validatedData.categoryId,
@@ -206,7 +206,7 @@ export async function PATCH(
         // Regular user - check if item exists and belongs to the user's company
         const existingItem = await prisma.inventoryItem.findUnique({
           where: {
-            id: params.id,
+            id: (await params).id,
             companyId: profile.companyId,
           },
         });
@@ -248,7 +248,7 @@ export async function PATCH(
         const updatedItem = await prisma.$transaction(async (tx) => {
           // Update the item
           const item = await tx.inventoryItem.update({
-            where: { id: params.id },
+            where: { id: (await params).id },
             data: {
               name: validatedData.name,
               categoryId: validatedData.categoryId,
@@ -318,7 +318,7 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate request using the middleware
@@ -329,7 +329,7 @@ export async function DELETE(
       // Superadmin can delete any item
       // Check if item exists
       const existingItem = await prisma.inventoryItem.findUnique({
-        where: { id: params.id },
+        where: { id: (await params).id },
       });
 
       if (!existingItem) {
@@ -341,12 +341,12 @@ export async function DELETE(
 
       // Check if this item has associated stock movements
       const movementsCount = await prisma.stockMovement.count({
-        where: { itemId: params.id },
+        where: { itemId: (await params).id },
       });
 
       // Check if this item has associated order items
       const orderItemsCount = await prisma.posOrderItem.count({
-        where: { itemId: params.id },
+        where: { itemId: (await params).id },
       });
 
       // If there are associated records, prevent deletion
@@ -365,7 +365,7 @@ export async function DELETE(
 
       // Delete the item
       await prisma.inventoryItem.delete({
-        where: { id: params.id },
+        where: { id: (await params).id },
       });
 
       // Return success response
@@ -375,7 +375,7 @@ export async function DELETE(
       // Regular user - check if item exists and belongs to the user's company
       const existingItem = await prisma.inventoryItem.findUnique({
         where: {
-          id: params.id,
+          id: (await params).id,
           companyId: profile.companyId,
         },
       });
@@ -389,12 +389,12 @@ export async function DELETE(
 
       // Check if this item has associated stock movements
       const movementsCount = await prisma.stockMovement.count({
-        where: { itemId: params.id },
+        where: { itemId: (await params).id },
       });
 
       // Check if this item has associated order items
       const orderItemsCount = await prisma.posOrderItem.count({
-        where: { itemId: params.id },
+        where: { itemId: (await params).id },
       });
 
       // If there are associated records, prevent deletion
@@ -413,7 +413,7 @@ export async function DELETE(
 
       // Delete the item
       await prisma.inventoryItem.delete({
-        where: { id: params.id },
+        where: { id: (await params).id },
       });
 
       // Return success response

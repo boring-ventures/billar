@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { SessionStatus, TableStatus } from "@prisma/client";
+import prisma from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
   try {
@@ -10,6 +11,11 @@ export async function GET(req: NextRequest) {
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Get user profile
+    const userProfile = await prisma.profile.findUnique({
+      where: { userId: currentUser.id },
+    });
 
     const { searchParams } = new URL(req.url);
     const tableId = searchParams.get("tableId");
@@ -43,9 +49,9 @@ export async function GET(req: NextRequest) {
     };
 
     // If the user has a company, filter by that company
-    if (currentUser.profile?.companyId) {
+    if (userProfile?.companyId) {
       query.where.table = {
-        companyId: currentUser.profile.companyId,
+        companyId: userProfile.companyId,
       };
     }
 
@@ -69,7 +75,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (!currentUser.profile?.id) {
+    // Get user profile
+    const userProfile = await prisma.profile.findUnique({
+      where: { userId: currentUser.id },
+    });
+
+    if (!userProfile) {
       return NextResponse.json(
         { error: "User profile not found" },
         { status: 400 }
@@ -90,8 +101,8 @@ export async function POST(req: NextRequest) {
     const table = await db.table.findFirst({
       where: {
         id: tableId,
-        ...(currentUser.profile.companyId && {
-          companyId: currentUser.profile.companyId,
+        ...(userProfile.companyId && {
+          companyId: userProfile.companyId,
         }),
       },
     });
@@ -129,7 +140,7 @@ export async function POST(req: NextRequest) {
       const newSession = await tx.tableSession.create({
         data: {
           tableId,
-          staffId: currentUser.profile.id,
+          staffId: userProfile.id,
           startedAt: new Date(),
           status: "ACTIVE",
         },
@@ -147,7 +158,7 @@ export async function POST(req: NextRequest) {
           tableId,
           previousStatus: "AVAILABLE",
           newStatus: "OCCUPIED",
-          changedById: currentUser.profile.id,
+          changedById: userProfile.id,
           notes: "Session started",
         },
       });

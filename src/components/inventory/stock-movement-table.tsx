@@ -21,7 +21,7 @@ import {
   CornerRightUp,
   ArrowLeftRight,
 } from "lucide-react";
-import { useInventory } from "@/hooks/use-inventory";
+import { useInventory, InventoryItem } from "@/hooks/use-inventory";
 import { StockMovementDialog } from "./stock-movement-dialog";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -66,7 +66,7 @@ export function StockMovementTable() {
   const { stockMovements, items, isLoading, fetchStockMovements, fetchItems } =
     useInventory();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<StockMovement | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const { toast } = useToast();
   const [movements, setMovements] = useState<StockMovement[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -86,7 +86,7 @@ export function StockMovementTable() {
   }, [fetchStockMovements, fetchItems]);
 
   const handleCreateMovement = () => {
-    setSelectedItem(null);
+    setSelectedItemId(null);
     setIsCreateDialogOpen(true);
   };
 
@@ -188,7 +188,7 @@ export function StockMovementTable() {
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>
-          <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 mr-2" />
               Add Movement
             </Button>
           </DialogTrigger>
@@ -293,7 +293,7 @@ export function StockMovementTable() {
                   onClick={() => setIsDialogOpen(false)}
                 >
                   Cancel
-        </Button>
+                </Button>
                 <Button type="submit">Create Movement</Button>
               </div>
             </form>
@@ -351,7 +351,7 @@ export function StockMovementTable() {
       <StockMovementDialog
         open={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}
-        item={selectedItem}
+        item={null}
       />
     </div>
   );

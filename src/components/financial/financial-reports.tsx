@@ -13,6 +13,7 @@ import {
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { addDays } from "date-fns";
 import { useFinancial } from "@/hooks/use-financial";
+import { DateRange } from "react-day-picker";
 
 interface Report {
   id: string;
@@ -23,10 +24,18 @@ interface Report {
   generatedAt: string;
 }
 
+interface IncomeItem {
+  id: string;
+  date: string;
+  amount: number;
+  category?: string;
+  source?: string;
+}
+
 export function FinancialReports() {
   // Use financial data from the API
   const { data, loading, error } = useFinancial();
-  
+
   // Apply defensive programming patterns
   const safeData = data || {
     totalIncome: 0,
@@ -36,11 +45,11 @@ export function FinancialReports() {
     incomeCategories: [],
     expenseCategories: [],
     recentIncome: [],
-    recentExpenses: []
+    recentExpenses: [],
   };
-  
+
   // Default date range for report generation
-  const [date, setDate] = useState({
+  const [date, setDate] = useState<DateRange | undefined>({
     from: new Date(),
     to: addDays(new Date(), 7),
   });
@@ -49,24 +58,26 @@ export function FinancialReports() {
 
   // Mock reports - in a real implementation, this would come from a dedicated reports API endpoint
   // Using data from our existing API for now to show connected data
-  const recentReports = safeData.recentIncome.slice(0, 3).map((income, index) => ({
-    id: `report-${index + 1}`,
-    name: `${index === 0 ? 'Monthly' : index === 1 ? 'Weekly' : 'Daily'} Report - ${income.date}`,
-    reportType: index === 0 ? 'monthly' : index === 1 ? 'weekly' : 'daily',
-    startDate: income.date,
-    endDate: income.date,
-    generatedAt: income.date
-  }));
+  const recentReports = safeData.recentIncome
+    .slice(0, 3)
+    .map((income: IncomeItem, index: number) => ({
+      id: `report-${index + 1}`,
+      name: `${index === 0 ? "Monthly" : index === 1 ? "Weekly" : "Daily"} Report - ${income.date}`,
+      reportType: index === 0 ? "monthly" : index === 1 ? "weekly" : "daily",
+      startDate: income.date,
+      endDate: income.date,
+      generatedAt: income.date,
+    }));
 
   // Function to handle report generation
   const handleGenerateReport = () => {
     console.log("Generating report with:", {
       type: reportType,
-      dateRange: date
+      dateRange: date,
     });
     // In a real implementation, this would call an API endpoint to generate the report
   };
-  
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -83,7 +94,7 @@ export function FinancialReports() {
       </div>
     );
   }
-  
+
   if (error) {
     console.error("Error loading financial data:", error);
     return (
@@ -103,10 +114,7 @@ export function FinancialReports() {
           <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
               <label className="text-sm font-medium">Report Type</label>
-              <Select
-                value={reportType}
-                onValueChange={setReportType}
-              >
+              <Select value={reportType} onValueChange={setReportType}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select report type" />
                 </SelectTrigger>
@@ -125,7 +133,9 @@ export function FinancialReports() {
               <DatePickerWithRange date={date} setDate={setDate} />
             </div>
             <div className="flex items-end">
-              <Button className="w-full" onClick={handleGenerateReport}>Generate Report</Button>
+              <Button className="w-full" onClick={handleGenerateReport}>
+                Generate Report
+              </Button>
             </div>
           </div>
         </CardContent>
@@ -143,10 +153,15 @@ export function FinancialReports() {
           ) : (
             <div className="space-y-4">
               {recentReports.map((report: Report) => (
-                <div key={report.id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div
+                  key={report.id}
+                  className="flex items-center justify-between p-4 border rounded-lg"
+                >
                   <div>
                     <h3 className="font-medium">{report.name}</h3>
-                    <p className="text-sm text-muted-foreground">Generated on {report.generatedAt}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Generated on {report.generatedAt}
+                    </p>
                   </div>
                   <Button variant="outline">Download</Button>
                 </div>
@@ -157,4 +172,4 @@ export function FinancialReports() {
       </Card>
     </div>
   );
-} 
+}

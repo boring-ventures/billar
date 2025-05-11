@@ -43,7 +43,7 @@ const settingsFormSchema = z.object({
 type SettingsFormValues = z.infer<typeof settingsFormSchema>;
 
 export function SettingsForm() {
-  const { profile, user, refetch } = useCurrentUser();
+  const { profile, refreshUser } = useCurrentUser();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState<string>("");
@@ -72,7 +72,7 @@ export function SettingsForm() {
   }, [profile, form]);
 
   async function onSubmit(data: SettingsFormValues) {
-    if (isSubmitting || !user) return;
+    if (isSubmitting || !profile) return;
 
     try {
       setIsSubmitting(true);
@@ -113,7 +113,7 @@ export function SettingsForm() {
           }
 
           // Refresh the user data after successful update
-          if (refetch) await refetch();
+          if (refreshUser) await refreshUser();
           success = true;
         } catch (error) {
           console.error(`Attempt ${retryCount + 1} failed:`, error);
@@ -185,8 +185,8 @@ export function SettingsForm() {
             <CardContent className="space-y-4">
               {profile && (
                 <AvatarUpload
-                  userId={profile.userId}
-                  currentAvatarUrl={profile.avatarUrl}
+                  userId={profile.id}
+                  currentAvatarUrl={profile.avatarUrl ?? null}
                   onUploadComplete={(url) => setNewAvatarUrl(url)}
                   onUploadError={(error) => {
                     toast({

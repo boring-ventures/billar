@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import prisma from "@/lib/prisma";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { tableId: string } }
+  { params }: { params: Promise<{ tableId: string }> }
 ) {
   try {
     const currentUser = await getCurrentUser();
@@ -13,14 +14,19 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { tableId } = params;
+    // Get user profile
+    const userProfile = await prisma.profile.findUnique({
+      where: { userId: currentUser.id },
+    });
+
+    const { tableId } = await params;
 
     // Check if table exists and belongs to user's company
     const table = await db.table.findFirst({
       where: {
         id: tableId,
-        ...(currentUser.profile?.companyId && {
-          companyId: currentUser.profile.companyId,
+        ...(userProfile?.companyId && {
+          companyId: userProfile.companyId,
         }),
       },
     });

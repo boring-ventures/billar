@@ -19,7 +19,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function SettingsPage() {
-  const { profile, isLoading, refetch } = useCurrentUser();
+  const { profile, isLoading, refreshUser } = useCurrentUser();
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   const [retryLoading, setRetryLoading] = useState(false);
@@ -37,8 +37,8 @@ export default function SettingsPage() {
 
   const handleRetry = async () => {
     setRetryLoading(true);
-    if (refetch) {
-      await refetch();
+    if (refreshUser) {
+      await refreshUser();
       setTimeout(() => setRetryLoading(false), 500);
     } else {
       setRetryLoading(false);

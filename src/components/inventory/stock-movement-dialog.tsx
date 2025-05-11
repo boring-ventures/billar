@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useInventory } from "@/hooks/use-inventory";
+import { useCreateStockMovement, InventoryItem } from "@/hooks/use-inventory";
 import { MovementType } from "@prisma/client";
 
 const movementFormSchema = z.object({
@@ -48,7 +48,7 @@ type MovementFormValues = z.infer<typeof movementFormSchema>;
 interface StockMovementDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  item: any | null;
+  item: InventoryItem | null;
 }
 
 export function StockMovementDialog({
@@ -56,7 +56,7 @@ export function StockMovementDialog({
   onOpenChange,
   item,
 }: StockMovementDialogProps) {
-  const { createStockMovement } = useInventory();
+  const createStockMovementMutation = useCreateStockMovement();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<MovementFormValues>({
@@ -87,7 +87,7 @@ export function StockMovementDialog({
   const onSubmit = async (data: MovementFormValues) => {
     setIsSubmitting(true);
     try {
-      await createStockMovement(data);
+      await createStockMovementMutation.mutateAsync(data);
       onOpenChange(false);
     } catch (error) {
       console.error("Error recording stock movement:", error);
@@ -176,7 +176,11 @@ export function StockMovementDialog({
                       {...field}
                       value={field.value === undefined ? "" : field.value}
                       onChange={(e) => {
-                        field.onChange(e.target.valueAsNumber || undefined);
+                        const value =
+                          e.target.value === ""
+                            ? undefined
+                            : parseFloat(e.target.value);
+                        field.onChange(value);
                       }}
                     />
                   </FormControl>
@@ -222,8 +226,13 @@ export function StockMovementDialog({
             />
 
             <DialogFooter>
-              <Button type="submit" disabled={isSubmitting}>
-                Record Movement
+              <Button
+                type="submit"
+                disabled={isSubmitting || createStockMovementMutation.isPending}
+              >
+                {isSubmitting || createStockMovementMutation.isPending
+                  ? "Recording..."
+                  : "Record Movement"}
               </Button>
             </DialogFooter>
           </form>

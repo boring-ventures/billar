@@ -11,7 +11,7 @@ const updateCategorySchema = z.object({
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate request using the middleware
@@ -19,7 +19,7 @@ export async function GET(
 
     // Find the category
     const category = await prisma.inventoryCategory.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     });
 
     if (!category) {
@@ -53,7 +53,7 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate request using the middleware
@@ -61,7 +61,7 @@ export async function PATCH(
 
     // Find the category to check permissions
     const category = await prisma.inventoryCategory.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     });
 
     if (!category) {
@@ -90,7 +90,7 @@ export async function PATCH(
 
       // Update the category
       const updatedCategory = await prisma.inventoryCategory.update({
-        where: { id: params.id },
+        where: { id: (await params).id },
         data: validatedData,
       });
 
@@ -116,7 +116,7 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate request using the middleware
@@ -124,7 +124,7 @@ export async function DELETE(
 
     // Find the category to check permissions
     const category = await prisma.inventoryCategory.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     });
 
     if (!category) {
@@ -147,20 +147,20 @@ export async function DELETE(
 
     // Check if this category has associated inventory items
     const itemsCount = await prisma.inventoryItem.count({
-      where: { categoryId: params.id },
+      where: { categoryId: (await params).id },
     });
 
     // For items using this category, update them to have no category
     if (itemsCount > 0) {
       await prisma.inventoryItem.updateMany({
-        where: { categoryId: params.id },
+        where: { categoryId: (await params).id },
         data: { categoryId: null },
       });
     }
 
     // Delete the category
     await prisma.inventoryCategory.delete({
-      where: { id: params.id },
+      where: { id: (await params).id },
     });
 
     // Return success response

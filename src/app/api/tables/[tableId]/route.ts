@@ -14,13 +14,13 @@ const tableUpdateSchema = z.object({
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { tableId: string } }
+  { params }: { params: Promise<{ tableId: string }> }
 ) {
   try {
     // Authenticate request using middleware
     const profile = await authenticateRequest(req);
     
-    const { tableId } = params;
+    const { tableId } = await params;
 
     // Find the table including related data
     const table = await prisma.table.findUnique({
@@ -96,13 +96,13 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { tableId: string } }
+  { params }: { params: Promise<{ tableId: string }> }
 ) {
   try {
     // Authenticate request using middleware
     const profile = await authenticateRequest(req);
     
-    const { tableId } = params;
+    const { tableId } = await params;
 
     // Find the table
     const table = await prisma.table.findUnique({
@@ -176,13 +176,13 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { tableId: string } }
+  { params }: { params: Promise<{ tableId: string }> }
 ) {
   try {
     // Authenticate request using middleware
     const profile = await authenticateRequest(req);
     
-    const { tableId } = params;
+    const { tableId } = await params;
 
     // Find the table
     const table = await prisma.table.findUnique({

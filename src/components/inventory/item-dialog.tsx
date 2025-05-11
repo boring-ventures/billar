@@ -30,11 +30,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  useInventoryCategories, 
-  useCreateItem, 
-  useUpdateItem, 
-  ItemFormValues 
+import {
+  useInventoryCategories,
+  useCreateItem,
+  useUpdateItem,
+  ItemFormValues,
+  InventoryItem,
 } from "@/hooks/use-inventory";
 
 const itemFormSchema = z.object({
@@ -58,7 +59,7 @@ type FormValues = z.infer<typeof itemFormSchema>;
 interface ItemDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  item: any | null;
+  item: InventoryItem | null;
 }
 
 export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
@@ -66,7 +67,7 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
   const createItemMutation = useCreateItem();
   const updateItemMutation = useUpdateItem();
   const categories = categoriesData?.data || [];
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<FormValues>({
@@ -90,7 +91,7 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
         sku: item.sku || "",
         quantity: item.quantity,
         criticalThreshold: item.criticalThreshold,
-        price: item.price,
+        price: item.price === null ? undefined : item.price,
         stockAlerts: item.stockAlerts,
       });
     } else {
@@ -110,15 +111,20 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
     setIsSubmitting(true);
     try {
       // Convert "none" to null/empty for the API
-      const formattedData = {
-        ...data,
-        categoryId: data.categoryId === "none" ? null : data.categoryId
+      const formattedData: ItemFormValues = {
+        name: data.name,
+        quantity: data.quantity,
+        criticalThreshold: data.criticalThreshold,
+        stockAlerts: data.stockAlerts,
+        sku: data.sku,
+        price: data.price,
+        categoryId: data.categoryId === "none" ? undefined : data.categoryId,
       };
-      
+
       if (item) {
-        await updateItemMutation.mutateAsync({ 
-          id: item.id, 
-          data: formattedData 
+        await updateItemMutation.mutateAsync({
+          id: item.id,
+          data: formattedData,
         });
       } else {
         await createItemMutation.mutateAsync(formattedData);
@@ -253,16 +259,20 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
               name="price"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Price</FormLabel>
+                  <FormLabel>Price (Optional)</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
                       step="0.01"
-                      placeholder="Item price (optional)"
+                      placeholder="Item price"
                       {...field}
                       value={field.value === undefined ? "" : field.value}
                       onChange={(e) => {
-                        field.onChange(e.target.valueAsNumber || undefined);
+                        const value =
+                          e.target.value === ""
+                            ? undefined
+                            : parseFloat(e.target.value);
+                        field.onChange(value);
                       }}
                     />
                   </FormControl>
@@ -283,9 +293,9 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
                     />
                   </FormControl>
                   <div className="space-y-1 leading-none">
-                    <FormLabel>Enable Stock Alerts</FormLabel>
+                    <FormLabel>Enable stock alerts</FormLabel>
                     <FormDescription>
-                      Show alerts when stock falls below the critical threshold
+                      Get alerts when stock falls below critical threshold
                     </FormDescription>
                   </div>
                 </FormItem>
@@ -293,8 +303,21 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
             />
 
             <DialogFooter>
-              <Button type="submit" disabled={isSubmitting}>
-                {item ? "Update" : "Create"}
+              <Button
+                type="submit"
+                disabled={
+                  isSubmitting ||
+                  createItemMutation.isPending ||
+                  updateItemMutation.isPending
+                }
+              >
+                {isSubmitting ||
+                createItemMutation.isPending ||
+                updateItemMutation.isPending
+                  ? "Saving..."
+                  : item
+                    ? "Update"
+                    : "Create"}
               </Button>
             </DialogFooter>
           </form>

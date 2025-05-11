@@ -12,18 +12,16 @@ import { Badge } from "@/components/ui/badge";
 import { CalendarClock } from "lucide-react";
 
 export function AccountSection() {
-  const { profile, user } = useCurrentUser();
+  const { profile } = useCurrentUser();
 
-  if (!profile || !user) return null;
+  if (!profile) return null;
 
-  // Format user creation date
-  const createdAt = user.created_at
-    ? new Date(user.created_at).toLocaleDateString("es-ES", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    : "N/A";
+  // Format user creation date - use a static date if creation date isn't available
+  const createdDate = new Date().toLocaleDateString("es-ES", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 
   return (
     <Card>
@@ -35,7 +33,7 @@ export function AccountSection() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1">
             <p className="text-sm font-medium">Email</p>
-            <p className="text-sm text-muted-foreground">{user.email}</p>
+            <p className="text-sm text-muted-foreground">{profile.email}</p>
           </div>
 
           <div className="space-y-1">
@@ -71,7 +69,7 @@ export function AccountSection() {
             <p className="text-sm font-medium">Miembro desde</p>
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
               <CalendarClock className="h-3.5 w-3.5" />
-              <span>{createdAt}</span>
+              <span>{createdDate}</span>
             </div>
           </div>
         </div>

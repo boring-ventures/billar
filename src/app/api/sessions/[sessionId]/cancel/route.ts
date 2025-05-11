@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import prisma from "@/lib/prisma";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { sessionId: string } }
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
     const currentUser = await getCurrentUser();
@@ -13,14 +14,19 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (!currentUser.profile?.id) {
+    // Get user profile
+    const userProfile = await prisma.profile.findUnique({
+      where: { userId: currentUser.id },
+    });
+
+    if (!userProfile) {
       return NextResponse.json(
         { error: "User profile not found" },
         { status: 400 }
       );
     }
 
-    const { sessionId } = params;
+    const { sessionId } = await params;
 
     // Get the active session
     const session = await db.tableSession.findUnique({
@@ -42,8 +48,8 @@ export async function POST(
 
     // Check company access
     if (
-      currentUser.profile.companyId &&
-      session.table.companyId !== currentUser.profile.companyId
+      userProfile.companyId &&
+      session.table.companyId !== userProfile.companyId
     ) {
       return NextResponse.json(
         { error: "You don't have access to this session" },
@@ -74,7 +80,7 @@ export async function POST(
           tableId: session.tableId,
           previousStatus: "OCCUPIED",
           newStatus: "AVAILABLE",
-          changedById: currentUser.profile.id,
+          changedById: userProfile.id,
           notes: "Session cancelled",
         },
       });

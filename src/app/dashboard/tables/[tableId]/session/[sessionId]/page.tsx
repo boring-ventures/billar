@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -12,11 +12,22 @@ import { useSessions } from "@/hooks/use-sessions";
 export default function ActiveSessionPage({
   params,
 }: {
-  params: { tableId: string; sessionId: string };
+  params: Promise<{ tableId: string; sessionId: string }>;
 }) {
   const router = useRouter();
-  const { sessionId, tableId } = params;
+  const [sessionId, setSessionId] = useState<string>("");
+  const [tableId, setTableId] = useState<string>("");
   const { fetchSessionById, activeSession, isLoading } = useSessions();
+
+  useEffect(() => {
+    const loadParams = async () => {
+      const resolvedParams = await params;
+      setSessionId(resolvedParams.sessionId);
+      setTableId(resolvedParams.tableId);
+    };
+
+    loadParams();
+  }, [params]);
 
   useEffect(() => {
     if (sessionId) {
@@ -30,7 +41,7 @@ export default function ActiveSessionPage({
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.push(`/tables/${tableId}`)}
+          onClick={() => router.push(`/dashboard/tables/${tableId}`)}
           className="mr-4"
         >
           <ArrowLeft className="h-5 w-5" />

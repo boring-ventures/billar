@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { DataTable } from "./data-table";
+import { DataTable } from "@/components/tables/data-table";
 import { UserDialog } from "../users/user-dialog";
 import { Badge } from "@/components/ui/badge";
 import { User } from "@/types/user";
@@ -26,7 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { TableSkeleton } from "./table-skeleton";
+import { TableSkeleton } from "@/components/tables/table-skeleton";
 import { useUsers } from "@/hooks/use-users";
 
 export function UserTable() {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { DataTable } from "./data-table";
+import { DataTable } from "@/components/tables/data-table";
 import { CompanyDialog } from "../users/company-dialog";
 import {
   DropdownMenu,
@@ -23,7 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { TableSkeleton } from "./table-skeleton";
+import { TableSkeleton } from "@/components/tables/table-skeleton";
 import { useCompanies } from "@/hooks/use-companies";
 
 // Import the Company type from the custom hook file

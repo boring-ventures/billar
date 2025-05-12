@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import type { User } from "@supabase/supabase-js";
-import type { Profile } from "@prisma/client";
+import { useProfile } from "./use-profile";
 
 type CurrentUserData = {
   user: User | null;
-  profile: Profile | null;
+  profile: ReturnType<typeof useProfile>["profile"];
   isLoading: boolean;
   error: Error | null;
   refetch?: () => Promise<void>;
@@ -15,19 +15,18 @@ type CurrentUserData = {
 
 export function useCurrentUser(): CurrentUserData {
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const supabase = createClientComponentClient();
+  const { profile, fetchProfile } = useProfile();
 
-  const fetchUserData = useCallback(async () => {
+  const fetchUserData = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
       // Get current user from Supabase
-      const { data: userData, error: userError } =
-        await supabase.auth.getUser();
+      const { data: userData, error: userError } = await supabase.auth.getUser();
 
       if (userError) {
         throw userError;
@@ -35,16 +34,7 @@ export function useCurrentUser(): CurrentUserData {
 
       if (userData.user) {
         setUser(userData.user);
-
-        // Fetch the user's profile from the API
-        const response = await fetch("/api/profile");
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch profile");
-        }
-
-        const profileData = await response.json();
-        setProfile(profileData);
+        await fetchProfile();
       }
     } catch (err) {
       console.error("Error fetching user data:", err);
@@ -52,7 +42,7 @@ export function useCurrentUser(): CurrentUserData {
     } finally {
       setIsLoading(false);
     }
-  }, [supabase.auth]);
+  };
 
   useEffect(() => {
     fetchUserData();
@@ -63,21 +53,10 @@ export function useCurrentUser(): CurrentUserData {
         if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
           if (session) {
             setUser(session.user);
-
-            // Fetch the user's profile when auth state changes
-            try {
-              const response = await fetch("/api/profile");
-              if (response.ok) {
-                const profileData = await response.json();
-                setProfile(profileData);
-              }
-            } catch (err) {
-              console.error("Error fetching profile:", err);
-            }
+            await fetchProfile();
           }
         } else if (event === "SIGNED_OUT") {
           setUser(null);
-          setProfile(null);
         }
       }
     );
@@ -85,7 +64,7 @@ export function useCurrentUser(): CurrentUserData {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [supabase.auth, fetchUserData]);
+  }, [supabase.auth, fetchProfile]);
 
   return { user, profile, isLoading, error, refetch: fetchUserData };
 }

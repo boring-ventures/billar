@@ -37,39 +37,29 @@ export function useTables() {
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const fetchTables = useCallback(
-    async (searchQuery?: string) => {
-      try {
-        setIsLoading(true);
-        const queryParams = new URLSearchParams();
-        if (searchQuery) {
-          queryParams.append("query", searchQuery);
-        }
-
-        const response = await fetch(`/api/tables?${queryParams.toString()}`);
-        if (response.ok) {
-          const data = await response.json();
-          setTables(data);
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to fetch tables",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching tables:", error);
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
+  const fetchTables = useCallback(async (searchQuery?: string) => {
+    try {
+      setIsLoading(true);
+      const queryParams = new URLSearchParams();
+      if (searchQuery) {
+        queryParams.append("query", searchQuery);
       }
-    },
-    [toast]
-  );
+      
+      const response = await fetch(`/api/tables?${queryParams.toString()}`);
+      if (response.ok) {
+        const data = await response.json();
+        setTables(data);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch tables",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
 
   const fetchTableDetails = useCallback(
     async (tableId: string) => {

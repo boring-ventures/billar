@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useToast } from "@/components/ui/use-toast";
+import { TableReservation } from "@prisma/client";
 
 export type ReservationStatus =
   | "PENDING"
@@ -61,47 +62,35 @@ export type CustomerFormValues = {
 
 export function useReservations() {
   const { toast } = useToast();
-  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [reservations, setReservations] = useState<TableReservation[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Reservation Operations
-  const fetchReservations = useCallback(
-    async (searchQuery?: string) => {
-      try {
-        setIsLoading(true);
-        const queryParams = new URLSearchParams();
-        if (searchQuery) {
-          queryParams.append("query", searchQuery);
-        }
-
-        const response = await fetch(
-          `/api/reservations?${queryParams.toString()}`
-        );
-        if (response.ok) {
-          const data = await response.json();
-          setReservations(data);
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to fetch reservations",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching reservations:", error);
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
+  const fetchReservations = useCallback(async (searchQuery?: string) => {
+    try {
+      setIsLoading(true);
+      const queryParams = new URLSearchParams();
+      if (searchQuery) {
+        queryParams.append("query", searchQuery);
       }
-    },
-    [toast]
-  );
+      
+      const response = await fetch(`/api/reservations?${queryParams.toString()}`);
+      if (response.ok) {
+        const data = await response.json();
+        setReservations(data);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch reservations",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
 
   const createReservation = useCallback(
     async (reservationData: ReservationFormValues) => {

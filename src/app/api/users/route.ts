@@ -52,10 +52,11 @@ export async function POST(request: NextRequest) {
       await supabase.auth.admin.createUser({
         email,
         password,
-        email_confirm: true,
+        email_confirm: false,
       });
 
     if (authError) {
+      console.log("error", authError);
       return NextResponse.json({ error: authError.message }, { status: 400 });
     }
 

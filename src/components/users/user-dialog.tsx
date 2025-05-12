@@ -34,6 +34,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useUsers } from "@/hooks/use-users";
+import { Loader2 } from "lucide-react";
 
 interface UserDialogProps {
   open: boolean;
@@ -71,6 +72,7 @@ export function UserDialog({
     []
   );
   const { createUser, updateUser } = useUsers();
+  const [loading, setLoading] = useState(false);
 
   const isEditing = !!user;
 
@@ -127,20 +129,32 @@ export function UserDialog({
   // Reset form when user changes
   useEffect(() => {
     if (open) {
-      form.reset({
-        firstName: user?.firstName || "",
-        lastName: user?.lastName || "",
-        email: "",
-        password: "",
-        role: getUserRole(user?.role as string),
-        companyId: getCompanyIdValue(user?.companyId),
-        active: user?.active !== undefined ? user.active : true,
-      });
+      // Different form schemas for create vs edit
+      if (isEditing && user) {
+        form.reset({
+          firstName: user?.firstName || "",
+          lastName: user?.lastName || "",
+          role: getUserRole(user?.role as string),
+          companyId: getCompanyIdValue(user?.companyId),
+          active: user?.active !== undefined ? user.active : true,
+        });
+      } else {
+        form.reset({
+          firstName: "",
+          lastName: "",
+          email: "",
+          password: "",
+          role: "SELLER",
+          companyId: NO_COMPANY,
+          active: true,
+        });
+      }
     }
-  }, [open, user, form]);
+  }, [open, user, form, isEditing]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
+      setLoading(true);
       let success;
 
       if (isEditing && user) {
@@ -149,7 +163,6 @@ export function UserDialog({
           firstName: values.firstName,
           lastName: values.lastName,
           role: values.role,
-          companyId: getActualCompanyId(values.companyId || NO_COMPANY),
           active: values.active,
         });
       } else {
@@ -160,6 +173,7 @@ export function UserDialog({
             description: "Email and password are required for new users",
             variant: "destructive",
           });
+          setLoading(false);
           return;
         }
 
@@ -185,6 +199,8 @@ export function UserDialog({
         description: "An unexpected error occurred",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -231,6 +247,18 @@ export function UserDialog({
                 </FormItem>
               )}
             />
+
+            {isEditing && user?.email && (
+              <div className="space-y-2">
+                <FormLabel>Email</FormLabel>
+                <div className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground">
+                  {user.email}
+                </div>
+                <p className="text-[0.8rem] text-muted-foreground">
+                  Email cannot be changed after creation.
+                </p>
+              </div>
+            )}
 
             {!isEditing && (
               <>
@@ -283,6 +311,7 @@ export function UserDialog({
                   <FormLabel>Role</FormLabel>
                   <Select
                     onValueChange={field.onChange}
+                    value={field.value}
                     defaultValue={field.value}
                   >
                     <FormControl>
@@ -301,34 +330,49 @@ export function UserDialog({
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="companyId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Company</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value || NO_COMPANY}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a company" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value={NO_COMPANY}>None</SelectItem>
-                      {companies.map((company) => (
-                        <SelectItem key={company.id} value={company.id}>
-                          {company.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {!isEditing && (
+              <FormField
+                control={form.control}
+                name="companyId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Company</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      defaultValue={field.value || NO_COMPANY}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a company" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value={NO_COMPANY}>None</SelectItem>
+                        {companies.map((company) => (
+                          <SelectItem key={company.id} value={company.id}>
+                            {company.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {isEditing && user?.companyId && (
+              <div className="space-y-2">
+                <FormLabel>Company</FormLabel>
+                <div className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground">
+                  {user.company?.name || "Assigned Company"}
+                </div>
+                <p className="text-[0.8rem] text-muted-foreground">
+                  Company assignment cannot be changed after creation.
+                </p>
+              </div>
+            )}
 
             <FormField
               control={form.control}
@@ -352,14 +396,17 @@ export function UserDialog({
             />
 
             <DialogFooter>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting
-                  ? isEditing
-                    ? "Updating..."
-                    : "Creating..."
-                  : isEditing
-                    ? "Update User"
-                    : "Create User"}
+              <Button type="submit" disabled={loading || isSubmitting}>
+                {loading || isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {isEditing ? "Updating..." : "Creating..."}
+                  </>
+                ) : isEditing ? (
+                  "Update User"
+                ) : (
+                  "Create User"
+                )}
               </Button>
             </DialogFooter>
           </form>

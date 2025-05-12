@@ -1,0 +1,71 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Next.js Page Component Params Promise Handling
+
+## Description
+This rule targets Next.js Page Components (⁠ export default function PageName(...) ⁠) where the 'params' object, passed as part of the component's props, is typed as a direct object but the build process indicates it should be treated as a Promise. The rule provides precise instructions for converting the Page Component function to 'async', updating the 'params' type signature to include 'Promise', and modifying the parameter access to use 'await'. This resolves compilation errors related to 'params' missing Promise properties.
+
+## Find Pattern
+Locate a Next.js Page Component defined with ⁠ export default function ⁠ that matches the following exact structural pattern:
+1.⁠ ⁠The Page Component function is NOT declared as ⁠ async ⁠.
+2.⁠ ⁠The 'params' object is destructured from the component's props.
+3.⁠ ⁠The TypeScript type annotation for 'params' in the function signature is a direct object (e.g., ⁠ { params: { tableId: string; sessionId: string } } ⁠), NOT a Promise type.
+4.⁠ ⁠Inside the function body, properties from 'params' are destructured directly (e.g., ⁠ const { prop1, prop2 } = params; ⁠) WITHOUT 'await'.
+
+The exact code structure to find is:
+⁠ typescript
+export default function $COMPONENT_NAME$({
+  params,
+}: {
+  params: $PARAMS_INNER_TYPE$; // Target: Type is a direct object, e.g., '{ tableId: string; sessionId: string }'
+}) {
+  // ... any code before param access
+  const { $PARAM_PROPERTIES_DESTRUCTURED$ } = params; // Target: Direct destructuring access without await
+  // ... any code after param access
+}
+ ⁠
+
+## Replacement Pattern
+Apply the following three precise modifications to the code identified by the FIND_PATTERN. No other code should be changed, added, or removed.
+
+1.⁠ ⁠Function Declaration Modification:
+⁠ typescript
+export default async function $COMPONENT_NAME$
+ ⁠
+
+2.Parameter Type Annotation Change:
+⁠ typescript
+params: Promise<$PARAMS_INNER_TYPE$>;
+ ⁠
+
+3.⁠ ⁠Parameter Destructuring Access Modification:
+⁠ typescript
+const { $PARAM_PROPERTIES_DESTRUCTURED$ } = await params;
+ ⁠
+The resulting code structure after applying these changes will be:
+⁠ typescript
+export default async function $COMPONENT_NAME$({ // Added 'async'
+  params,
+}: {
+  params: Promise<$PARAMS_INNER_TYPE$>; // Type of 'params' is now a Promise
+}) {
+  // ... any code before param access
+  const { $PARAM_PROPERTIES_DESTRUCTURED$ } = await params; // Access with 'await'
+  // ... any code after param access
+}
+ ⁠
+
+## Placeholder Definitions
+•⁠  ⁠⁠ $COMPONENT_NAME$ ⁠: Represents the name of the Page component function (e.g., 'ActiveSessionPage'). This placeholder should retain its original value.
+•⁠  ⁠⁠ $PARAMS_INNER_TYPE$ ⁠: Represents the specific TypeScript object type that 'params' contains (e.g., '{ tableId: string; sessionId: string }'). This type must be preserved exactly as found and only wrapped within 'Promise<>'.
+•⁠  ⁠⁠ $PARAM_PROPERTIES_DESTRUCTURED$ ⁠: Represents the comma-separated list of properties being destructured from 'params' (e.g., 'sessionId, tableId'). This must be preserved exactly as found.
+
+## Important Instructions
+•⁠  ⁠This rule is designed specifically for Next.js *Page Components* (⁠export default function ⁠). It must NOT be applied to API Routes (⁠ export async function GET ⁠, ⁠ POST ⁠, etc.).
+•⁠  ⁠Strictly adhere to the Find Pattern and Replacement Pattern. Do not apply this rule if the Find Pattern is not an exact match.
+•⁠  ⁠Perform ONLY the three specified modifications: adding 'async' to the function, wrapping the 'params' type with 'Promise<>', and adding 'await' before the destructuring assignment.
+•⁠  ⁠DO NOT introduce any additional code (e.g., imports, helper functions), error handling, comments, or refactorings beyond these precise changes.
+•⁠  ⁠Ensure all other lines of code, including other props or parameters, and lines preceding or succeeding the identified pattern, remain untouched.

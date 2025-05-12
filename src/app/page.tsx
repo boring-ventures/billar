@@ -15,6 +15,7 @@ import ScrollReveal from "@/components/landing-v0/scroll-reveal"
 import RefinedTableAnimation from "@/components/landing-v0/animations/refined-table-animation"
 import RefinedCustomerAnimation from "@/components/landing-v0/animations/refined-customer-animation"
 import RefinedAnalyticsAnimation from "@/components/landing-v0/animations/refined-analytics-animation"
+import { AuthHeader } from "@/components/views/landing-page/auth-header"
 
 export default function Home() {
   return (
@@ -47,14 +48,8 @@ export default function Home() {
               Pricing
             </Link>
           </nav>
-          <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              className="hidden border-green-500 text-green-500 hover:bg-green-950 hover:text-green-400 md:inline-flex transition-all duration-300"
-            >
-              Log In
-            </Button>
-            <Button className="bg-red-600 text-white hover:bg-red-500 transition-all duration-300">Get Started</Button>
+          <div className="hidden md:flex">
+            <AuthHeader />
           </div>
         </div>
       </header>
@@ -73,19 +68,23 @@ export default function Home() {
                 and boost revenue.
               </p>
               <div className="flex flex-col gap-4 sm:flex-row">
-                <Button
-                  className="bg-green-600 text-white hover:bg-green-500 transition-all duration-300 transform hover:scale-105"
-                  size="lg"
-                >
-                  Start Free Trial
-                </Button>
-                <Button
-                  variant="outline"
-                  className="border-red-500 text-red-500 hover:bg-red-950 hover:text-red-400 transition-all duration-300 transform hover:scale-105"
-                  size="lg"
-                >
-                  Watch Demo
-                </Button>
+                <Link href="/sign-up">
+                  <Button
+                    className="bg-green-600 text-white hover:bg-green-500 transition-all duration-300 transform hover:scale-105"
+                    size="lg"
+                  >
+                    Start Free Trial
+                  </Button>
+                </Link>
+                <Link href="#features">
+                  <Button
+                    variant="outline"
+                    className="border-red-500 text-red-500 hover:bg-red-950 hover:text-red-400 transition-all duration-300 transform hover:scale-105"
+                    size="lg"
+                  >
+                    Watch Demo
+                  </Button>
+                </Link>
               </div>
             </div>
           </ScrollReveal>

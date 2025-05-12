@@ -1,16 +1,60 @@
-{
-    "name": "Next.js API Route Params Promise Handling",
-    "description": "Corrects the type definition of 'params' in Next.js API route handlers to be a Promise, and updates its property access to use 'await'. This is crucial for resolving build-time type errors and ensuring runtime stability in production environments, fostering better development for current and future projects.",
-    "pattern": {
-      "type": "regex",
-      "value": "(export\\s+async\\s+function\\s+)(\\w+)(\\s*\\(\\s*req:\\s*NextRequest,\\s*{\\s*params\\s*}:\\s*{\\s*params:\\s*)(\\S[^\\}]+?)(}\\s*\\)\\s*\\{\\s*[\\s\\S]*?)(const\\s+)(\\w+)(\\s*=\\s*params\\.)(\\w+)(;[\\s\\S]*?\\})",
-      "flags": "gs"
-    },
-    "replacement": "$1$2$3Promise<$4>$5$6$7$8(await params).$9$10",
-    "scope": {
-      "files": ["**/pages/api/**/*.ts", "**/app/**/route.ts"],
-      "exclude": ["node_modules/**", ".next/**", "dist/**"]
-    },
-    "severity": "error",
-    "message": "CRITICAL TYPE ERROR: 'params' in this Next.js API route handler should be typed as a Promise and accessed with 'await'. This is a mandatory fix for production readiness, resolving build failures and ensuring runtime stability. Review and apply immediately."
-  }
+#cursorrule
+
+# Next.js Page Component Params Promise Handling
+
+## Description
+This rule specifically targets Next.js Page Components where the 'params' object, passed as part of the component's props, is typed as a direct object but requires resolution as a Promise. It provides precise instructions for converting the Page Component function to 'async', updating the 'params' type signature to include 'Promise', and modifying the parameter access to use 'await'.
+
+## Find Pattern
+Locate a Next.js Page Component defined with `export default function` that strictly matches the following structural and behavioral criteria:
+1. The Page Component function is NOT declared as `async`.
+2. The 'params' object is destructured from the component's props.
+3. The TypeScript type annotation for 'params' in the function signature is a direct object (e.g., '{ params: { tableId: string; sessionId: string } }'), explicitly NOT a Promise type.
+4. Inside the function body, properties from 'params' are destructured directly WITHOUT being preceded by an 'await' keyword.
+
+The exact code structure to find is:
+```typescript
+export default function $COMPONENT_NAME$({
+  params,
+}: {
+  params: $PARAMS_INNER_TYPE$;
+}) {
+  const { $PARAM_PROPERTIES_DESTRUCTURED$ } = params;
+}
+```
+
+## Replacement Pattern
+Apply the following three precise modifications:
+
+1. Function Declaration Modification:
+```typescript
+export default async function $COMPONENT_NAME$
+```
+
+2. Parameter Type Annotation Change:
+```typescript
+params: Promise<$PARAMS_INNER_TYPE$>;
+```
+
+3. Parameter Destructuring Access Modification:
+```typescript
+const { $PARAM_PROPERTIES_DESTRUCTURED$ } = await params;
+```
+
+## Placeholder Definitions
+- `$COMPONENT_NAME$`: The exact name of the Page component function
+- `$PARAMS_INNER_TYPE$`: The exact TypeScript object type that 'params' contains
+- `$PARAM_PROPERTIES_DESTRUCTURED$`: The exact comma-separated list of properties being destructured from 'params'
+
+## Rationale
+- Prevents Critical Build Failures
+- Ensures Correct Server-Side Rendering (SSR) / Static Site Generation (SSG)
+- Maintains Application Stability and User Experience
+- Ensures Future Compatibility
+
+## Important Instructions
+- This rule is designed specifically for Next.js Page Components (`export default function`)
+- Strictly adhere to the Find Pattern and Replacement Pattern
+- Perform ONLY the three specified modifications
+- DO NOT introduce any additional code
+- Ensure all other lines of code remain untouched

@@ -29,10 +29,12 @@ export function DataTable({ columns, data }: DataTableProps) {
       </TableHeader>
       <TableBody>
         {data.map((row, i) => (
-          <TableRow key={i}>
+          <TableRow key={row.id || i}>
             {columns.map((column) => (
-              <TableCell key={column.accessorKey}>
-                {row[column.accessorKey]}
+              <TableCell key={`${row.id || i}-${column.accessorKey}`}>
+                {typeof row[column.accessorKey] === 'object' 
+                  ? JSON.stringify(row[column.accessorKey])
+                  : row[column.accessorKey]}
               </TableCell>
             ))}
           </TableRow>

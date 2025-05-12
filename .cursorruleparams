@@ -1,0 +1,16 @@
+{
+    "name": "Next.js API Route Params Promise Handling",
+    "description": "Corrects the type definition of 'params' in Next.js API route handlers to be a Promise, and updates its property access to use 'await'. This is crucial for resolving build-time type errors and ensuring runtime stability in production environments, fostering better development for current and future projects.",
+    "pattern": {
+      "type": "regex",
+      "value": "(export\\s+async\\s+function\\s+)(\\w+)(\\s*\\(\\s*req:\\s*NextRequest,\\s*{\\s*params\\s*}:\\s*{\\s*params:\\s*)(\\S[^\\}]+?)(}\\s*\\)\\s*\\{\\s*[\\s\\S]*?)(const\\s+)(\\w+)(\\s*=\\s*params\\.)(\\w+)(;[\\s\\S]*?\\})",
+      "flags": "gs"
+    },
+    "replacement": "$1$2$3Promise<$4>$5$6$7$8(await params).$9$10",
+    "scope": {
+      "files": ["**/pages/api/**/*.ts", "**/app/**/route.ts"],
+      "exclude": ["node_modules/**", ".next/**", "dist/**"]
+    },
+    "severity": "error",
+    "message": "CRITICAL TYPE ERROR: 'params' in this Next.js API route handler should be typed as a Promise and accessed with 'await'. This is a mandatory fix for production readiness, resolving build failures and ensuring runtime stability. Review and apply immediately."
+  }

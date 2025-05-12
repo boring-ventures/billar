@@ -1,0 +1,16 @@
+{
+  "name": "Next.js Page Component Params Promise Handling",
+  "description": "Corrects the type definition of 'params' in Next.js Page Components to be a Promise, makes the component 'async', and updates its property access to use 'await'. This is crucial for resolving build errors, ensuring correct Server-Side Rendering (SSR)/Static Site Generation (SSG) behavior, and maintaining stability in production applications.",
+  "pattern": {
+    "type": "regex",
+    "value": "(export\\s+default\\s+)(function\\s+)(\\w+)(\\s*\\(\\s*{\\s*params\\s*}:\\s*{\\s*params:\\s*)(\\S[^\\}]+?)(}\\s*\\)\\s*\\{\\s*[\\s\\S]*?)(const\\s*{\\s*)([^}]+?)(}\\s*=\\s*)(params;)([\\s\\S]*?\\})",
+    "flags": "gs"
+  },
+  "replacement": "$1async $2$3$4Promise<$5>$6$7$8await $10$11",
+  "scope": {
+    "files": ["**/app/**/*.tsx", "**/pages/**/*.tsx", "**/app/**/*.ts", "**/pages/**/*.ts"],
+    "exclude": ["node_modules/**", ".next/**", "dist/**", "**/api/**"]
+  },
+  "severity": "error",
+  "message": "CRITICAL TYPE ERROR: 'params' in this Next.js Page Component should be typed as a Promise, the component function must be 'async', and 'params' must be accessed with 'await'. This is a mandatory fix for production readiness, resolving build failures and ensuring correct SSR/SSG. Review and apply immediately."
+}

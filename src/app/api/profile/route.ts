@@ -3,10 +3,26 @@ import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import prisma from "@/lib/prisma";
 
+// Helper function to log detailed error information
+function logError(context: string, error: any) {
+  console.error(`API Error [${context}]:`, {
+    message: error?.message || "Unknown error",
+    name: error?.name,
+    stack: error?.stack,
+    details: error,
+  });
+}
+
 // GET: Fetch profile for the current authenticated user
 export async function GET() {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    // Create a new supabase client for each request with fresh cookies
+    const cookieStore = cookies();
+
+    // Debug cookie information
+    console.log("Cookie store available:", !!cookieStore);
+
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
 
     // Get the current user's session
     const {
@@ -14,26 +30,64 @@ export async function GET() {
       error: sessionError,
     } = await supabase.auth.getSession();
 
-    if (sessionError || !session) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    if (sessionError) {
+      logError("Session retrieval", sessionError);
+      return NextResponse.json(
+        {
+          error: "Authentication error",
+          details: sessionError.message,
+        },
+        { status: 401 }
+      );
+    }
+
+    if (!session) {
+      return NextResponse.json(
+        {
+          error: "Not authenticated",
+          message: "No active session found",
+        },
+        { status: 401 }
+      );
     }
 
     const userId = session.user.id;
+    console.log("Session user ID:", userId);
 
-    // Fetch profile from the database
-    const profile = await prisma.profile.findUnique({
-      where: { userId },
-    });
+    try {
+      // Fetch profile from the database
+      const profile = await prisma.profile.findUnique({
+        where: { userId },
+      });
 
-    if (!profile) {
-      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+      if (!profile) {
+        return NextResponse.json(
+          {
+            error: "Profile not found",
+            userId: userId,
+          },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json(profile);
+    } catch (dbError) {
+      logError("Database query", dbError);
+      return NextResponse.json(
+        {
+          error: "Database error",
+          details: dbError instanceof Error ? dbError.message : String(dbError),
+        },
+        { status: 500 }
+      );
     }
-
-    return NextResponse.json(profile);
   } catch (error) {
-    console.error("Error fetching profile:", error);
+    logError("General API error", error);
     return NextResponse.json(
-      { error: "Failed to fetch profile" },
+      {
+        error: "Failed to fetch profile",
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }

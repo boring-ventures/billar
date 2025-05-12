@@ -25,6 +25,10 @@ export type TableWithDetails = Table & {
     maintenanceAt: Date;
     cost: number | null;
   }>;
+  company: {
+    id: string;
+    name: string;
+  };
 };
 
 export function useTables() {
@@ -92,7 +96,12 @@ export function useTables() {
   );
 
   const createTable = useCallback(
-    async (tableData: TableFormValues) => {
+    async (tableData: {
+      name: string;
+      status: TableStatus;
+      hourlyRate: number | null;
+      companyId: string;
+    }) => {
       try {
         setIsSubmitting(true);
         const response = await fetch("/api/tables", {
@@ -135,7 +144,14 @@ export function useTables() {
   );
 
   const updateTable = useCallback(
-    async (tableId: string, tableData: Partial<TableFormValues>) => {
+    async (
+      tableId: string,
+      tableData: {
+        name?: string;
+        status?: TableStatus;
+        hourlyRate?: number | null;
+      }
+    ) => {
       try {
         setIsSubmitting(true);
         const response = await fetch(`/api/tables/${tableId}`, {
@@ -152,9 +168,6 @@ export function useTables() {
             description: "Table updated successfully",
           });
           await fetchTables();
-          if (tableDetails) {
-            await fetchTableDetails(tableId);
-          }
           return true;
         } else {
           const error = await response.json();
@@ -177,7 +190,7 @@ export function useTables() {
         setIsSubmitting(false);
       }
     },
-    [fetchTables, fetchTableDetails, tableDetails, toast]
+    [fetchTables, toast]
   );
 
   const deleteTable = useCallback(

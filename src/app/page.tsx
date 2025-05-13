@@ -1,32 +1,27 @@
-import Head from "next/head";
+import { Metadata } from "next";
 import Header from "@/components/views/landing-page/Header";
 import Hero from "@/components/views/landing-page/Hero";
-import SocialProof from "@/components/views/landing-page/SocialProof";
 import Features from "@/components/views/landing-page/Features";
-import Testimonials from "@/components/views/landing-page/Testimonials";
-import CTA from "@/components/views/landing-page/CTA";
+import About from "@/components/views/landing-page/About";
+import PricingCTA from "@/components/views/landing-page/CTA";
 import Footer from "@/components/views/landing-page/Footer";
+
+export const metadata: Metadata = {
+  title: "BILLAR - Billiard Parlour Management App",
+  description:
+    "Comprehensive management app for billiard parlours. Manage tables, inventory, reservations, and payments for just $20/month.",
+};
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen bg-white">
-      <Head>
-        <title>Billar - Pool Games Management</title>
-        <meta
-          name="description"
-          content="Billar - A modern platform for managing pool games and tournaments."
-        />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-
+    <div className="flex flex-col min-h-screen bg-[#191919]">
       <Header />
 
-      <main className="flex-grow">
+      <main className="flex-grow pt-16">
         <Hero />
-        <SocialProof />
         <Features />
-        <Testimonials />
-        <CTA />
+        <About />
+        <PricingCTA />
       </main>
 
       <Footer />

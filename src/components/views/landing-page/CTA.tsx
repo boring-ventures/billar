@@ -1,62 +1,96 @@
 import Link from "next/link";
-import { ArrowRight, Trophy } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import { ShimmerButton } from "@/components/magicui/shimmer-button";
-import { BlurFade } from "@/components/magicui/blur-fade";
-import { AnimatedShinyText } from "@/components/magicui/animated-shiny-text";
+import { GlowingStarsBackgroundCard } from "@/components/magicui/glowing-stars-background";
 
-export default function CTA() {
+export default function PricingCTA() {
+  const features = [
+    "Unlimited tables management",
+    "Complete POS system",
+    "Inventory tracking",
+    "Reservation management",
+    "Financial reporting",
+    "Customer database",
+    "Staff management",
+  ];
+
   return (
-    <section className="py-28 bg-gray-50 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute inset-0 bg-gradient-to-b from-gray-50 via-gray-50 to-gray-100 -z-10" />
-      <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/5 rounded-full blur-3xl -z-10" />
-      <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-primary/5 rounded-full blur-3xl -z-10" />
+    <section
+      id="pricing"
+      className="py-24 bg-[#191919] relative overflow-hidden"
+    >
+      {/* Gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#212121]/50 to-[#191919] -z-10" />
 
-      {/* Background pattern */}
-      <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-20 -z-10" />
+      {/* Colored glow effects */}
+      <div className="absolute top-40 left-20 w-1/2 h-1/3 bg-red-500/10 rounded-full blur-3xl -z-5"></div>
+      <div className="absolute bottom-20 right-20 w-1/2 h-1/3 bg-green-500/10 rounded-full blur-3xl -z-5"></div>
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
-        <div className="max-w-3xl mx-auto backdrop-blur-sm bg-white/30 rounded-2xl p-12 border border-white/40 shadow-xl">
-          <div className="text-center">
-            <BlurFade>
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-6">
-                <Trophy className="h-8 w-8 text-primary" />
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="max-w-3xl mx-auto text-center mb-16">
+          <h2 className="text-4xl font-bold tracking-tight mb-4 text-white">
+            Simple, Transparent Pricing
+          </h2>
+          <p className="text-xl text-gray-400">
+            One affordable plan with everything you need to run your billiard
+            parlour efficiently
+          </p>
+        </div>
+
+        <div className="max-w-lg mx-auto">
+          <GlowingStarsBackgroundCard containerClassName="border-gray-800 bg-[#191919]">
+            <div className="text-center py-8 relative">
+              {/* Accent corner blobs */}
+              <div className="absolute top-0 left-0 w-32 h-32 bg-red-500/10 rounded-full blur-xl -z-10"></div>
+              <div className="absolute bottom-0 right-0 w-32 h-32 bg-green-500/10 rounded-full blur-xl -z-10"></div>
+
+              <div className="bg-gradient-to-r from-red-500/20 to-green-500/20 text-white text-sm font-medium rounded-full inline-flex px-4 py-1 mb-4">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-green-500">
+                  Full-featured plan
+                </span>
               </div>
-
-              <AnimatedShinyText>
-                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-                  Ready to elevate your pool game?
-                </h2>
-              </AnimatedShinyText>
-
-              <p className="text-xl text-gray-600 mb-10">
-                Join Billar today and take your pool games management to a new
-                level.
+              <div className="flex items-center justify-center mb-3">
+                <span className="text-5xl font-bold text-white">$20</span>
+                <span className="text-gray-400 ml-2">/month</span>
+              </div>
+              <p className="text-gray-400 mb-6 text-sm">
+                Billed monthly or $200/year (save $40)
               </p>
 
-              <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
-                <ShimmerButton>
-                  <Link
-                    href="/sign-up"
-                    className="inline-flex items-center px-8 py-3 text-lg font-medium"
-                  >
-                    Get Started
-                    <ArrowRight
-                      className="ml-2 group-hover:translate-x-1 transition-transform"
-                      size={20}
-                    />
-                  </Link>
-                </ShimmerButton>
-
+              <ShimmerButton
+                className="w-full mb-8"
+                shimmerColor="#ef4444"
+                background="rgba(239, 68, 68, 0.9)"
+              >
                 <Link
-                  href="#features"
-                  className="text-primary hover:text-primary/80 font-medium transition-colors"
+                  href="/sign-up"
+                  className="inline-flex items-center justify-center w-full px-6 py-3 text-base font-medium"
                 >
-                  Explore Features
+                  Get Started
+                  <ArrowRight
+                    className="ml-2 group-hover:translate-x-1 transition-transform"
+                    size={18}
+                  />
                 </Link>
+              </ShimmerButton>
+
+              <div className="space-y-3 text-left">
+                {features.map((feature, index) => (
+                  <div key={feature} className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <Check
+                        className={`h-5 w-5 ${index % 2 === 0 ? "text-red-500" : "text-green-500"} mt-0.5`}
+                      />
+                    </div>
+                    <span className="ml-3 text-gray-300">{feature}</span>
+                  </div>
+                ))}
               </div>
-            </BlurFade>
-          </div>
+
+              {/* Green accent line at the bottom */}
+              <div className="mt-8 h-1 w-16 mx-auto bg-gradient-to-r from-red-500 to-green-500 rounded-full"></div>
+            </div>
+          </GlowingStarsBackgroundCard>
         </div>
       </div>
     </section>

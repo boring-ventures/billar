@@ -1,64 +1,93 @@
-import { CheckCircle } from "lucide-react";
-import { ShineBorder } from "@/components/magicui/shine-border";
+import { CheckIcon } from "lucide-react";
 import { BlurFade } from "@/components/magicui/blur-fade";
-import { SparklesText } from "@/components/magicui/sparkles-text";
+import { cn } from "@/lib/utils";
 
 export default function About() {
+  const benefits = [
+    "Developed specifically for billiard parlour owners",
+    "Comprehensive management of all aspects of your business",
+    "Built by experts with years of experience in pool halls",
+    "Regular updates with new features based on feedback",
+    "Cloud-based system accessible from anywhere",
+  ];
+
   return (
-    <section id="about" className="py-20 bg-secondary">
+    <section id="about" className="py-24 bg-[#121212] overflow-hidden">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <BlurFade className="max-w-3xl mx-auto text-center">
-          <SparklesText text="About POSITIVE-Next">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          <BlurFade>
+            <div className="relative">
+              {/* Main image */}
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-gray-800">
+                <div className="aspect-[4/3] relative bg-gray-800 flex items-center justify-center">
+                  <div className="absolute w-full h-full flex items-center justify-center">
+                    <div className="w-3/4 h-3/4 bg-gradient-to-br from-red-500/20 to-green-500/20 rounded-lg flex items-center justify-center">
+                      <span className="text-4xl font-bold text-white">
+                        BILLAR
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-          </SparklesText>
-          <p className="text-lg text-muted-foreground mb-12">
-            POSITIVE-Next is a revolutionary app designed to help you harness
-            the power of your mind. Our mission is to empower individuals to
-            overcome mental saboteurs and achieve their full potential.
-          </p>
-        </BlurFade>
+              {/* Floating stats card */}
+              <div className="absolute -bottom-6 -right-6 bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-800 max-w-[240px]">
+                <div className="text-2xl font-bold text-red-500 mb-1">100%</div>
+                <div className="text-sm text-gray-400">
+                  Designed for pool hall owners
+                </div>
+              </div>
 
-        <div className="grid md:grid-cols-2 gap-12 items-center">
-          <ShineBorder 
-            className="space-y-6 p-8 rounded-xl"
-            borderWidth={1}
-            color="rgba(var(--primary), 0.5)"
-          >
-            <h3 className="text-2xl font-semibold text-foreground mb-4">
-              Why Choose POSITIVE-Next?
-            </h3>
-            {[
-              { id: "science", text: "Science-based approach" },
-              { id: "personal", text: "Personalized experience" },
-              { id: "progress", text: "Track your progress" },
-              { id: "expert", text: "Expert guidance" },
-            ].map((item) => (
-              <BlurFade
-                key={item.id}
-                className="flex items-center space-x-3"
-              >
-                <CheckCircle className="h-6 w-6 text-primary" />
-                <span className="text-foreground">{item.text}</span>
-              </BlurFade>
-            ))}
-          </ShineBorder>
+              {/* Decorative elements */}
+              <div className="absolute -z-10 -top-6 -left-6 w-24 h-24 bg-red-500/10 rounded-full blur-xl"></div>
+              <div className="absolute -z-10 -bottom-10 right-20 w-32 h-32 bg-green-500/10 rounded-full blur-xl"></div>
+            </div>
+          </BlurFade>
 
-          <ShineBorder 
-            className="bg-primary/10 rounded-xl p-8"
-            borderWidth={1}
-            color="rgba(var(--primary), 0.5)"
-          >
-            <BlurFade>
-              <h3 className="text-2xl font-semibold text-foreground mb-4">
-                Our Vision
-              </h3>
-              <p className="text-muted-foreground">
-                We envision a world where everyone has the tools and knowledge to
-                cultivate a positive, resilient mindset. Through POSITIVE-Next,
-                we&apos;re making mental fitness accessible and engaging for all.
-              </p>
-            </BlurFade>
-          </ShineBorder>
+          <BlurFade delay={0.2}>
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-3xl font-bold text-white mb-4">
+                  Why Choose Our Billiard Management App?
+                </h2>
+                <p className="text-lg text-gray-400 mb-6">
+                  We&apos;ve created the most intuitive mobile-first solution
+                  that addresses the unique challenges faced by billiard parlour
+                  owners. From table management to financial reporting, our
+                  platform streamlines every aspect of your business.
+                </p>
+              </div>
+
+              <ul className="space-y-3">
+                {benefits.map((benefit, i) => (
+                  <li key={i} className="flex items-start">
+                    <span
+                      className={cn(
+                        "flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full mr-3 mt-1",
+                        "bg-red-500/20 text-red-500"
+                      )}
+                    >
+                      <CheckIcon className="h-3 w-3" />
+                    </span>
+                    <span className="text-gray-300">{benefit}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="pt-6">
+                <div className="p-4 bg-gray-900 rounded-lg border border-gray-800">
+                  <p className="text-gray-300 italic">
+                    &ldquo;As a billiard parlour owner, I needed a system that
+                    could scale with my business. This app does exactly that,
+                    while being incredibly user-friendly and affordable.&rdquo;
+                  </p>
+                  <div className="mt-3 text-sm text-gray-500 font-medium">
+                    &mdash; Daniel R., Owner of Premier Billiards
+                  </div>
+                </div>
+              </div>
+            </div>
+          </BlurFade>
         </div>
       </div>
     </section>

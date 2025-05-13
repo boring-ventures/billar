@@ -1,113 +1,152 @@
-import { Trophy, Users, Clock, Calendar, Award, ChartBar } from "lucide-react";
+import {
+  LayoutDashboard,
+  Calendar,
+  DollarSign,
+  ShoppingCart,
+  BarChart2,
+  Users,
+  Clock,
+  ClipboardList,
+} from "lucide-react";
 import { BlurFade } from "@/components/magicui/blur-fade";
-import { ShineBorder } from "@/components/magicui/shine-border";
-import { AnimatedShinyText } from "@/components/magicui/animated-shiny-text";
-
-const features = [
-  {
-    id: "tournament-management",
-    icon: Trophy,
-    title: "Tournament Management",
-    description:
-      "Create and manage pool tournaments with customizable formats and rules.",
-  },
-  {
-    id: "player-profiles",
-    icon: Users,
-    title: "Player Profiles",
-    description:
-      "Track player statistics, rankings, and performance history over time.",
-  },
-  {
-    id: "real-time-scoring",
-    icon: Clock,
-    title: "Real-Time Scoring",
-    description:
-      "Update game scores in real-time and instantly share results with participants.",
-  },
-  {
-    id: "event-scheduling",
-    icon: Calendar,
-    title: "Event Scheduling",
-    description:
-      "Schedule games and tournaments with integrated notifications and reminders.",
-  },
-  {
-    id: "leaderboards",
-    icon: Award,
-    title: "Leaderboards",
-    description:
-      "Showcase top players with dynamic leaderboards and achievement badges.",
-  },
-  {
-    id: "analytics",
-    icon: ChartBar,
-    title: "Performance Analytics",
-    description:
-      "Gain insights into player and tournament statistics with detailed analytics.",
-  },
-];
+import { TickingCounter } from "@/components/magicui/ticking-counter";
 
 export default function Features() {
+  const features = [
+    {
+      icon: LayoutDashboard,
+      title: "Table Management",
+      description:
+        "Monitor and manage all your billiard tables in real-time. Track table status, availability, and efficiently handle maintenance schedules.",
+      color: "bg-red-500/10 text-red-500",
+    },
+    {
+      icon: Calendar,
+      title: "Reservation System",
+      description:
+        "Allow customers to book tables in advance. Manage reservations with an intuitive calendar interface and prevent double bookings.",
+      color: "bg-green-500/10 text-green-500",
+    },
+    {
+      icon: Clock,
+      title: "Time Tracking",
+      description:
+        "Automatically track table usage time with precise hourly rates. End sessions with a click and generate accurate bills.",
+      color: "bg-red-500/10 text-red-500",
+    },
+    {
+      icon: ShoppingCart,
+      title: "POS & Inventory",
+      description:
+        "Sell food, drinks, and equipment with the built-in point of sale system. Track inventory levels and get low stock alerts.",
+      color: "bg-green-500/20 text-green-500",
+    },
+    {
+      icon: DollarSign,
+      title: "Payment Processing",
+      description:
+        "Accept multiple payment methods including cash, credit cards, and QR payments. Easily manage unpaid bills and payment status.",
+      color: "bg-red-500/20 text-red-500",
+    },
+    {
+      icon: BarChart2,
+      title: "Financial Reports",
+      description:
+        "Generate comprehensive financial reports with breakdowns of income from table rentals, food and beverages, and other revenue streams.",
+      color: "bg-green-500/10 text-green-500",
+    },
+    {
+      icon: Users,
+      title: "Customer Management",
+      description:
+        "Build a database of your regular customers. Track preferences, reservation history, and create loyalty programs.",
+      color: "bg-pink-500/10 text-pink-500",
+    },
+    {
+      icon: ClipboardList,
+      title: "Staff Management",
+      description:
+        "Manage employee accounts with different access levels. Track staff performance and table session assignments.",
+      color: "bg-teal-500/10 text-teal-500",
+    },
+  ];
+
   return (
     <section
       id="features"
-      className="relative py-28 bg-gray-50 overflow-hidden"
+      className="py-24 bg-[#191919] relative overflow-hidden"
     >
-      {/* Decorative elements */}
-      <div className="absolute top-20 right-0 w-80 h-80 bg-primary/5 rounded-full blur-3xl -z-0" />
-      <div className="absolute bottom-40 left-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl -z-0" />
+      {/* Subtle diagonal pattern */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#252525_1px,transparent_1px),linear-gradient(to_bottom,#252525_1px,transparent_1px)] bg-[size:32px_32px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_50%,#000_60%,transparent_100%)]"></div>
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
-        <div className="text-center mb-20 max-w-2xl mx-auto">
-          <BlurFade>
-            <AnimatedShinyText>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                Everything you need
-              </h2>
-            </AnimatedShinyText>
-            <p className="text-lg text-gray-600">
-              Comprehensive tools to manage your pool games and tournaments with
-              ease
-            </p>
-          </BlurFade>
+      {/* Colored glow effects */}
+      <div className="absolute top-20 left-20 w-1/3 h-1/3 bg-red-500/10 rounded-full blur-3xl -z-10"></div>
+      <div className="absolute bottom-20 right-20 w-1/3 h-1/3 bg-green-500/10 rounded-full blur-3xl -z-10"></div>
+
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="max-w-3xl mx-auto text-center mb-16">
+          <p className="text-red-500 font-medium mb-2">Powerful Features</p>
+          <h2 className="text-4xl font-bold tracking-tight mb-4 text-white">
+            Everything You Need For Your Pool Hall
+          </h2>
+          <p className="text-xl text-gray-400">
+            Our platform combines all essential tools into one unified system
+          </p>
+
+          <div className="flex justify-center gap-10 mt-8">
+            <div className="text-center">
+              <TickingCounter
+                className="text-3xl font-bold text-red-500"
+                from={0}
+                to={40}
+                duration={2.5}
+              />
+              <p className="text-sm text-gray-500">Fewer hours on admin work</p>
+            </div>
+            <div className="text-center">
+              <TickingCounter
+                className="text-3xl font-bold text-green-500"
+                from={0}
+                to={30}
+                duration={2.5}
+                suffix="%"
+              />
+              <p className="text-sm text-gray-500">Increase in revenues</p>
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
           {features.map((feature, i) => (
-            <BlurFade key={feature.id} delay={i * 0.1} className="group">
-              <ShineBorder
-                className="h-full bg-white rounded-xl hover:shadow-lg transition-all duration-300"
-                color="rgba(var(--primary), 0.3)"
-                borderWidth={1}
-              >
-                <div className="flex flex-col p-8">
-                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-lg bg-primary/10 text-primary mb-6 group-hover:bg-primary/20 transition-colors">
-                    <feature.icon className="h-7 w-7" />
-                  </div>
+            <BlurFade key={feature.title} delay={i * 0.1}>
+              <div className="relative group">
+                <div className="flex flex-col h-full p-6 bg-gray-900 rounded-2xl shadow-md border border-gray-800 hover:border-red-500/50 dark:hover:border-green-500/50 transition-all duration-300">
+                  {/* Subtle color accent in the corner */}
+                  <div
+                    className={`absolute -top-1 -right-1 w-16 h-16 rounded-full opacity-20 ${i % 2 === 0 ? "bg-red-500/30" : "bg-green-500/30"} blur-xl -z-0`}
+                  ></div>
 
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                  <div
+                    className={`w-12 h-12 rounded-lg flex items-center justify-center mb-5 ${feature.color}`}
+                  >
+                    <feature.icon className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2 text-white">
                     {feature.title}
                   </h3>
+                  <p className="text-gray-400 flex-grow">
+                    {feature.description}
+                  </p>
 
-                  <p className="text-gray-600">{feature.description}</p>
+                  {/* Subtle accent line at the bottom */}
+                  <div
+                    className={`h-1 w-12 mt-4 rounded-full ${i % 2 === 0 ? "bg-red-500/50" : "bg-green-500/50"}`}
+                  ></div>
                 </div>
-              </ShineBorder>
+              </div>
             </BlurFade>
           ))}
         </div>
-      </div>
-
-      {/* Bottom wave divider */}
-      <div className="absolute bottom-0 left-0 right-0 h-16 overflow-hidden">
-        <svg
-          viewBox="0 0 1200 120"
-          preserveAspectRatio="none"
-          className="absolute bottom-0 w-full h-full transform translate-y-1/2"
-          fill="white"
-        >
-          <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V120H0V95.8C59.71,118.11,130.83,141.14,213.2,141.14c67.6,0,124.85-16.73,180.19-39.9a396.42,396.42,0,0,1,40.5-19.18Z" />
-        </svg>
       </div>
     </section>
   );

@@ -1,111 +1,74 @@
 import Link from "next/link";
-import {
-  FacebookIcon,
-  TwitterIcon,
-  InstagramIcon,
-  CircleDot,
-} from "lucide-react";
+import { Facebook, Twitter, Instagram, Github as GitHub } from "lucide-react";
 
 export default function Footer() {
+  const currentYear = new Date().getFullYear();
+
+  const footerLinks = [
+    { name: "Features", href: "/#features" },
+    { name: "Pricing", href: "/#pricing" },
+    { name: "About", href: "/#about" },
+    { name: "Terms", href: "/terms" },
+    { name: "Privacy", href: "/privacy" },
+  ];
+
+  const socialLinks = [
+    { name: "Twitter", icon: Twitter },
+    { name: "Facebook", icon: Facebook },
+    { name: "Instagram", icon: Instagram },
+    { name: "GitHub", icon: GitHub },
+  ];
+
   return (
-    <footer className="bg-gray-900 text-white py-16">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
-          <div>
-            <div className="flex items-center space-x-2 mb-5">
-              <CircleDot className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-bold text-white">Billar</span>
-            </div>
-            <p className="text-gray-400">
-              Modern pool games management platform
+    <footer className="bg-[#191919] text-gray-400 border-t border-gray-800">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="flex flex-col md:flex-row justify-between items-center">
+          <div className="mb-8 md:mb-0">
+            <Link href="/" className="flex items-center space-x-2 mb-4">
+              <div className="w-8 h-8 rounded-full bg-red-500"></div>
+              <span className="text-xl font-bold text-white">BILLAR</span>
+            </Link>
+            <p className="text-sm max-w-xs">
+              Comprehensive management system for billiard parlours and pool
+              halls.
             </p>
           </div>
-          <div>
-            <h4 className="text-lg font-semibold mb-4 text-white">
-              Quick Links
-            </h4>
-            <ul className="space-y-3">
-              <li>
-                <Link
-                  href="/#features"
-                  className="text-gray-400 hover:text-primary transition-colors"
-                >
-                  Features
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/#testimonials"
-                  className="text-gray-400 hover:text-primary transition-colors"
-                >
-                  Testimonials
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/sign-up"
-                  className="text-gray-400 hover:text-primary transition-colors"
-                >
-                  Get Started
-                </Link>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="text-lg font-semibold mb-4 text-white">Legal</h4>
-            <ul className="space-y-3">
-              <li>
-                <Link
-                  href="/terms"
-                  className="text-gray-400 hover:text-primary transition-colors"
-                >
-                  Terms of Service
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/privacy"
-                  className="text-gray-400 hover:text-primary transition-colors"
-                >
-                  Privacy Policy
-                </Link>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="text-lg font-semibold mb-4 text-white">Connect</h4>
-            <div className="flex space-x-4">
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-400 hover:text-primary transition-colors"
-              >
-                <FacebookIcon size={24} />
-              </a>
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-400 hover:text-primary transition-colors"
-              >
-                <TwitterIcon size={24} />
-              </a>
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-400 hover:text-primary transition-colors"
-              >
-                <InstagramIcon size={24} />
-              </a>
+
+          <div className="flex flex-col items-center md:items-end">
+            <div className="flex space-x-6 mb-6">
+              {socialLinks.map((social) => {
+                const SocialIcon = social.icon;
+                return (
+                  <a
+                    key={social.name}
+                    href={`https://${social.name.toLowerCase()}.com`}
+                    className="text-gray-400 hover:text-red-500 transition-colors"
+                    aria-label={social.name}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <SocialIcon className="h-5 w-5" />
+                  </a>
+                );
+              })}
             </div>
+
+            <div className="flex flex-wrap justify-center gap-6 mb-6">
+              {footerLinks.map((link) => (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  className="text-sm hover:text-red-500 transition-colors"
+                >
+                  {link.name}
+                </Link>
+              ))}
+            </div>
+
+            <p className="text-sm text-gray-500">
+              &copy; {currentYear} BILLAR. All rights reserved.
+            </p>
           </div>
-        </div>
-        <div className="mt-12 pt-8 border-t border-gray-800 text-center">
-          <p className="text-gray-500">
-            &copy; {new Date().getFullYear()} Billar. All rights reserved.
-          </p>
         </div>
       </div>
     </footer>

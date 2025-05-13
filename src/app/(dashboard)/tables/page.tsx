@@ -6,10 +6,7 @@ import { useEffect, useState } from "react";
 import { TablesTable } from "@/components/tables/tables-table";
 import { TableSessionsTable } from "@/components/tables/table-sessions-table";
 import { TablesGridView } from "@/components/tables/tables-grid-view";
-import {
-  LayoutGrid,
-  Table as TableIcon,
-} from "lucide-react";
+import { LayoutGrid, Table as TableIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TableDialog } from "@/components/tables/table-dialog";

@@ -141,9 +141,13 @@ export function useCreateTableMutation() {
         title: "Success",
         description: "Table created successfully",
       });
-      // Invalidate the tables query for this company
+      // Invalidate all tables queries to ensure data consistency
       queryClient.invalidateQueries({
-        queryKey: ["tables", { companyId: variables.companyId }],
+        queryKey: ["tables"],
+      });
+      // Also invalidate the specific table query
+      queryClient.invalidateQueries({
+        queryKey: ["table", data.id],
       });
       return data;
     },

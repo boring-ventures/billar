@@ -48,7 +48,11 @@ export default function TableDetailsPage() {
       status: "ACTIVE",
     });
 
-  const activeSession = activeSessions.length > 0 ? activeSessions[0] : null;
+  const isLoading = tableLoading || sessionsLoading;
+
+  // Only set activeSession when not in loading state
+  const activeSession =
+    !isLoading && activeSessions.length > 0 ? activeSessions[0] : null;
 
   // Update active session duration every second
   useEffect(() => {
@@ -118,13 +122,11 @@ export default function TableDetailsPage() {
     }
   };
 
-  const isLoading = tableLoading || sessionsLoading;
-
   if (isLoading) {
     return (
       <>
         <TableDetailsSkeleton />
-        {sessionsLoading && <ActiveSessionSkeleton />}
+        <ActiveSessionSkeleton />
       </>
     );
   }

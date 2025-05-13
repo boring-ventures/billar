@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   Users,
   TableProperties,
+  PackageOpen,
 } from "lucide-react";
 import type { SidebarData } from "../types";
 
@@ -49,6 +50,11 @@ export const sidebarData: SidebarData = {
           title: "Table Management",
           url: "/tables",
           icon: TableProperties,
+        },
+        {
+          title: "Inventory Management",
+          url: "/inventory",
+          icon: PackageOpen,
         },
       ],
     },

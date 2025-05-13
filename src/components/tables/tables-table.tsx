@@ -189,6 +189,7 @@ export function TablesTable() {
     },
     {
       id: "actions",
+      header: "Actions",
       cell: ({ row }) => {
         const table = row.original;
 

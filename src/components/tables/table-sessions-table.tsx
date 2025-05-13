@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ColumnDef } from "@tanstack/react-table";
 import { SessionStatus, TableSession } from "@prisma/client";
@@ -41,6 +41,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { SessionDialog } from "./session-dialog";
+import { TableSessionsTableSkeleton } from "./table-sessions-table-skeleton";
 
 interface TableSessionsTableProps {
   activeOnly?: boolean;
@@ -76,6 +77,11 @@ export function TableSessionsTable({
   const [selectedSession, setSelectedSession] =
     useState<SessionWithDuration | null>(null);
   const [sessionDialogOpen, setSessionDialogOpen] = useState(false);
+
+  // Update statusFilter when activeOnly prop changes
+  useEffect(() => {
+    setStatusFilter(activeOnly ? "ACTIVE" : "all");
+  }, [activeOnly]);
 
   const { data: sessions = [], isLoading } = useTableSessionsQuery({
     status:
@@ -204,6 +210,7 @@ export function TableSessionsTable({
     },
     {
       id: "actions",
+      header: "Actions",
       cell: ({ row }) => {
         const session = row.original;
 
@@ -260,7 +267,7 @@ export function TableSessionsTable({
   ];
 
   if (isLoading) {
-    return <TableSkeleton columnCount={8} />;
+    return <TableSessionsTableSkeleton />;
   }
 
   const statusOptions = activeOnly ? (

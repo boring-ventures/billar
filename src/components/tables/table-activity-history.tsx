@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TableStatus } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";
 import { CalendarClock, User } from "lucide-react";
+import { ActivityHistorySkeleton } from "./activity-history-skeleton";
 
 interface TableActivityHistoryProps {
   tableId: string;
@@ -53,7 +54,7 @@ export function TableActivityHistory({ tableId }: TableActivityHistoryProps) {
   };
 
   if (isLoading) {
-    return <div className="text-center py-4">Loading activity logs...</div>;
+    return <ActivityHistorySkeleton />;
   }
 
   if (activityLogs.length === 0) {

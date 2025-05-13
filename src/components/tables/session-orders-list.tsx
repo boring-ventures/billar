@@ -2,28 +2,25 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
 import { ShoppingCart } from "lucide-react";
+import { SessionOrdersListSkeleton } from "./session-orders-list-skeleton";
 
 interface SessionOrdersListProps {
   sessionId: string;
 }
 
-interface OrderItem {
-  id: string;
-  quantity: number;
-  unitPrice: number;
-  item: {
-    name: string;
-  };
-}
-
 interface Order {
   id: string;
+  createdAt: string;
   amount: number;
   paymentStatus: string;
-  createdAt: string;
-  orderItems: OrderItem[];
+  items?: Array<{
+    name: string;
+    quantity: number;
+    price: number;
+  }>;
 }
 
 export function SessionOrdersList({ sessionId }: SessionOrdersListProps) {
@@ -39,7 +36,7 @@ export function SessionOrdersList({ sessionId }: SessionOrdersListProps) {
   });
 
   if (isLoading) {
-    return <div className="text-center py-4">Loading orders...</div>;
+    return <SessionOrdersListSkeleton />;
   }
 
   if (orders.length === 0) {
@@ -56,64 +53,56 @@ export function SessionOrdersList({ sessionId }: SessionOrdersListProps) {
   }
 
   return (
-    <div className="space-y-4">
-      {orders.map((order) => (
-        <Card key={order.id}>
-          <CardContent className="pt-6">
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <p className="font-medium">Order #{order.id.slice(-8)}</p>
-                <p className="text-sm text-muted-foreground">
-                  {new Date(order.createdAt).toLocaleString()}
-                </p>
+    <Card>
+      <CardContent className="p-6">
+        {orders.map((order) => (
+          <div
+            key={order.id}
+            className="py-4 border-b last:border-b-0 space-y-2"
+          >
+            <div className="flex justify-between">
+              <div className="font-medium">
+                {new Date(order.createdAt).toLocaleString()}
               </div>
-              <div>
-                <p className="font-bold text-right">
-                  {formatCurrency(order.amount)}
-                </p>
-                <p className="text-sm text-right">
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-xs ${
-                      order.paymentStatus === "PAID"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-amber-100 text-amber-800"
-                    }`}
+              <Badge
+                className={
+                  order.paymentStatus === "PAID"
+                    ? "bg-green-500/15 text-green-600"
+                    : order.paymentStatus === "PENDING"
+                      ? "bg-amber-500/15 text-amber-600"
+                      : "bg-red-500/15 text-red-600"
+                }
+              >
+                {order.paymentStatus}
+              </Badge>
+            </div>
+            {order.items && order.items.length > 0 ? (
+              <div className="space-y-1 mt-2">
+                {order.items.map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex justify-between text-sm text-muted-foreground"
                   >
-                    {order.paymentStatus}
-                  </span>
-                </p>
+                    <div>
+                      {item.quantity} x {item.name}
+                    </div>
+                    <div>{formatCurrency(item.price * item.quantity)}</div>
+                  </div>
+                ))}
               </div>
-            </div>
-
-            <div className="border-t pt-4">
-              <table className="w-full">
-                <thead className="text-xs text-muted-foreground">
-                  <tr>
-                    <th className="text-left pb-2">Item</th>
-                    <th className="text-right pb-2">Qty</th>
-                    <th className="text-right pb-2">Price</th>
-                    <th className="text-right pb-2">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {order.orderItems.map((item) => (
-                    <tr key={item.id}>
-                      <td className="py-1">{item.item.name}</td>
-                      <td className="text-right py-1">{item.quantity}</td>
-                      <td className="text-right py-1">
-                        {formatCurrency(item.unitPrice)}
-                      </td>
-                      <td className="text-right py-1">
-                        {formatCurrency(item.quantity * item.unitPrice)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+            ) : (
+              <div className="flex justify-between mt-2">
+                <span className="text-sm text-muted-foreground">
+                  Order total
+                </span>
+                <span className="font-medium">
+                  {formatCurrency(order.amount)}
+                </span>
+              </div>
+            )}
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }

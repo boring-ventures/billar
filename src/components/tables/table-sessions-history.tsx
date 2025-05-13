@@ -14,6 +14,7 @@ import { formatCurrency, formatDuration } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { SessionStatus, TableSession } from "@prisma/client";
 import { Calendar, Clock } from "lucide-react";
+import { TableSessionsSkeleton } from "./table-sessions-skeleton";
 
 interface TableSessionsHistoryProps {
   tableId: string;
@@ -65,7 +66,7 @@ export function TableSessionsHistory({ tableId }: TableSessionsHistoryProps) {
   };
 
   if (isLoading) {
-    return <div className="text-center py-4">Loading session history...</div>;
+    return <TableSessionsSkeleton />;
   }
 
   if (sessions.length === 0) {

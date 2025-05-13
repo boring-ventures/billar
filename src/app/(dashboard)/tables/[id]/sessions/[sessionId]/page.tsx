@@ -23,6 +23,7 @@ import { SessionOrdersList } from "@/components/tables/session-orders-list";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useState, useEffect } from "react";
 import { SessionCancelDialog } from "@/components/tables/session-cancel-dialog";
+import { SessionDetailsSkeleton } from "@/components/tables/session-details-skeleton";
 
 export default function TableSessionDetailsPage() {
   const params = useParams();
@@ -84,15 +85,7 @@ export default function TableSessionDetailsPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="p-8">
-        <div className="flex items-center justify-between">
-          <h2 className="text-3xl font-bold tracking-tight">
-            Loading session details...
-          </h2>
-        </div>
-      </div>
-    );
+    return <SessionDetailsSkeleton />;
   }
 
   if (!session) {

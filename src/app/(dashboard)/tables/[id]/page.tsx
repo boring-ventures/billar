@@ -27,6 +27,8 @@ import { SessionCancelDialog } from "@/components/tables/session-cancel-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { formatDuration, formatCurrency } from "@/lib/utils";
 import { QuickStartSessionDialog } from "@/components/tables/quick-start-session-dialog";
+import { TableDetailsSkeleton } from "@/components/tables/table-details-skeleton";
+import { ActiveSessionSkeleton } from "@/components/tables/active-session-skeleton";
 
 export default function TableDetailsPage() {
   const params = useParams();
@@ -120,13 +122,10 @@ export default function TableDetailsPage() {
 
   if (isLoading) {
     return (
-      <div className="p-8">
-        <div className="flex items-center justify-between">
-          <h2 className="text-3xl font-bold tracking-tight">
-            Loading table details...
-          </h2>
-        </div>
-      </div>
+      <>
+        <TableDetailsSkeleton />
+        {sessionsLoading && <ActiveSessionSkeleton />}
+      </>
     );
   }
 

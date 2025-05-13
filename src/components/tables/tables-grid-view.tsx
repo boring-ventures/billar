@@ -160,7 +160,7 @@ export function TablesGridView({ companyId, query }: TablesGridViewProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Table Actions</DropdownMenuLabel>
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();

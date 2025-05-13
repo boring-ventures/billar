@@ -9,6 +9,10 @@ import {
   useDeleteTableMutation,
   Table as TableType,
 } from "@/hooks/use-tables-query";
+import {
+  useTableSessionsQuery,
+  useEndTableSessionMutation,
+} from "@/hooks/use-table-sessions-query";
 import { Badge } from "@/components/ui/badge";
 import { TableSkeleton } from "@/components/tables/table-skeleton";
 import { Button } from "@/components/ui/button";
@@ -20,7 +24,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DataTable } from "./data-table";
-import { MoreHorizontal, Edit, Trash, Eye, PlayCircle } from "lucide-react";
+import {
+  MoreHorizontal,
+  Edit,
+  Trash,
+  Eye,
+  PlayCircle,
+  StopCircle,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,16 +51,17 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { TableDialog } from "./table-dialog";
-import { SessionDialog } from "./session-dialog";
+import { QuickStartSessionDialog } from "./quick-start-session-dialog";
 
 export function TablesTable() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  const [isEndSessionAlertOpen, setIsEndSessionAlertOpen] = useState(false);
   const [selectedTable, setSelectedTable] = useState<TableType | null>(null);
   const [tableDialogOpen, setTableDialogOpen] = useState(false);
-  const [sessionDialogOpen, setSessionDialogOpen] = useState(false);
+  const [quickStartDialogOpen, setQuickStartDialogOpen] = useState(false);
 
   const { data: tables = [], isLoading } = useTablesQuery({
     status:
@@ -59,12 +71,30 @@ export function TablesTable() {
     query: searchQuery,
   });
 
+  // Get active sessions to find the session ID for the currently selected table
+  const { data: activeSessions = [] } = useTableSessionsQuery({
+    status: "ACTIVE",
+  });
+
   const deleteTableMutation = useDeleteTableMutation();
+  const endSessionMutation = useEndTableSessionMutation();
 
   const handleDelete = async () => {
     if (selectedTable) {
       await deleteTableMutation.mutateAsync(selectedTable.id);
       setIsDeleteAlertOpen(false);
+    }
+  };
+
+  const handleEndSession = async () => {
+    if (selectedTable) {
+      const session = activeSessions.find(
+        (s: { tableId: string; id: string }) => s.tableId === selectedTable.id
+      );
+      if (session) {
+        await endSessionMutation.mutateAsync(session.id);
+        setIsEndSessionAlertOpen(false);
+      }
     }
   };
 
@@ -80,7 +110,7 @@ export function TablesTable() {
 
   const handleStartSession = (table: TableType) => {
     setSelectedTable(table);
-    setSessionDialogOpen(true);
+    setQuickStartDialogOpen(true);
   };
 
   const columns: ColumnDef<TableType>[] = [
@@ -171,6 +201,17 @@ export function TablesTable() {
                   Start Session
                 </DropdownMenuItem>
               )}
+              {table.status === "OCCUPIED" && (
+                <DropdownMenuItem
+                  onClick={() => {
+                    setSelectedTable(table);
+                    setIsEndSessionAlertOpen(true);
+                  }}
+                >
+                  <StopCircle className="mr-2 h-4 w-4" />
+                  End Session
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => {
@@ -229,12 +270,13 @@ export function TablesTable() {
         }}
       />
 
-      <SessionDialog
-        open={sessionDialogOpen}
-        onOpenChange={setSessionDialogOpen}
+      <QuickStartSessionDialog
+        open={quickStartDialogOpen}
+        onOpenChange={setQuickStartDialogOpen}
         table={selectedTable}
         onSuccess={() => {
-          // Refresh the data
+          setQuickStartDialogOpen(false);
+          setSelectedTable(null);
         }}
       />
 
@@ -255,6 +297,30 @@ export function TablesTable() {
               disabled={deleteTableMutation.isPending}
             >
               {deleteTableMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={isEndSessionAlertOpen}
+        onOpenChange={setIsEndSessionAlertOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>End this session?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will end the active session and calculate the final cost. The
+              table will be marked as available again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleEndSession}
+              disabled={endSessionMutation.isPending}
+            >
+              {endSessionMutation.isPending ? "Processing..." : "End Session"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

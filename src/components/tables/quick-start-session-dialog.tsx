@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { formatCurrency } from "@/lib/utils";
 import { Clock, PlayCircle } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 import {
   Dialog,
@@ -50,6 +51,7 @@ export function QuickStartSessionDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const createSessionMutation = useCreateTableSessionMutation();
+  const { user } = useAuth();
 
   // Update current time every second
   useEffect(() => {
@@ -87,10 +89,12 @@ export function QuickStartSessionDialog({
     try {
       await createSessionMutation.mutateAsync({
         tableId: table.id,
+        staffId: user?.profile?.id,
         staffNotes: values.staffNotes,
       });
 
       form.reset();
+      onOpenChange(false);
       onSuccess?.();
     } catch (error) {
       console.error("Failed to start session:", error);

@@ -6,7 +6,12 @@ import { useEffect, useState } from "react";
 import { TablesTable } from "@/components/tables/tables-table";
 import { TableSessionsTable } from "@/components/tables/table-sessions-table";
 import { TablesGridView } from "@/components/tables/tables-grid-view";
-import { LayoutGrid, Table as TableIcon, ClockIcon } from "lucide-react";
+import {
+  LayoutGrid,
+  Table as TableIcon,
+  ClockIcon,
+  ListIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TableDialog } from "@/components/tables/table-dialog";
@@ -17,7 +22,11 @@ export default function TablesPage() {
   const tabParam = searchParams.get("tab");
   const viewParam = searchParams.get("view");
   const [activeTab, setActiveTab] = useState(
-    tabParam === "sessions" ? "sessions" : "tables"
+    tabParam === "sessions"
+      ? "sessions"
+      : tabParam === "all-sessions"
+        ? "all-sessions"
+        : "tables"
   );
   const [tableView, setTableView] = useState(
     viewParam === "grid" ? "grid" : "list"
@@ -28,7 +37,13 @@ export default function TablesPage() {
 
   // Update the tab when URL changes
   useEffect(() => {
-    setActiveTab(tabParam === "sessions" ? "sessions" : "tables");
+    setActiveTab(
+      tabParam === "sessions"
+        ? "sessions"
+        : tabParam === "all-sessions"
+          ? "all-sessions"
+          : "tables"
+    );
     setTableView(viewParam === "grid" ? "grid" : "list");
   }, [tabParam, viewParam]);
 
@@ -47,9 +62,10 @@ export default function TablesPage() {
           onValueChange={setActiveTab}
           className="w-full max-w-md"
         >
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="tables">Tables</TabsTrigger>
             <TabsTrigger value="sessions">Active Sessions</TabsTrigger>
+            <TabsTrigger value="all-sessions">All Sessions</TabsTrigger>
           </TabsList>
         </Tabs>
 
@@ -106,7 +122,13 @@ export default function TablesPage() {
 
       {activeTab === "sessions" && (
         <div className="mt-6">
-          <TableSessionsTable />
+          <TableSessionsTable activeOnly={true} />
+        </div>
+      )}
+
+      {activeTab === "all-sessions" && (
+        <div className="mt-6">
+          <TableSessionsTable activeOnly={false} />
         </div>
       )}
 

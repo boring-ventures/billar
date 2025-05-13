@@ -64,9 +64,17 @@ type TableSession = {
   } | null;
 };
 
-export function TableSessionsTable() {
+interface TableSessionsTableProps {
+  activeOnly?: boolean;
+}
+
+export function TableSessionsTable({
+  activeOnly = true,
+}: TableSessionsTableProps) {
   const router = useRouter();
-  const [statusFilter, setStatusFilter] = useState<string>("ACTIVE");
+  const [statusFilter, setStatusFilter] = useState<string>(
+    activeOnly ? "ACTIVE" : "all"
+  );
   const [isEndSessionAlertOpen, setIsEndSessionAlertOpen] = useState(false);
   const [isCancelSessionAlertOpen, setIsCancelSessionAlertOpen] =
     useState(false);
@@ -159,6 +167,14 @@ export function TableSessionsTable() {
       },
     },
     {
+      accessorKey: "endedAt",
+      header: "Ended",
+      cell: ({ row }) => {
+        const date = row.getValue("endedAt");
+        return <div>{date ? new Date(date).toLocaleString() : "--"}</div>;
+      },
+    },
+    {
       accessorKey: "durationFormatted",
       header: "Duration",
       cell: ({ row }) => {
@@ -246,20 +262,32 @@ export function TableSessionsTable() {
   ];
 
   if (isLoading) {
-    return <TableSkeleton columnCount={7} />;
+    return <TableSkeleton columnCount={8} />;
   }
 
+  const statusOptions = activeOnly ? (
+    <>
+      <SelectItem value="ACTIVE">Active</SelectItem>
+    </>
+  ) : (
+    <>
+      <SelectItem value="all">All Sessions</SelectItem>
+      <SelectItem value="ACTIVE">Active</SelectItem>
+      <SelectItem value="COMPLETED">Completed</SelectItem>
+      <SelectItem value="CANCELLED">Cancelled</SelectItem>
+    </>
+  );
+
   const statusFilterElement = (
-    <Select value={statusFilter} onValueChange={setStatusFilter}>
+    <Select
+      value={statusFilter}
+      onValueChange={setStatusFilter}
+      disabled={activeOnly}
+    >
       <SelectTrigger className="w-full md:w-[180px]">
         <SelectValue placeholder="Filter by status" />
       </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">All Sessions</SelectItem>
-        <SelectItem value="ACTIVE">Active</SelectItem>
-        <SelectItem value="COMPLETED">Completed</SelectItem>
-        <SelectItem value="CANCELLED">Cancelled</SelectItem>
-      </SelectContent>
+      <SelectContent>{statusOptions}</SelectContent>
     </Select>
   );
 

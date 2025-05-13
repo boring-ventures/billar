@@ -187,9 +187,13 @@ export function useCreateTableSessionMutation() {
         description: "Table session started successfully",
       });
 
-      // Invalidate table sessions queries and the specific table
+      // Invalidate all related queries to ensure consistency across views
       queryClient.invalidateQueries({
         queryKey: ["tableSessions"],
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: ["tables"],
       });
 
       queryClient.invalidateQueries({
@@ -224,9 +228,13 @@ export function useEndTableSessionMutation() {
         description: "Table session ended successfully",
       });
 
-      // Invalidate various queries
+      // Invalidate all related queries to ensure consistency across views
       queryClient.invalidateQueries({
         queryKey: ["tableSessions"],
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: ["tables"],
       });
 
       queryClient.invalidateQueries({
@@ -328,6 +336,7 @@ export function useDeleteTableSessionMutation() {
 
 export function useCancelTableSessionMutation() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (sessionId: string) => {
@@ -342,9 +351,30 @@ export function useCancelTableSessionMutation() {
 
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      toast({
+        title: "Success",
+        description: "Session cancelled successfully",
+      });
+
+      // Invalidate all related queries to ensure consistency across views
       queryClient.invalidateQueries({ queryKey: ["tableSessions"] });
       queryClient.invalidateQueries({ queryKey: ["tables"] });
+
+      if (data.id) {
+        queryClient.invalidateQueries({ queryKey: ["tableSession", data.id] });
+      }
+
+      if (data.tableId) {
+        queryClient.invalidateQueries({ queryKey: ["table", data.tableId] });
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to cancel session",
+        variant: "destructive",
+      });
     },
   });
 }

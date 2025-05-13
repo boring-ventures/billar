@@ -136,7 +136,7 @@ export function useCreateTableMutation() {
 
   return useMutation({
     mutationFn: createTableApi,
-    onSuccess: (data, variables) => {
+    onSuccess: (data) => {
       toast({
         title: "Success",
         description: "Table created successfully",

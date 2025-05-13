@@ -10,10 +10,7 @@ import { LayoutGrid, Table as TableIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TableDialog } from "@/components/tables/table-dialog";
-import { SessionDialog } from "@/components/tables/session-dialog";
-import { TableSkeleton } from "@/components/tables/table-skeleton";
-import { TableSessionsTableSkeleton } from "@/components/tables/table-sessions-table-skeleton";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SessionDialog } from "@/components/tables/session-dialog";;
 
 export default function TablesPage() {
   const searchParams = useSearchParams();

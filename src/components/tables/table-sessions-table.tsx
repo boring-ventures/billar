@@ -10,7 +10,6 @@ import {
   useCancelTableSessionMutation,
 } from "@/hooks/use-table-sessions-query";
 import { Badge } from "@/components/ui/badge";
-import { TableSkeleton } from "@/components/tables/table-skeleton";
 import { Button } from "@/components/ui/button";
 import {
   Select,

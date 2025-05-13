@@ -1,10 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactStrictMode: true,
+  swcMinify: true,
   images: {
     domains: [
       // Add your Supabase project domain
       "swfgvfhpmicwptupjyko.supabase.co",
       "xqakfzhkeiongvzgbhji.supabase.co",
+      "placehold.co",
     ],
   },
   output: "standalone",

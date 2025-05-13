@@ -6,6 +6,7 @@ import {
   Users,
   TableProperties,
   PackageOpen,
+  ShoppingCart,
 } from "lucide-react";
 import type { SidebarData } from "../types";
 
@@ -17,19 +18,9 @@ export const sidebarData: SidebarData = {
   },
   teams: [
     {
-      name: "Shadcn Admin",
+      name: "Billar",
       logo: Command,
-      plan: "Vite + ShadcnUI",
-    },
-    {
-      name: "Acme Inc",
-      logo: GalleryVerticalEnd,
-      plan: "Enterprise",
-    },
-    {
-      name: "Acme Corp.",
-      logo: AudioWaveform,
-      plan: "Startup",
+      plan: "",
     },
   ],
   navGroups: [
@@ -55,6 +46,11 @@ export const sidebarData: SidebarData = {
           title: "Inventory Management",
           url: "/inventory",
           icon: PackageOpen,
+        },
+        {
+          title: "POS Orders",
+          url: "/pos",
+          icon: ShoppingCart,
         },
       ],
     },

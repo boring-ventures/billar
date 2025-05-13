@@ -11,6 +11,8 @@ interface PosOrderFilters {
   paymentStatus?: PaymentStatus;
   dateFrom?: string;
   dateTo?: string;
+  page?: number;
+  limit?: number;
 }
 
 interface OrderSummary {
@@ -27,11 +29,16 @@ interface OrderSummary {
  * Provides order management, filtering, and specialized queries.
  */
 export const usePosOrdersQuery = (initialFilters: PosOrderFilters) => {
-  const [filters, setFilters] = useState<PosOrderFilters>(initialFilters);
+  const [filters, setFilters] = useState<PosOrderFilters>({
+    ...initialFilters,
+    page: initialFilters.page || 1,
+    limit: initialFilters.limit || 100,
+  });
 
   // Use the base hook with our filters
   const {
     orders,
+    pagination,
     isLoading,
     error,
     clearError,
@@ -46,6 +53,42 @@ export const usePosOrdersQuery = (initialFilters: PosOrderFilters) => {
     getPaymentStatusText,
     calculateOrderTotal,
   } = usePosOrders(filters);
+
+  // Pagination controls
+  const nextPage = () => {
+    if (pagination && pagination.page < pagination.totalPages) {
+      setFilters((prev) => ({
+        ...prev,
+        page: (prev.page || 1) + 1,
+      }));
+    }
+  };
+
+  const prevPage = () => {
+    if (pagination && pagination.page > 1) {
+      setFilters((prev) => ({
+        ...prev,
+        page: (prev.page || 2) - 1,
+      }));
+    }
+  };
+
+  const goToPage = (page: number) => {
+    if (pagination && page >= 1 && page <= pagination.totalPages) {
+      setFilters((prev) => ({
+        ...prev,
+        page,
+      }));
+    }
+  };
+
+  const setPageSize = (limit: number) => {
+    setFilters((prev) => ({
+      ...prev,
+      limit,
+      page: 1, // Reset to first page when changing page size
+    }));
+  };
 
   // Get orders for a specific table session
   const useTableSessionOrders = (tableSessionId?: string) => {
@@ -123,7 +166,7 @@ export const usePosOrdersQuery = (initialFilters: PosOrderFilters) => {
 
   // Get order summary statistics
   const useOrderSummary = (
-    companyId: string,
+    companyId?: string,
     dateFrom?: string,
     dateTo?: string
   ) => {
@@ -131,23 +174,13 @@ export const usePosOrdersQuery = (initialFilters: PosOrderFilters) => {
       queryKey: ["orderSummary", companyId, dateFrom, dateTo],
       queryFn: async () => {
         const summaryFilters: PosOrderFilters = {
-          companyId,
+          companyId: companyId || "",
           dateFrom,
           dateTo,
         };
 
         // Get the data directly without calling a hook inside queryFn
         try {
-          if (!summaryFilters.companyId)
-            return {
-              totalOrders: 0,
-              totalPaid: 0,
-              totalUnpaid: 0,
-              totalAmount: 0,
-              paidAmount: 0,
-              unpaidAmount: 0,
-            } as OrderSummary;
-
           const queryString = new URLSearchParams();
           if (companyId) queryString.append("companyId", companyId);
           if (dateFrom) queryString.append("dateFrom", dateFrom);
@@ -156,9 +189,12 @@ export const usePosOrdersQuery = (initialFilters: PosOrderFilters) => {
           const response = await fetch(
             `/api/pos-orders?${queryString.toString()}`
           );
-          const summaryOrders = await response.json();
+          const data = await response.json();
 
-          if (!summaryOrders.length) {
+          // Handle the new response format with pagination
+          const summaryOrders = data.data || data;
+
+          if (!summaryOrders || !summaryOrders.length) {
             return {
               totalOrders: 0,
               totalPaid: 0,
@@ -219,7 +255,7 @@ export const usePosOrdersQuery = (initialFilters: PosOrderFilters) => {
           } as OrderSummary;
         }
       },
-      enabled: !!companyId,
+      enabled: true,
     });
   };
 
@@ -235,12 +271,14 @@ export const usePosOrdersQuery = (initialFilters: PosOrderFilters) => {
   const resetFilters = () => {
     setFilters({
       companyId: filters.companyId,
+      page: 1,
+      limit: filters.limit || 100,
     });
   };
 
   // Get top selling items for a period
   const useTopSellingItems = (
-    companyId: string,
+    companyId?: string,
     limit = 5,
     dateFrom?: string,
     dateTo?: string
@@ -249,15 +287,13 @@ export const usePosOrdersQuery = (initialFilters: PosOrderFilters) => {
       queryKey: ["topSellingItems", companyId, limit, dateFrom, dateTo],
       queryFn: async () => {
         const periodFilters: PosOrderFilters = {
-          companyId,
+          companyId: companyId || "",
           dateFrom,
           dateTo,
         };
 
         // Get the data directly without calling a hook inside queryFn
         try {
-          if (!periodFilters.companyId) return [];
-
           const queryString = new URLSearchParams();
           if (companyId) queryString.append("companyId", companyId);
           if (dateFrom) queryString.append("dateFrom", dateFrom);
@@ -266,9 +302,12 @@ export const usePosOrdersQuery = (initialFilters: PosOrderFilters) => {
           const response = await fetch(
             `/api/pos-orders?${queryString.toString()}`
           );
-          const periodOrders = await response.json();
+          const data = await response.json();
 
-          if (!periodOrders.length) {
+          // Handle the new response format with pagination
+          const periodOrders = data.data || data;
+
+          if (!periodOrders || !periodOrders.length) {
             return [];
           }
 
@@ -344,18 +383,24 @@ export const usePosOrdersQuery = (initialFilters: PosOrderFilters) => {
           return [];
         }
       },
-      enabled: !!companyId,
+      enabled: true,
     });
   };
 
   return {
     orders,
+    pagination,
     isLoading,
     error,
     clearError,
     filters,
     updateFilters,
     resetFilters,
+    // Pagination controls
+    nextPage,
+    prevPage,
+    goToPage,
+    setPageSize,
     useOrder,
     createOrder,
     updateOrder,

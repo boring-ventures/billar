@@ -31,7 +31,9 @@ interface InventoryItem {
 interface InventoryItemFilters {
   companyId: string;
   categoryId?: string;
-  lowStock?: boolean;
+  search?: string;
+  inStock?: boolean;
+  belowThreshold?: boolean;
 }
 
 interface CreateInventoryItemPayload {
@@ -66,20 +68,31 @@ interface ErrorResponse {
 
 export const useInventoryItems = (filters: InventoryItemFilters) => {
   const queryClient = useQueryClient();
-  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const [error, setError] = useState<string | null>(null);
 
-  // Construct the query string based on filters
+  // Construct query string from filters
   const getQueryString = (filters: InventoryItemFilters) => {
     const params = new URLSearchParams();
-    params.append("companyId", filters.companyId);
+
+    if (filters.companyId) {
+      params.append("companyId", filters.companyId);
+    }
 
     if (filters.categoryId) {
       params.append("categoryId", filters.categoryId);
     }
 
-    if (filters.lowStock) {
-      params.append("lowStock", "true");
+    if (filters.search) {
+      params.append("search", filters.search);
+    }
+
+    if (filters.inStock !== undefined) {
+      params.append("inStock", String(filters.inStock));
+    }
+
+    if (filters.belowThreshold !== undefined) {
+      params.append("belowThreshold", String(filters.belowThreshold));
     }
 
     return params.toString();
@@ -96,7 +109,7 @@ export const useInventoryItems = (filters: InventoryItemFilters) => {
         const response = await axios.get(`/api/inventory-items?${queryString}`);
         return response.data as InventoryItem[];
       } catch (error) {
-        console.error("Failed to fetch items:", error);
+        console.error("Failed to fetch inventory items:", error);
         setError("Failed to load inventory items.");
         return [];
       }
@@ -105,7 +118,7 @@ export const useInventoryItems = (filters: InventoryItemFilters) => {
   });
 
   // Fetch a single inventory item by ID
-  const useItem = (itemId?: string) => {
+  const useInventoryItem = (itemId?: string) => {
     return useQuery({
       queryKey: ["inventoryItem", itemId],
       queryFn: async () => {
@@ -115,7 +128,7 @@ export const useInventoryItems = (filters: InventoryItemFilters) => {
           const response = await axios.get(`/api/inventory-items/${itemId}`);
           return response.data as InventoryItem;
         } catch (error) {
-          console.error("Failed to fetch item:", error);
+          console.error("Failed to fetch inventory item:", error);
           setError("Failed to load inventory item.");
           return null;
         }
@@ -243,6 +256,7 @@ export const useInventoryItems = (filters: InventoryItemFilters) => {
     },
   });
 
+  // Clear error state
   const clearError = () => setError(null);
 
   return {
@@ -250,7 +264,7 @@ export const useInventoryItems = (filters: InventoryItemFilters) => {
     isLoading,
     error,
     clearError,
-    useItem,
+    useInventoryItem,
     createItem,
     updateItem,
     deleteItem,

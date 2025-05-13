@@ -134,23 +134,40 @@ export const usePosOrders = (filters: PosOrderFilters) => {
   };
 
   // Fetch all POS orders with filters
-  const { data: orders, isLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["posOrders", filters],
     queryFn: async () => {
       try {
-        if (!filters.companyId) return [];
-
         const queryString = getQueryString(filters);
         const response = await axios.get(`/api/pos-orders?${queryString}`);
-        return response.data as PosOrder[];
+
+        // Handle the new response format with pagination
+        if (response.data.data && response.data.pagination) {
+          return {
+            orders: response.data.data as PosOrder[],
+            pagination: response.data.pagination,
+          };
+        }
+
+        // Handle backward compatibility with old format
+        return {
+          orders: Array.isArray(response.data)
+            ? response.data
+            : ([] as PosOrder[]),
+          pagination: null,
+        };
       } catch (error) {
         console.error("Failed to fetch orders:", error);
         setError("Failed to load POS orders.");
-        return [];
+        return { orders: [], pagination: null };
       }
     },
-    enabled: !!filters.companyId,
+    enabled: true,
   });
+
+  // Extract orders and pagination from the response
+  const orders = data?.orders || [];
+  const pagination = data?.pagination;
 
   // Fetch a single POS order by ID
   const useOrder = (orderId?: string) => {
@@ -196,7 +213,7 @@ export const usePosOrders = (filters: PosOrderFilters) => {
       });
 
       // Invalidate orders
-      queryClient.invalidateQueries({ queryKey: ["posOrders", filters] });
+      queryClient.invalidateQueries({ queryKey: ["posOrders"] });
 
       // Invalidate inventory items to reflect stock changes
       queryClient.invalidateQueries({
@@ -247,8 +264,8 @@ export const usePosOrders = (filters: PosOrderFilters) => {
         description: "Order updated successfully",
       });
 
-      // Invalidate orders list
-      queryClient.invalidateQueries({ queryKey: ["posOrders", filters] });
+      // Invalidate orders list with broader pattern
+      queryClient.invalidateQueries({ queryKey: ["posOrders"] });
 
       // Invalidate the specific order
       queryClient.invalidateQueries({ queryKey: ["posOrder", variables.id] });
@@ -287,7 +304,7 @@ export const usePosOrders = (filters: PosOrderFilters) => {
       });
 
       // Invalidate orders list
-      queryClient.invalidateQueries({ queryKey: ["posOrders", filters] });
+      queryClient.invalidateQueries({ queryKey: ["posOrders"] });
 
       // Invalidate inventory items to reflect stock changes
       queryClient.invalidateQueries({
@@ -334,7 +351,7 @@ export const usePosOrders = (filters: PosOrderFilters) => {
       });
 
       // Invalidate orders list
-      queryClient.invalidateQueries({ queryKey: ["posOrders", filters] });
+      queryClient.invalidateQueries({ queryKey: ["posOrders"] });
 
       // Invalidate inventory item to reflect stock changes
       queryClient.invalidateQueries({
@@ -386,7 +403,7 @@ export const usePosOrders = (filters: PosOrderFilters) => {
       });
 
       // Invalidate orders list
-      queryClient.invalidateQueries({ queryKey: ["posOrders", filters] });
+      queryClient.invalidateQueries({ queryKey: ["posOrders"] });
 
       // Invalidate all orders as we don't know the specific one here
       queryClient.invalidateQueries({
@@ -436,7 +453,7 @@ export const usePosOrders = (filters: PosOrderFilters) => {
       });
 
       // Invalidate orders list
-      queryClient.invalidateQueries({ queryKey: ["posOrders", filters] });
+      queryClient.invalidateQueries({ queryKey: ["posOrders"] });
 
       // Invalidate all orders as we don't know the specific one
       queryClient.invalidateQueries({
@@ -496,7 +513,8 @@ export const usePosOrders = (filters: PosOrderFilters) => {
   const clearError = () => setError(null);
 
   return {
-    orders: orders || [],
+    orders,
+    pagination,
     isLoading,
     error,
     clearError,

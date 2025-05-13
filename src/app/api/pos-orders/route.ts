@@ -14,6 +14,11 @@ export async function GET(request: NextRequest) {
     const dateFrom = searchParams.get("dateFrom");
     const dateTo = searchParams.get("dateTo");
 
+    // Add pagination parameters
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "100");
+    const skip = (page - 1) * limit;
+
     // Configure where clause based on provided filters
     const whereClause: Prisma.PosOrderWhereInput = {};
 
@@ -42,6 +47,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Get total count for pagination info
+    const totalCount = await prisma.posOrder.count({
+      where: whereClause,
+    });
+
     const orders = await prisma.posOrder.findMany({
       where: whereClause,
       include: {
@@ -67,13 +77,30 @@ export async function GET(request: NextRequest) {
             },
           },
         },
+        company: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
       orderBy: {
         createdAt: "desc",
       },
+      skip,
+      take: limit,
     });
 
-    return NextResponse.json(orders);
+    // Return with pagination metadata
+    return NextResponse.json({
+      data: orders,
+      pagination: {
+        total: totalCount,
+        page,
+        limit,
+        totalPages: Math.ceil(totalCount / limit),
+      },
+    });
   } catch (error) {
     console.error("Error fetching POS orders:", error);
     return NextResponse.json(

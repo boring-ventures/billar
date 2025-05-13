@@ -4,6 +4,8 @@ import { useState, useCallback } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
 import { SessionStatus } from "@prisma/client";
+import { useQuery } from "@tanstack/react-query";
+import axios from "axios";
 
 export interface TableSession {
   id: string;
@@ -35,13 +37,55 @@ export interface TableSession {
   }>;
 }
 
-export function useTableSessions() {
+export function useTableSessions(companyId: string) {
   const { toast } = useToast();
   const router = useRouter();
   const [sessions, setSessions] = useState<TableSession[]>([]);
   const [activeSession, setActiveSession] = useState<TableSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Fetch active table sessions
+  const {
+    data: activeSessions,
+    isLoading: activeSessionsLoading,
+    error: activeSessionsError,
+  } = useQuery({
+    queryKey: ["tableSessions", companyId, "active"],
+    queryFn: async () => {
+      if (!companyId) return [];
+
+      try {
+        const response = await axios.get(
+          `/api/table-sessions?companyId=${companyId}&status=ACTIVE`
+        );
+        return response.data as TableSession[];
+      } catch (error) {
+        console.error("Failed to fetch active table sessions:", error);
+        return [];
+      }
+    },
+    enabled: !!companyId,
+  });
+
+  // Fetch a specific table session
+  const useTableSession = (sessionId?: string) => {
+    return useQuery({
+      queryKey: ["tableSession", sessionId],
+      queryFn: async () => {
+        if (!sessionId) return null;
+
+        try {
+          const response = await axios.get(`/api/table-sessions/${sessionId}`);
+          return response.data as TableSession;
+        } catch (error) {
+          console.error("Failed to fetch table session:", error);
+          return null;
+        }
+      },
+      enabled: !!sessionId,
+    });
+  };
 
   const fetchTableSessions = useCallback(
     async (params?: {
@@ -323,5 +367,9 @@ export function useTableSessions() {
     endTableSession,
     deleteTableSession,
     updateSessionStatus,
+    activeSessions: activeSessions || [],
+    activeSessionsLoading,
+    activeSessionsError,
+    useTableSession,
   };
 }

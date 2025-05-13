@@ -29,6 +29,15 @@ interface UpdateInventoryCategoryPayload {
   description?: string;
 }
 
+// Define error response type
+interface ErrorResponse {
+  response?: {
+    data?: {
+      error?: string;
+    };
+  };
+}
+
 export const useInventoryCategories = (companyId?: string) => {
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
@@ -82,9 +91,14 @@ export const useInventoryCategories = (companyId?: string) => {
       try {
         const response = await axios.post("/api/inventory-categories", data);
         return response.data as InventoryCategory;
-      } catch (error: any) {
+      } catch (error: unknown) {
         const errorMessage =
-          error.response?.data?.error || "Failed to create category.";
+          error instanceof Error
+            ? error.message
+            : typeof error === "object" && error !== null && "response" in error
+              ? (error as ErrorResponse).response?.data?.error ||
+                "Failed to create category."
+              : "Failed to create category.";
         throw new Error(errorMessage);
       }
     },
@@ -126,9 +140,14 @@ export const useInventoryCategories = (companyId?: string) => {
           }
         );
         return response.data as InventoryCategory;
-      } catch (error: any) {
+      } catch (error: unknown) {
         const errorMessage =
-          error.response?.data?.error || "Failed to update category.";
+          error instanceof Error
+            ? error.message
+            : typeof error === "object" && error !== null && "response" in error
+              ? (error as ErrorResponse).response?.data?.error ||
+                "Failed to update category."
+              : "Failed to update category.";
         throw new Error(errorMessage);
       }
     },
@@ -169,13 +188,18 @@ export const useInventoryCategories = (companyId?: string) => {
           `/api/inventory-categories/${categoryId}`
         );
         return response.data;
-      } catch (error: any) {
+      } catch (error: unknown) {
         const errorMessage =
-          error.response?.data?.error || "Failed to delete category.";
+          error instanceof Error
+            ? error.message
+            : typeof error === "object" && error !== null && "response" in error
+              ? (error as ErrorResponse).response?.data?.error ||
+                "Failed to delete category."
+              : "Failed to delete category.";
         throw new Error(errorMessage);
       }
     },
-    onSuccess: (_, categoryId) => {
+    onSuccess: () => {
       toast({
         title: "Success",
         description: "Category deleted successfully",

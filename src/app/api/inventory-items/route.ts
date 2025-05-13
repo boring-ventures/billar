@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
+import { Prisma } from "@prisma/client";
 
 // GET /api/inventory-items - Get all inventory items
 export async function GET(request: NextRequest) {
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
     const lowStock = searchParams.get("lowStock");
 
     // Configure where clause based on provided filters
-    const whereClause: any = {};
+    const whereClause: Prisma.InventoryItemWhereInput = {};
 
     if (companyId) {
       whereClause.companyId = companyId;

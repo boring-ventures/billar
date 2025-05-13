@@ -17,7 +17,7 @@ import { useCurrentUser } from "@/hooks/use-current-user";
 export default function InventoryPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { user } = useCurrentUser();
+  const { profile } = useCurrentUser();
 
   const tabParam = searchParams.get("tab");
   const viewParam = searchParams.get("view");
@@ -72,9 +72,11 @@ export default function InventoryPage() {
 
   // Function to render the appropriate content based on active tab
   const renderTabContent = () => {
+    const companyId = profile?.companyId as string | undefined;
+
     if (activeTab === "items") {
       if (inventoryView === "list") {
-        return <InventoryItemsTable companyId={user?.companyId} />;
+        return <InventoryItemsTable companyId={companyId} />;
       } else {
         return (
           <div className="mt-6">
@@ -99,19 +101,15 @@ export default function InventoryPage() {
                 </Button>
               </div>
             </div>
-            <InventoryItemsGridView
-              query={searchQuery}
-              companyId={user?.companyId}
-            />
+            <InventoryItemsGridView query={searchQuery} companyId={companyId} />
           </div>
         );
       }
     } else if (activeTab === "categories") {
       return (
         <div className="mt-6">
-          
           <InventoryCategoriesTable
-            companyId={user?.companyId}
+            companyId={companyId}
             searchQuery={searchQuery}
           />
         </div>
@@ -119,7 +117,7 @@ export default function InventoryPage() {
     } else {
       return (
         <div className="mt-6">
-          <LowStockItemsTable companyId={user?.companyId} />
+          <LowStockItemsTable companyId={companyId} />
         </div>
       );
     }
@@ -183,7 +181,7 @@ export default function InventoryPage() {
         onSuccess={() => {
           // Refresh data
         }}
-        companyId={user?.companyId}
+        companyId={profile?.companyId as string | undefined}
       />
 
       <InventoryCategoryDialog
@@ -193,7 +191,7 @@ export default function InventoryPage() {
         onSuccess={() => {
           // Refresh data
         }}
-        companyId={user?.companyId}
+        companyId={profile?.companyId as string | undefined}
       />
     </div>
   );

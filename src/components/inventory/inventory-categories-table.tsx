@@ -18,16 +18,6 @@ import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Edit, Trash } from "lucide-react";
 import { InventoryCategoryDialog } from "./inventory-category-dialog";
 import { DeleteCategoryDialog } from "./delete-category-dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 
 interface InventoryCategoriesTableProps {
@@ -39,16 +29,24 @@ interface InventoryCategory {
   id: string;
   name: string;
   description: string | null;
+  companyId: string;
   createdAt: string;
-  items: any[];
+  updatedAt: string;
+  items: {
+    id: string;
+    name: string;
+    quantity: number;
+  }[];
 }
 
 export function InventoryCategoriesTable({
   companyId,
   searchQuery = "",
 }: InventoryCategoriesTableProps) {
-  const [editingCategory, setEditingCategory] = useState<any>(null);
-  const [deleteCategory, setDeleteCategory] = useState<any>(null);
+  const [editingCategory, setEditingCategory] =
+    useState<InventoryCategory | null>(null);
+  const [deleteCategory, setDeleteCategory] =
+    useState<InventoryCategory | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const queryClient = useQueryClient();
@@ -72,12 +70,12 @@ export function InventoryCategoriesTable({
           .includes(effectiveSearchQuery.toLowerCase()))
   );
 
-  const handleEditCategory = (category: any) => {
+  const handleEditCategory = (category: InventoryCategory) => {
     setEditingCategory(category);
     setShowEditDialog(true);
   };
 
-  const handleDeleteCategory = (category: any) => {
+  const handleDeleteCategory = (category: InventoryCategory) => {
     setDeleteCategory(category);
     setShowDeleteDialog(true);
   };
@@ -123,7 +121,7 @@ export function InventoryCategoriesTable({
       accessorKey: "items",
       header: "Items",
       cell: ({ row }) => {
-        const items = row.getValue("items") as any[];
+        const items = row.getValue("items") as { id: string; name: string }[];
         const count = items ? items.length : 0;
         return (
           <div className="text-right">

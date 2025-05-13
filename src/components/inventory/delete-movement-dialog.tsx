@@ -13,10 +13,31 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useStockMovements } from "@/hooks/use-stock-movements";
 
+// Stock movement types from Prisma schema
+type MovementType = "PURCHASE" | "SALE" | "ADJUSTMENT" | "RETURN" | "TRANSFER";
+
+interface StockMovement {
+  id: string;
+  itemId: string;
+  quantity: number;
+  type: MovementType;
+  costPrice: number | null;
+  reason: string | null;
+  reference: string | null;
+  createdAt: string;
+  createdBy: string | null;
+  item?: {
+    id: string;
+    name: string;
+    sku: string | null;
+    quantity: number;
+  };
+}
+
 interface DeleteMovementDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  movement: any | null;
+  movement: StockMovement | null;
   onSuccess?: () => void;
 }
 

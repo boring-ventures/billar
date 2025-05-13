@@ -40,6 +40,15 @@ interface UpdateStockMovementPayload {
   costPrice?: number;
 }
 
+// Define error response type
+interface ErrorResponse {
+  response?: {
+    data?: {
+      error?: string;
+    };
+  };
+}
+
 export const useStockMovements = (itemId?: string) => {
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
@@ -93,13 +102,18 @@ export const useStockMovements = (itemId?: string) => {
       try {
         const response = await axios.post("/api/stock-movements", data);
         return response.data;
-      } catch (error: any) {
+      } catch (error: unknown) {
         const errorMessage =
-          error.response?.data?.error || "Failed to create stock movement.";
+          error instanceof Error
+            ? error.message
+            : typeof error === "object" && error !== null && "response" in error
+              ? (error as ErrorResponse)?.response?.data?.error ||
+                "Failed to create stock movement."
+              : "Failed to create stock movement.";
         throw new Error(errorMessage);
       }
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast({
         title: "Success",
         description: "Stock movement recorded successfully",
@@ -137,9 +151,14 @@ export const useStockMovements = (itemId?: string) => {
           costPrice: data.costPrice,
         });
         return response.data;
-      } catch (error: any) {
+      } catch (error: unknown) {
         const errorMessage =
-          error.response?.data?.error || "Failed to update stock movement.";
+          error instanceof Error
+            ? error.message
+            : typeof error === "object" && error !== null && "response" in error
+              ? (error as ErrorResponse)?.response?.data?.error ||
+                "Failed to update stock movement."
+              : "Failed to update stock movement.";
         throw new Error(errorMessage);
       }
     },
@@ -185,9 +204,14 @@ export const useStockMovements = (itemId?: string) => {
           `/api/stock-movements/${movementId}`
         );
         return response.data;
-      } catch (error: any) {
+      } catch (error: unknown) {
         const errorMessage =
-          error.response?.data?.error || "Failed to delete stock movement.";
+          error instanceof Error
+            ? error.message
+            : typeof error === "object" && error !== null && "response" in error
+              ? (error as ErrorResponse)?.response?.data?.error ||
+                "Failed to delete stock movement."
+              : "Failed to delete stock movement.";
         throw new Error(errorMessage);
       }
     },

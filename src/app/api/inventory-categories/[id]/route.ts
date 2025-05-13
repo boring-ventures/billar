@@ -6,10 +6,10 @@ import { cookies } from "next/headers";
 // GET /api/inventory-categories/[id] - Get a specific inventory category
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const category = await prisma.inventoryCategory.findUnique({
       where: { id },
@@ -46,7 +46,7 @@ export async function GET(
 // PUT /api/inventory-categories/[id] - Update an inventory category
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const cookieStore = cookies();
@@ -61,7 +61,7 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const { name, description } = body;
 
@@ -104,7 +104,7 @@ export async function PUT(
 // DELETE /api/inventory-categories/[id] - Delete an inventory category
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const cookieStore = cookies();
@@ -119,7 +119,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Check if category exists
     const category = await prisma.inventoryCategory.findUnique({

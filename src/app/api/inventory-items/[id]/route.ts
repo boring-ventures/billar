@@ -6,10 +6,10 @@ import { cookies } from "next/headers";
 // GET /api/inventory-items/[id] - Get a specific inventory item
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const item = await prisma.inventoryItem.findUnique({
       where: { id },
@@ -52,7 +52,7 @@ export async function GET(
 // PUT /api/inventory-items/[id] - Update an inventory item
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const cookieStore = cookies();
@@ -67,7 +67,7 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const { name, categoryId, sku, price, criticalThreshold, stockAlerts } =
       body;
@@ -140,7 +140,7 @@ export async function PUT(
 // DELETE /api/inventory-items/[id] - Delete an inventory item
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const cookieStore = cookies();
@@ -155,7 +155,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Check if item exists
     const item = await prisma.inventoryItem.findUnique({

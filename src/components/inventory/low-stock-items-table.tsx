@@ -19,6 +19,25 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { StockMovementDialog } from "@/components/inventory/stock-movement-dialog";
 import { Card } from "@/components/ui/card";
 
+interface InventoryItem {
+  id: string;
+  name: string;
+  quantity: number;
+  criticalThreshold: number;
+  price: number | null;
+  companyId: string;
+  categoryId: string | null;
+  sku: string | null;
+  lastStockUpdate: string | null;
+  stockAlerts: boolean;
+  createdAt: string;
+  updatedAt: string;
+  category?: {
+    id: string;
+    name: string;
+  };
+}
+
 interface LowStockItemsTableProps {
   companyId?: string;
 }
@@ -26,7 +45,7 @@ interface LowStockItemsTableProps {
 export function LowStockItemsTable({ companyId }: LowStockItemsTableProps) {
   const router = useRouter();
   const [stockDialogOpen, setStockDialogOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
 
   // Fetch low stock items
   const { data: items = [], isLoading } = useLowStockItemsQuery(companyId);
@@ -39,7 +58,10 @@ export function LowStockItemsTable({ companyId }: LowStockItemsTableProps) {
     router.push(`/inventory/${itemId}`);
   };
 
-  const handleAddStock = (item: any, e: React.MouseEvent) => {
+  const handleAddStock = (
+    item: InventoryItem,
+    e: React.MouseEvent<HTMLElement>
+  ) => {
     e.stopPropagation();
     setSelectedItem(item);
     setStockDialogOpen(true);

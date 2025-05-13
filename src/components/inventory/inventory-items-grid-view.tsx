@@ -29,6 +29,25 @@ import { StockMovementDialog } from "./stock-movement-dialog";
 import { DeleteItemDialog } from "./delete-item-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 
+interface InventoryItem {
+  id: string;
+  companyId: string;
+  categoryId: string | null;
+  name: string;
+  sku: string | null;
+  quantity: number;
+  criticalThreshold: number;
+  price: number | null;
+  stockAlerts: boolean;
+  lastStockUpdate: string | null;
+  createdAt: string;
+  updatedAt: string;
+  category?: {
+    id: string;
+    name: string;
+  };
+}
+
 interface InventoryItemsGridViewProps {
   query: string;
   companyId?: string;
@@ -39,15 +58,17 @@ export function InventoryItemsGridView({
   companyId,
 }: InventoryItemsGridViewProps) {
   const router = useRouter();
-  const [editingItem, setEditingItem] = useState<any>(null);
-  const [deleteItem, setDeleteItem] = useState<any>(null);
+  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const [deleteItem, setDeleteItem] = useState<InventoryItem | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showStockDialog, setShowStockDialog] = useState(false);
   const [stockDialogType, setStockDialogType] = useState<
     "PURCHASE" | "SALE" | "ADJUSTMENT"
   >("PURCHASE");
-  const [stockDialogItem, setStockDialogItem] = useState<any>(null);
+  const [stockDialogItem, setStockDialogItem] = useState<InventoryItem | null>(
+    null
+  );
 
   // Fetch inventory items
   const { data: items = [], isLoading } = useInventoryItemsQuery({
@@ -67,26 +88,38 @@ export function InventoryItemsGridView({
     router.push(`/inventory/${itemId}`);
   };
 
-  const handleEditItem = (item: any, e: React.MouseEvent) => {
+  const handleEditItem = (
+    item: InventoryItem,
+    e: React.MouseEvent<HTMLElement>
+  ) => {
     e.stopPropagation();
     setEditingItem(item);
     setShowEditDialog(true);
   };
 
-  const handleDeleteItem = (item: any, e: React.MouseEvent) => {
+  const handleDeleteItem = (
+    item: InventoryItem,
+    e: React.MouseEvent<HTMLElement>
+  ) => {
     e.stopPropagation();
     setDeleteItem(item);
     setShowDeleteDialog(true);
   };
 
-  const handleAddStock = (item: any, e: React.MouseEvent) => {
+  const handleAddStock = (
+    item: InventoryItem,
+    e: React.MouseEvent<HTMLElement>
+  ) => {
     e.stopPropagation();
     setStockDialogItem(item);
     setStockDialogType("PURCHASE");
     setShowStockDialog(true);
   };
 
-  const handleRemoveStock = (item: any, e: React.MouseEvent) => {
+  const handleRemoveStock = (
+    item: InventoryItem,
+    e: React.MouseEvent<HTMLElement>
+  ) => {
     e.stopPropagation();
     setStockDialogItem(item);
     setStockDialogType("SALE");

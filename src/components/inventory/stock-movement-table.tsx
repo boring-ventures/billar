@@ -25,25 +25,41 @@ import { EditMovementDialog } from "./edit-movement-dialog";
 import { DeleteMovementDialog } from "./delete-movement-dialog";
 import { useStockMovements } from "@/hooks/use-stock-movements";
 
-interface StockMovementTableProps {
-  movements: any[];
+type MovementType = "PURCHASE" | "SALE" | "ADJUSTMENT" | "RETURN" | "TRANSFER";
+
+interface StockMovement {
+  id: string;
   itemId: string;
-  showAll: boolean;
+  quantity: number;
+  type: MovementType;
+  costPrice: number | null;
+  reason: string | null;
+  reference: string | null;
+  createdAt: string;
+  createdBy: string | null;
+}
+
+interface StockMovementTableProps {
+  movements: StockMovement[];
+  itemId: string;
+  showAll?: boolean;
 }
 
 export function StockMovementTable({
   movements,
   itemId,
-  showAll,
+  showAll = true,
 }: StockMovementTableProps) {
-  const [editMovement, setEditMovement] = useState<any>(null);
-  const [deleteMovement, setDeleteMovement] = useState<any>(null);
+  const [editMovement, setEditMovement] = useState<StockMovement | null>(null);
+  const [deleteMovement, setDeleteMovement] = useState<StockMovement | null>(
+    null
+  );
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const { getMovementTypeDescription } = useStockMovements(itemId);
 
-  const handleEditMovement = (movement: any) => {
+  const handleEditMovement = (movement: StockMovement) => {
     // Only ADJUSTMENT type movements can be edited
     if (movement.type === "ADJUSTMENT") {
       setEditMovement(movement);
@@ -51,7 +67,7 @@ export function StockMovementTable({
     }
   };
 
-  const handleDeleteMovement = (movement: any) => {
+  const handleDeleteMovement = (movement: StockMovement) => {
     // Only ADJUSTMENT type movements can be deleted
     if (movement.type === "ADJUSTMENT") {
       setDeleteMovement(movement);
@@ -94,6 +110,7 @@ export function StockMovementTable({
             <TableHead className="text-right">Quantity</TableHead>
             <TableHead>Reason</TableHead>
             <TableHead className="text-right">Cost Price</TableHead>
+            {showAll && <TableHead>Reference</TableHead>}
             <TableHead className="text-right"></TableHead>
           </TableRow>
         </TableHeader>
@@ -129,6 +146,7 @@ export function StockMovementTable({
               <TableCell className="text-right">
                 {movement.costPrice ? formatCurrency(movement.costPrice) : "-"}
               </TableCell>
+              {showAll && <TableCell>{movement.reference || "-"}</TableCell>}
               <TableCell className="text-right">
                 {movement.type === "ADJUSTMENT" && (
                   <DropdownMenu>

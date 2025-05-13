@@ -13,10 +13,30 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useInventoryItems } from "@/hooks/use-inventory-items";
 
+// Define the interface for inventory item
+interface InventoryItem {
+  id: string;
+  companyId: string;
+  categoryId: string | null;
+  name: string;
+  sku: string | null;
+  quantity: number;
+  criticalThreshold: number;
+  price: number | null;
+  lastStockUpdate: string | null;
+  stockAlerts: boolean;
+  createdAt: string;
+  updatedAt: string;
+  category?: {
+    id: string;
+    name: string;
+  };
+}
+
 interface DeleteItemDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  item: any | null;
+  item: InventoryItem | null;
   onSuccess?: () => void;
 }
 
@@ -55,8 +75,9 @@ export function DeleteItemDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Delete Inventory Item</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete "{item.name}"? This action cannot be
-            undone and will also delete all associated stock movements.
+            Are you sure you want to delete &quot;{item.name}&quot;? This action
+            cannot be undone and will also delete all associated stock
+            movements.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

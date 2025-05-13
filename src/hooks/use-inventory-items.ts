@@ -55,6 +55,15 @@ interface UpdateInventoryItemPayload {
   stockAlerts?: boolean;
 }
 
+// Define error response type
+interface ErrorResponse {
+  response?: {
+    data?: {
+      error?: string;
+    };
+  };
+}
+
 export const useInventoryItems = (filters: InventoryItemFilters) => {
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
@@ -121,9 +130,14 @@ export const useInventoryItems = (filters: InventoryItemFilters) => {
       try {
         const response = await axios.post("/api/inventory-items", data);
         return response.data as InventoryItem;
-      } catch (error: any) {
+      } catch (error: unknown) {
         const errorMessage =
-          error.response?.data?.error || "Failed to create item.";
+          error instanceof Error
+            ? error.message
+            : typeof error === "object" && error !== null && "response" in error
+              ? (error as ErrorResponse)?.response?.data?.error ||
+                "Failed to create item."
+              : "Failed to create item.";
         throw new Error(errorMessage);
       }
     },
@@ -157,9 +171,14 @@ export const useInventoryItems = (filters: InventoryItemFilters) => {
           stockAlerts: data.stockAlerts,
         });
         return response.data as InventoryItem;
-      } catch (error: any) {
+      } catch (error: unknown) {
         const errorMessage =
-          error.response?.data?.error || "Failed to update item.";
+          error instanceof Error
+            ? error.message
+            : typeof error === "object" && error !== null && "response" in error
+              ? (error as ErrorResponse)?.response?.data?.error ||
+                "Failed to update item."
+              : "Failed to update item.";
         throw new Error(errorMessage);
       }
     },
@@ -196,9 +215,14 @@ export const useInventoryItems = (filters: InventoryItemFilters) => {
       try {
         const response = await axios.delete(`/api/inventory-items/${itemId}`);
         return response.data;
-      } catch (error: any) {
+      } catch (error: unknown) {
         const errorMessage =
-          error.response?.data?.error || "Failed to delete item.";
+          error instanceof Error
+            ? error.message
+            : typeof error === "object" && error !== null && "response" in error
+              ? (error as ErrorResponse)?.response?.data?.error ||
+                "Failed to delete item."
+              : "Failed to delete item.";
         throw new Error(errorMessage);
       }
     },

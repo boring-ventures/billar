@@ -6,10 +6,10 @@ import { cookies } from "next/headers";
 // GET /api/stock-movements/[id] - Get a specific stock movement
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const movement = await prisma.stockMovement.findUnique({
       where: { id },
@@ -45,7 +45,7 @@ export async function GET(
 // PUT /api/stock-movements/[id] - Update a stock movement (only for ADJUSTMENT types)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const cookieStore = cookies();
@@ -60,7 +60,7 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const { quantity, reason, costPrice } = body;
 
@@ -138,7 +138,7 @@ export async function PUT(
 // DELETE /api/stock-movements/[id] - Delete a stock movement (only for ADJUSTMENT types)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const cookieStore = cookies();
@@ -153,7 +153,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Find the movement
     const movement = await prisma.stockMovement.findUnique({

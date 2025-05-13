@@ -38,10 +38,29 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+interface InventoryItem {
+  id: string;
+  companyId: string;
+  categoryId: string | null;
+  name: string;
+  sku: string | null;
+  quantity: number;
+  criticalThreshold: number;
+  price: number | null;
+  lastStockUpdate: string | null;
+  stockAlerts: boolean;
+  createdAt: string;
+  updatedAt: string;
+  category?: {
+    id: string;
+    name: string;
+  };
+}
+
 interface StockMovementDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  item: any | null;
+  item: InventoryItem | null;
   type: "PURCHASE" | "SALE" | "ADJUSTMENT";
   onSuccess?: () => void;
 }
@@ -105,7 +124,7 @@ export function StockMovementDialog({
       const costPrice =
         data.costPrice && data.costPrice.trim() !== ""
           ? parseFloat(data.costPrice)
-          : null;
+          : undefined;
 
       await createMovement.mutateAsync({
         itemId: item.id,
@@ -133,12 +152,14 @@ export function StockMovementDialog({
       } else {
         onOpenChange(false);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error recording stock movement:", error);
 
       // Display the error message to the user
       const errorMessage =
-        error.response?.data?.error || "Failed to record stock movement";
+        error instanceof Error
+          ? error.message
+          : "Failed to record stock movement";
       toast({
         title: "Error",
         description: errorMessage,
@@ -157,7 +178,7 @@ export function StockMovementDialog({
         <DialogHeader>
           <DialogTitle>{getTypeTitle()}</DialogTitle>
           <DialogDescription>
-            {`Record a${type === "PURCHASE" ? "n" : ""} ${type.toLowerCase()} for "${item.name}".`}
+            {`Record a${type === "PURCHASE" ? "n" : ""} ${type.toLowerCase()} for &quot;${item.name}&quot;.`}
           </DialogDescription>
         </DialogHeader>
 

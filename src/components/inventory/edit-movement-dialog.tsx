@@ -33,10 +33,31 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+// Stock movement types from Prisma schema
+type MovementType = "PURCHASE" | "SALE" | "ADJUSTMENT" | "RETURN" | "TRANSFER";
+
+interface StockMovement {
+  id: string;
+  itemId: string;
+  quantity: number;
+  type: MovementType;
+  costPrice: number | null;
+  reason: string | null;
+  reference: string | null;
+  createdAt: string;
+  createdBy: string | null;
+  item?: {
+    id: string;
+    name: string;
+    sku: string | null;
+    quantity: number;
+  };
+}
+
 interface EditMovementDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  movement: any | null;
+  movement: StockMovement | null;
   onSuccess?: () => void;
 }
 

@@ -43,10 +43,17 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+interface InventoryCategory {
+  id: string;
+  name: string;
+  description: string | null;
+  companyId: string;
+}
+
 interface InventoryCategoryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  category: any | null;
+  category: InventoryCategory | null;
   companyId?: string;
   onSuccess?: () => void;
 }

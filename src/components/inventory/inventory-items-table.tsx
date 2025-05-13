@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { ColumnDef } from "@tanstack/react-table";
 import {
@@ -36,20 +36,10 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
-import { InventoryItemDialog } from "./inventory-item-dialog";
-import { StockMovementDialog } from "./stock-movement-dialog";
-import { DeleteItemDialog } from "./delete-item-dialog";
+import { InventoryItemDialog } from "@/components/inventory/inventory-item-dialog";
+import { StockMovementDialog } from "@/components/inventory/stock-movement-dialog";
+import { DeleteItemDialog } from "@/components/inventory/delete-item-dialog";
 import { Badge } from "@/components/ui/badge";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 interface InventoryItemsTableProps {
   companyId?: string;
@@ -57,12 +47,17 @@ interface InventoryItemsTableProps {
 
 interface InventoryItem {
   id: string;
+  companyId: string;
+  categoryId: string | null;
   name: string;
   sku: string | null;
   quantity: number;
-  price: number | null;
   criticalThreshold: number;
+  price: number | null;
+  lastStockUpdate: string | null;
   stockAlerts: boolean;
+  createdAt: string;
+  updatedAt: string;
   category?: {
     id: string;
     name: string;
@@ -76,15 +71,17 @@ export function InventoryItemsTable({ companyId }: InventoryItemsTableProps) {
   const [categoryFilter, setCategoryFilter] = useState<string | undefined>(
     undefined
   );
-  const [editingItem, setEditingItem] = useState<any>(null);
-  const [deleteItem, setDeleteItem] = useState<any>(null);
+  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const [deleteItem, setDeleteItem] = useState<InventoryItem | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showStockDialog, setShowStockDialog] = useState(false);
   const [stockDialogType, setStockDialogType] = useState<
     "PURCHASE" | "SALE" | "ADJUSTMENT"
   >("PURCHASE");
-  const [stockDialogItem, setStockDialogItem] = useState<any>(null);
+  const [stockDialogItem, setStockDialogItem] = useState<InventoryItem | null>(
+    null
+  );
 
   // Fetch inventory items
   const { data: items = [], isLoading } = useInventoryItemsQuery({
@@ -96,6 +93,20 @@ export function InventoryItemsTable({ companyId }: InventoryItemsTableProps) {
   const { data: categories = [] } = useInventoryCategoriesQuery({
     companyId,
   });
+
+  // Filter items by search query
+  const filteredItems = useMemo(() => {
+    if (!searchQuery) return items;
+
+    const lowerQuery = searchQuery.toLowerCase();
+    return items.filter(
+      (item) =>
+        item.name.toLowerCase().includes(lowerQuery) ||
+        (item.sku && item.sku.toLowerCase().includes(lowerQuery)) ||
+        (item.category?.name &&
+          item.category.name.toLowerCase().includes(lowerQuery))
+    );
+  }, [items, searchQuery]);
 
   const handleDialogSuccess = () => {
     // Invalidate and refetch inventory items
@@ -126,23 +137,23 @@ export function InventoryItemsTable({ companyId }: InventoryItemsTableProps) {
     setShowEditDialog(true);
   };
 
-  const handleEditItem = (item: any) => {
+  const handleEditItem = (item: InventoryItem) => {
     setEditingItem(item);
     setShowEditDialog(true);
   };
 
-  const handleDeleteItem = (item: any) => {
+  const handleDeleteItem = (item: InventoryItem) => {
     setDeleteItem(item);
     setShowDeleteDialog(true);
   };
 
-  const handleAddStock = (item: any) => {
+  const handleAddStock = (item: InventoryItem) => {
     setStockDialogItem(item);
     setStockDialogType("PURCHASE");
     setShowStockDialog(true);
   };
 
-  const handleRemoveStock = (item: any) => {
+  const handleRemoveStock = (item: InventoryItem) => {
     setStockDialogItem(item);
     setStockDialogType("SALE");
     setShowStockDialog(true);
@@ -289,7 +300,7 @@ export function InventoryItemsTable({ companyId }: InventoryItemsTableProps) {
     <>
       <DataTable
         columns={columns}
-        data={items}
+        data={filteredItems}
         onSearch={setSearchQuery}
         searchPlaceholder="Search items..."
         onAddNew={handleAddNewItem}

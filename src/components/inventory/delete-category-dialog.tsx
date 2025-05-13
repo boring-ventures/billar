@@ -15,10 +15,25 @@ import { useInventoryCategories } from "@/hooks/use-inventory-categories";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/use-toast";
 
+// Define the interface for the inventory category
+interface InventoryCategory {
+  id: string;
+  name: string;
+  description: string | null;
+  companyId: string;
+  createdAt: string;
+  updatedAt: string;
+  items?: {
+    id: string;
+    name: string;
+    quantity: number;
+  }[];
+}
+
 interface DeleteCategoryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  category: any | null;
+  category: InventoryCategory | null;
   onSuccess?: () => void;
 }
 
@@ -78,13 +93,13 @@ export function DeleteCategoryDialog({
           <AlertDialogTitle>Delete Category</AlertDialogTitle>
           {hasItems ? (
             <AlertDialogDescription className="text-destructive">
-              Cannot delete "{category.name}" because it contains items. Please
-              move or delete all items in this category first.
+              Cannot delete &quot;{category.name}&quot; because it contains
+              items. Please move or delete all items in this category first.
             </AlertDialogDescription>
           ) : (
             <AlertDialogDescription>
-              Are you sure you want to delete the category "{category.name}"?
-              This action cannot be undone.
+              Are you sure you want to delete the category &quot;{category.name}
+              &quot;? This action cannot be undone.
             </AlertDialogDescription>
           )}
         </AlertDialogHeader>

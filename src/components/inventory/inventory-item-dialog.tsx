@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useInventoryCategoriesQuery } from "@/hooks/use-inventory-query";
 import { useInventoryItems } from "@/hooks/use-inventory-items";
 import {
@@ -48,10 +47,22 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+interface InventoryItem {
+  id: string;
+  companyId: string;
+  categoryId: string | null;
+  name: string;
+  sku: string | null;
+  quantity: number;
+  criticalThreshold: number;
+  price: number | null;
+  stockAlerts: boolean;
+}
+
 interface InventoryItemDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  item: any | null;
+  item: InventoryItem | null;
   companyId?: string;
   onSuccess?: () => void;
 }
@@ -165,7 +176,7 @@ export function InventoryItemDialog({
           name: data.name,
           categoryId: data.categoryId === "none" ? "" : data.categoryId,
           sku: data.sku,
-          price,
+          price: price !== null ? price : undefined,
           criticalThreshold: data.criticalThreshold,
           stockAlerts: data.stockAlerts,
         });
@@ -176,7 +187,7 @@ export function InventoryItemDialog({
           companyId: data.companyId,
           categoryId: data.categoryId === "none" ? "" : data.categoryId,
           sku: data.sku,
-          price,
+          price: price !== null ? price : undefined,
           criticalThreshold: data.criticalThreshold,
           stockAlerts: data.stockAlerts,
         });

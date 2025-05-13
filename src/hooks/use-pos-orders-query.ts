@@ -173,11 +173,6 @@ export const usePosOrdersQuery = (initialFilters: PosOrderFilters) => {
     return useQuery({
       queryKey: ["orderSummary", companyId, dateFrom, dateTo],
       queryFn: async () => {
-        const summaryFilters: PosOrderFilters = {
-          companyId: companyId || "",
-          dateFrom,
-          dateTo,
-        };
 
         // Get the data directly without calling a hook inside queryFn
         try {
@@ -286,11 +281,6 @@ export const usePosOrdersQuery = (initialFilters: PosOrderFilters) => {
     return useQuery({
       queryKey: ["topSellingItems", companyId, limit, dateFrom, dateTo],
       queryFn: async () => {
-        const periodFilters: PosOrderFilters = {
-          companyId: companyId || "",
-          dateFrom,
-          dateTo,
-        };
 
         // Get the data directly without calling a hook inside queryFn
         try {

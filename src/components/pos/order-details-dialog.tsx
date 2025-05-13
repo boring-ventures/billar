@@ -26,7 +26,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { usePosOrders } from "@/hooks/use-pos-orders";
 import {
   Select,
@@ -118,7 +117,7 @@ export function OrderDetailsDialog({
               <CardContent>
                 <Badge
                   variant={
-                    order.paymentStatus === "PAID" ? "success" : "default"
+                    order.paymentStatus === "PAID" ? "default" : "outline"
                   }
                 >
                   {getPaymentStatusText(order.paymentStatus)}

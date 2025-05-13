@@ -80,8 +80,6 @@ export function OrderHistory() {
     // Pagination methods
     nextPage,
     prevPage,
-    goToPage,
-    setPageSize,
   } = usePosOrdersQuery({
     companyId: companyIdFilter || "", // Pass empty string instead of undefined
     dateFrom: dateRange?.from?.toISOString(),
@@ -183,7 +181,6 @@ export function OrderHistory() {
 
   return (
     <div className="space-y-6">
-
       <Card>
         <CardHeader>
           <CardTitle>Order Filters</CardTitle>

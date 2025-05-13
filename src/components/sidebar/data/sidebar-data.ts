@@ -1,7 +1,5 @@
 import {
-  AudioWaveform,
   Command,
-  GalleryVerticalEnd,
   LayoutDashboard,
   Users,
   TableProperties,

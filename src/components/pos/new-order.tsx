@@ -72,7 +72,7 @@ export function NewOrder() {
     selectedCompanyId,
     setSelectedCompanyId,
   } = useCompany();
-  const { user, profile } = useCurrentUser();
+  const { profile } = useCurrentUser();
   const [companyId, setCompanyId] = useState<string>("");
   const isSuperAdmin = profile?.role === "SUPERADMIN";
 
@@ -98,9 +98,9 @@ export function NewOrder() {
 
   // Hooks
   const { toast } = useToast();
-  const { createOrder, addOrderItem } = usePosOrders({ companyId });
+  const { createOrder } = usePosOrders({ companyId });
   const { items, isLoading: isLoadingItems } = useInventoryItems({ companyId });
-  const { activeSessions, isLoading: isLoadingSessions } =
+  const { activeSessions } =
     useTableSessions(companyId);
 
   // Reset cart when company changes

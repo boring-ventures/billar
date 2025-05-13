@@ -72,7 +72,7 @@ export function QuickStartSessionDialog({
         staffNotes: "",
       });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [table, open]);
 
   const form = useForm<FormValues>({

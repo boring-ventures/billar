@@ -91,7 +91,7 @@ export async function PATCH(
         where: { id: tableId },
         data: {
           name,
-          status: status as any,
+          status: status,
           hourlyRate: hourlyRate ? parseFloat(hourlyRate) : null,
         },
       });
@@ -102,7 +102,7 @@ export async function PATCH(
           data: {
             tableId,
             previousStatus: existingTable.status,
-            newStatus: status as any,
+            newStatus: status,
             notes: `Status updated from ${existingTable.status} to ${status}`,
             // changedById would be set in a real application based on auth
           },

@@ -20,7 +20,7 @@ export function useCurrentUser(): CurrentUserData {
   const [error, setError] = useState<Error | null>(null);
   const supabase = createClientComponentClient();
 
-  const fetchProfile = useCallback(async (userId: string) => {
+  const fetchProfile = useCallback(async () => {
     try {
       const response = await fetch("/api/profile", {
         method: "GET",
@@ -60,7 +60,7 @@ export function useCurrentUser(): CurrentUserData {
 
       if (userData.user) {
         setUser(userData.user);
-        await fetchProfile(userData.user.id);
+        await fetchProfile();
       } else {
         setUser(null);
         setProfile(null);
@@ -83,7 +83,7 @@ export function useCurrentUser(): CurrentUserData {
         if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
           if (session) {
             setUser(session.user);
-            await fetchProfile(session.user.id);
+            await fetchProfile();
           }
         } else if (event === "SIGNED_OUT") {
           setUser(null);

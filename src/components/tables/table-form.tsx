@@ -1,11 +1,9 @@
-"use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { TableStatus } from "@prisma/client";
+import { Company, TableStatus } from "@prisma/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -155,7 +153,7 @@ export function TableForm({ initialData }: TableFormProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {companies.map((company: any) => (
+                      {companies.map((company: Company) => (
                         <SelectItem key={company.id} value={company.id}>
                           {company.name}
                         </SelectItem>

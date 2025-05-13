@@ -10,8 +10,20 @@ interface TableActivityHistoryProps {
   tableId: string;
 }
 
+interface ActivityLog {
+  id: string;
+  changedAt: string;
+  previousStatus: TableStatus;
+  newStatus: TableStatus;
+  notes?: string;
+  changedBy?: {
+    firstName: string;
+    lastName: string;
+  };
+}
+
 export function TableActivityHistory({ tableId }: TableActivityHistoryProps) {
-  const { data: activityLogs = [], isLoading } = useQuery({
+  const { data: activityLogs = [], isLoading } = useQuery<ActivityLog[]>({
     queryKey: ["tableActivityLogs", tableId],
     queryFn: async () => {
       // This would be a real API call in a complete implementation
@@ -64,7 +76,7 @@ export function TableActivityHistory({ tableId }: TableActivityHistoryProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-8">
-            {activityLogs.map((log: any, index: number) => (
+            {activityLogs.map((log: ActivityLog, index: number) => (
               <div key={log.id} className="relative pl-8">
                 {/* Timeline connector */}
                 {index < activityLogs.length - 1 && (

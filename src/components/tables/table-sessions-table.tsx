@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { ColumnDef } from "@tanstack/react-table";
-import { SessionStatus } from "@prisma/client";
+import { SessionStatus, TableSession } from "@prisma/client";
 import {
   useTableSessionsQuery,
   useEndTableSessionMutation,
@@ -46,6 +46,23 @@ interface TableSessionsTableProps {
   activeOnly?: boolean;
 }
 
+// Define the extended session type
+interface ExtendedTableSession extends TableSession {
+  table?: {
+    name: string;
+  } | null;
+  staff?: {
+    firstName?: string;
+    lastName?: string;
+  } | null;
+}
+
+// Define the session with duration
+interface SessionWithDuration extends ExtendedTableSession {
+  duration: number;
+  durationFormatted: string;
+}
+
 export function TableSessionsTable({
   activeOnly = true,
 }: TableSessionsTableProps) {
@@ -56,9 +73,8 @@ export function TableSessionsTable({
   const [isEndSessionAlertOpen, setIsEndSessionAlertOpen] = useState(false);
   const [isCancelSessionAlertOpen, setIsCancelSessionAlertOpen] =
     useState(false);
-  const [selectedSession, setSelectedSession] = useState<
-    (typeof sessionsWithDuration)[0] | null
-  >(null);
+  const [selectedSession, setSelectedSession] =
+    useState<SessionWithDuration | null>(null);
   const [sessionDialogOpen, setSessionDialogOpen] = useState(false);
 
   const { data: sessions = [], isLoading } = useTableSessionsQuery({
@@ -73,7 +89,7 @@ export function TableSessionsTable({
 
   // Calculate durations for each session
   const sessionsWithDuration = useMemo(() => {
-    return sessions.map((session) => {
+    return sessions.map((session: ExtendedTableSession) => {
       const start = new Date(session.startedAt);
       const end = session.endedAt ? new Date(session.endedAt) : new Date();
       const durationMs = end.getTime() - start.getTime();
@@ -103,7 +119,7 @@ export function TableSessionsTable({
     setSessionDialogOpen(true);
   };
 
-  const columns: ColumnDef<(typeof sessionsWithDuration)[0]>[] = [
+  const columns: ColumnDef<SessionWithDuration>[] = [
     {
       accessorKey: "table.name",
       header: "Table",
@@ -148,8 +164,12 @@ export function TableSessionsTable({
       accessorKey: "endedAt",
       header: "Ended",
       cell: ({ row }) => {
-        const date = row.getValue("endedAt");
-        return <div>{date ? new Date(date).toLocaleString() : "--"}</div>;
+        const endDate = row.getValue("endedAt");
+        return (
+          <div>
+            {endDate ? new Date(endDate as string).toLocaleString() : "--"}
+          </div>
+        );
       },
     },
     {

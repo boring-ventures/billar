@@ -8,6 +8,18 @@ interface SessionOrdersListProps {
   sessionId: string;
 }
 
+interface OrderItem {
+  id: string;
+  // Add other properties as needed
+}
+
+interface Order {
+  id: string;
+  amount: number;
+  paymentStatus: "PAID" | "PENDING" | "FAILED"; // Add other valid statuses as needed
+  orderItems?: OrderItem[];
+}
+
 export function SessionOrdersList({ sessionId }: SessionOrdersListProps) {
   const { data: session, isLoading } = useQuery({
     queryKey: ["tableSession", sessionId],
@@ -42,7 +54,7 @@ export function SessionOrdersList({ sessionId }: SessionOrdersListProps) {
     <Card>
       <CardContent className="pt-6">
         <div className="space-y-4">
-          {orders.map((order: any) => (
+          {orders.map((order: Order) => (
             <div
               key={order.id}
               className="flex justify-between items-center p-3 border rounded-md"

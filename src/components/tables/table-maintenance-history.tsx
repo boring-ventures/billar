@@ -18,6 +18,7 @@ export function TableMaintenanceHistory({
         <div className="text-center py-8 text-muted-foreground">
           Maintenance history will be implemented in a future update.
         </div>
+        {tableId}
       </CardContent>
     </Card>
   );

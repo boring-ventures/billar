@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
-
+import { SessionStatus } from "@prisma/client";
 // GET /api/table-sessions - Get all table sessions
 export async function GET(request: NextRequest) {
   try {
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const sessions = await prisma.tableSession.findMany({
       where: {
         ...(tableId ? { tableId } : {}),
-        ...(status ? { status: status as any } : {}),
+        ...(status ? { status: status as SessionStatus } : {}),
         ...(companyId
           ? {
               table: {
@@ -76,6 +76,10 @@ export async function POST(request: NextRequest) {
     const {
       data: { session },
     } = await supabase.auth.getSession();
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const body = await request.json();
     const { tableId, staffId, staffNotes } = body;

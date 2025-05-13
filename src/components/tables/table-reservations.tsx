@@ -16,6 +16,7 @@ export function TableReservations({ tableId }: TableReservationsProps) {
         <div className="text-center py-8 text-muted-foreground">
           Reservation management will be implemented in a future update.
         </div>
+        {tableId}
       </CardContent>
     </Card>
   );

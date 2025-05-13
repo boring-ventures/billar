@@ -12,17 +12,25 @@ import {
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDuration } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { SessionStatus } from "@prisma/client";
+import { SessionStatus, TableSession } from "@prisma/client";
 import { Calendar, Clock } from "lucide-react";
 
 interface TableSessionsHistoryProps {
   tableId: string;
 }
 
+// Extend the TableSession to include the staff object
+interface ExtendedTableSession extends TableSession {
+  staff?: {
+    firstName?: string;
+    lastName?: string;
+  } | null;
+}
+
 export function TableSessionsHistory({ tableId }: TableSessionsHistoryProps) {
   const router = useRouter();
 
-  const { data: sessions = [], isLoading } = useQuery({
+  const { data: sessions = [], isLoading } = useQuery<ExtendedTableSession[]>({
     queryKey: ["tableSessions", { tableId }],
     queryFn: async () => {
       const response = await fetch(`/api/table-sessions?tableId=${tableId}`);
@@ -64,7 +72,7 @@ export function TableSessionsHistory({ tableId }: TableSessionsHistoryProps) {
 
   return (
     <div className="space-y-4">
-      {sessions.map((session: any) => {
+      {sessions.map((session: ExtendedTableSession) => {
         const startDate = new Date(session.startedAt);
         const endDate = session.endedAt ? new Date(session.endedAt) : null;
         const durationMs = endDate
@@ -118,7 +126,7 @@ export function TableSessionsHistory({ tableId }: TableSessionsHistoryProps) {
                   </p>
                   <p>
                     {session.totalCost
-                      ? formatCurrency(session.totalCost)
+                      ? formatCurrency(Number(session.totalCost))
                       : "--"}
                   </p>
                 </div>

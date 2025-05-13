@@ -3,16 +3,6 @@ import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import prisma from "@/lib/prisma";
 
-// Helper function to log detailed error information
-function logError(context: string, error: any) {
-  console.error(`API Error [${context}]:`, {
-    message: error?.message || "Unknown error",
-    name: error?.name,
-    stack: error?.stack,
-    details: error,
-  });
-}
-
 // GET: Fetch profile for the current authenticated user
 export async function GET() {
   try {
@@ -31,7 +21,6 @@ export async function GET() {
     } = await supabase.auth.getSession();
 
     if (sessionError) {
-      logError("Session retrieval", sessionError);
       return NextResponse.json(
         {
           error: "Authentication error",
@@ -72,7 +61,6 @@ export async function GET() {
 
       return NextResponse.json(profile);
     } catch (dbError) {
-      logError("Database query", dbError);
       return NextResponse.json(
         {
           error: "Database error",
@@ -82,7 +70,6 @@ export async function GET() {
       );
     }
   } catch (error) {
-    logError("General API error", error);
     return NextResponse.json(
       {
         error: "Failed to fetch profile",

@@ -142,7 +142,7 @@ export async function PATCH(
     const updatedSession = await prisma.tableSession.update({
       where: { id: sessionId },
       data: {
-        status: status as any,
+        status: status,
       },
     });
 

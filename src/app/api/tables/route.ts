@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-
+import { TableStatus } from "@prisma/client";
 // GET /api/tables - Get all tables
 export async function GET(request: NextRequest) {
   try {
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const tables = await prisma.table.findMany({
       where: {
         ...(companyId ? { companyId } : {}),
-        ...(status ? { status: status as any } : {}),
+        ...(status ? { status: status as TableStatus } : {}),
         ...(query
           ? {
               name: { contains: query, mode: "insensitive" },

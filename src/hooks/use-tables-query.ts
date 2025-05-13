@@ -108,19 +108,6 @@ const updateTableApi = async ({
   return response.json();
 };
 
-const deleteTableApi = async (tableId: string) => {
-  const response = await fetch(`/api/tables/${tableId}`, {
-    method: "DELETE",
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "Failed to delete table");
-  }
-
-  return response.json();
-};
-
 // React Query Hooks
 export function useTablesQuery(params?: {
   companyId?: string;

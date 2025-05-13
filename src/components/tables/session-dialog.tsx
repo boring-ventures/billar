@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/providers/auth-provider";
 import {
   Dialog,
@@ -34,6 +33,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { useCreateTableSessionMutation } from "@/hooks/use-table-sessions-query";
 import { Table } from "@/hooks/use-tables-query";
+import { User } from "@/types/user";
 
 interface SessionDialogProps {
   open: boolean;
@@ -55,7 +55,6 @@ export function SessionDialog({
   table = null,
   onSuccess,
 }: SessionDialogProps) {
-  const { toast } = useToast();
   const { profile } = useAuth();
   const [tables, setTables] = useState<Table[]>([]);
   const [staff, setStaff] = useState<{ id: string; name: string }[]>([]);
@@ -93,7 +92,7 @@ export function SessionDialog({
         if (response.ok) {
           const data = await response.json();
           // Format staff names
-          const formattedStaff = data.map((user: any) => ({
+          const formattedStaff = data.map((user: User) => ({
             id: user.id,
             name:
               `${user.firstName || ""} ${user.lastName || ""}`.trim() ||

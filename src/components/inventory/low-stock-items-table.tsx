@@ -1,23 +1,30 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { useLowStockItemsQuery } from "@/hooks/use-inventory-query";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Plus, ArrowRight } from "lucide-react";
+import { ColumnDef } from "@tanstack/react-table";
+import { useLowStockItemsQuery } from "@/hooks/use-inventory-query";
+import { Button } from "@/components/ui/button";
+import {
+  AlertTriangle,
+  Plus,
+  ArrowRight,
+  Eye,
+  MoreHorizontal,
+} from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { StockMovementDialog } from "@/components/inventory/stock-movement-dialog";
-import { Card } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { DataTable } from "@/components/tables/data-table";
+import { TableSkeleton } from "@/components/tables/table-skeleton";
 
 interface InventoryItem {
   id: string;
@@ -50,19 +57,7 @@ export function LowStockItemsTable({ companyId }: LowStockItemsTableProps) {
   // Fetch low stock items
   const { data: items = [], isLoading } = useLowStockItemsQuery(companyId);
 
-  console.log("Low Stock Items Table - companyId:", companyId);
-  console.log("Low Stock Items Table - items:", items);
-  console.log("Low Stock Items Table - isLoading:", isLoading);
-
-  const handleRowClick = (itemId: string) => {
-    router.push(`/inventory/${itemId}`);
-  };
-
-  const handleAddStock = (
-    item: InventoryItem,
-    e: React.MouseEvent<HTMLElement>
-  ) => {
-    e.stopPropagation();
+  const handleAddStock = (item: InventoryItem) => {
     setSelectedItem(item);
     setStockDialogOpen(true);
   };
@@ -71,9 +66,96 @@ export function LowStockItemsTable({ companyId }: LowStockItemsTableProps) {
     router.push("/inventory");
   };
 
-  if (!isLoading && items.length === 0) {
+  const columns: ColumnDef<InventoryItem>[] = [
+    {
+      accessorKey: "name",
+      header: "Name",
+      cell: ({ row }) => {
+        const item = row.original;
+        return (
+          <div className="flex items-center font-medium">
+            {item.name}
+            <Badge className="ml-2 bg-amber-500/15 text-amber-600 flex items-center gap-1">
+              <AlertTriangle className="h-3 w-3" />
+              LOW
+            </Badge>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "category",
+      header: "Category",
+      cell: ({ row }) => {
+        const item = row.original;
+        return <div>{item.category?.name || "Uncategorized"}</div>;
+      },
+    },
+    {
+      accessorKey: "quantity",
+      header: "Current Stock",
+      cell: ({ row }) => {
+        const item = row.original;
+        return (
+          <div className="text-amber-600 font-semibold">{item.quantity}</div>
+        );
+      },
+    },
+    {
+      accessorKey: "criticalThreshold",
+      header: "Threshold",
+      cell: ({ row }) => {
+        return <div>{row.original.criticalThreshold}</div>;
+      },
+    },
+    {
+      accessorKey: "price",
+      header: "Price",
+      cell: ({ row }) => {
+        const price = row.original.price;
+        return <div>{price ? formatCurrency(price) : "-"}</div>;
+      },
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => {
+        const item = row.original;
+
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem
+                onClick={() => router.push(`/inventory/${item.id}`)}
+              >
+                <Eye className="mr-2 h-4 w-4" />
+                View Details
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleAddStock(item)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Stock
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ];
+
+  if (isLoading) {
+    return <TableSkeleton columnCount={6} />;
+  }
+
+  if (items.length === 0) {
     return (
-      <Card className="p-8 text-center">
+      <div className="p-8 text-center border rounded-md">
         <div className="flex flex-col items-center gap-2">
           <div className="bg-green-100 p-3 rounded-full">
             <svg
@@ -103,7 +185,7 @@ export function LowStockItemsTable({ companyId }: LowStockItemsTableProps) {
             View All Items
           </Button>
         </div>
-      </Card>
+      </div>
     );
   }
 
@@ -118,67 +200,11 @@ export function LowStockItemsTable({ companyId }: LowStockItemsTableProps) {
         </AlertDescription>
       </Alert>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[300px]">Name</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Current Stock</TableHead>
-              <TableHead>Threshold</TableHead>
-              <TableHead>Price</TableHead>
-              <TableHead className="text-right"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-8">
-                  Loading low stock items...
-                </TableCell>
-              </TableRow>
-            ) : (
-              items.map((item) => (
-                <TableRow
-                  key={item.id}
-                  onClick={() => handleRowClick(item.id)}
-                  className="cursor-pointer hover:bg-muted/50"
-                >
-                  <TableCell className="font-medium">
-                    <div className="flex items-center">
-                      {item.name}
-                      <Badge className="ml-2 bg-amber-500/15 text-amber-600 flex items-center gap-1">
-                        <AlertTriangle className="h-3 w-3" />
-                        LOW
-                      </Badge>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {item.category?.name || "Uncategorized"}
-                  </TableCell>
-                  <TableCell className="text-amber-600 font-semibold">
-                    {item.quantity}
-                  </TableCell>
-                  <TableCell>{item.criticalThreshold}</TableCell>
-                  <TableCell>
-                    {item.price ? formatCurrency(item.price) : "-"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      size="sm"
-                      onClick={(e) => handleAddStock(item, e)}
-                      className="gap-1"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add Stock
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      <DataTable
+        columns={columns}
+        data={items}
+        searchPlaceholder="Search low stock items..."
+      />
 
       <div className="flex justify-end">
         <Button variant="outline" onClick={handleViewAllItems}>

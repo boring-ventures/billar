@@ -140,7 +140,7 @@ export function InventoryCategoriesTable({
     },
     {
       id: "actions",
-      header: "",
+      header: "Actions",
       cell: ({ row }) => {
         const category = row.original;
         const hasItems = category.items && category.items.length > 0;

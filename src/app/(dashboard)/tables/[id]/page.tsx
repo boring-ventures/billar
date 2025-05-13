@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useTableByIdQuery } from "@/hooks/use-tables-query";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Clock, Edit, Trash2, Play } from "lucide-react";
+import { ArrowLeft, Edit, Play } from "lucide-react";
 import { TableStatus } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";
 import { TableSessionsHistory } from "@/components/tables/table-sessions-history";
@@ -15,10 +15,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { TableReservations } from "@/components/tables/table-reservations";
 import { TableMaintenanceHistory } from "@/components/tables/table-maintenance-history";
-import { TableHeader } from "@/components/tables/table-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCreateTableSessionMutation } from "@/hooks/use-table-sessions-query";
 import { useState } from "react";

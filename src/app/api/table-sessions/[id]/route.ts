@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
 
 // Helper to calculate session cost based on hourly rate
 const calculateSessionCost = (

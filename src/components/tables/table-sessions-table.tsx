@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { formatCurrency, formatDuration } from "@/lib/utils";
 import { DataTable } from "./data-table";
-import { MoreHorizontal, StopCircle, X, Eye, PlusCircle } from "lucide-react";
+import { MoreHorizontal, StopCircle, X, Eye } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,28 +41,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { SessionDialog } from "./session-dialog";
-
-type TableSession = {
-  id: string;
-  tableId: string;
-  startedAt: Date;
-  endedAt: Date | null;
-  totalCost: number | null;
-  status: SessionStatus;
-  table?: {
-    id: string;
-    name: string;
-    companyId: string;
-    company?: {
-      name: string;
-    };
-  };
-  staff?: {
-    id: string;
-    firstName: string | null;
-    lastName: string | null;
-  } | null;
-};
 
 interface TableSessionsTableProps {
   activeOnly?: boolean;

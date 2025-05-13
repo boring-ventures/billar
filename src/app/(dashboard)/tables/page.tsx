@@ -1,6 +1,6 @@
 "use client";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { TablesTable } from "@/components/tables/tables-table";
@@ -9,8 +9,6 @@ import { TablesGridView } from "@/components/tables/tables-grid-view";
 import {
   LayoutGrid,
   Table as TableIcon,
-  ClockIcon,
-  ListIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useToast } from "@/components/ui/use-toast";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/providers/auth-provider";
 import {
   Dialog,
   DialogContent,
@@ -56,7 +56,7 @@ export function SessionDialog({
   onSuccess,
 }: SessionDialogProps) {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { profile } = useAuth();
   const [tables, setTables] = useState<Table[]>([]);
   const [staff, setStaff] = useState<{ id: string; name: string }[]>([]);
 
@@ -65,7 +65,7 @@ export function SessionDialog({
   // Define default values
   const defaultValues = {
     tableId: table?.id || "",
-    staffId: user?.profile?.id || "",
+    staffId: profile?.id || "",
   };
 
   const form = useForm<SessionFormValues>({
@@ -117,16 +117,16 @@ export function SessionDialog({
     if (open) {
       form.reset({
         tableId: table?.id || "",
-        staffId: user?.profile?.id || "",
+        staffId: profile?.id || "",
       });
     }
-  }, [open, table, form, user]);
+  }, [open, table, form, profile]);
 
   const onSubmit = async (values: SessionFormValues) => {
     try {
       await createSessionMutation.mutateAsync({
         tableId: values.tableId,
-        staffId: values.staffId || user?.profile?.id || undefined,
+        staffId: values.staffId || profile?.id || undefined,
       });
 
       onSuccess();

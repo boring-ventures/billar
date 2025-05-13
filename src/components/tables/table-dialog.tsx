@@ -71,7 +71,6 @@ export function TableDialog({
   table,
   onSuccess,
 }: TableDialogProps) {
-  const { toast } = useToast();
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>(
     []
   );

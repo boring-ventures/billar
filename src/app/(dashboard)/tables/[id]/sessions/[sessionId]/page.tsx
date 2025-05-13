@@ -11,7 +11,6 @@ import {
   Clock,
   DollarSign,
   StopCircle,
-  Trash2,
   ShoppingCart,
   User,
 } from "lucide-react";
@@ -20,7 +19,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -34,7 +32,6 @@ export default function TableSessionDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const sessionId = params?.sessionId as string;
-  const tableId = params?.id as string;
 
   const { data: session, isLoading } = useTableSessionByIdQuery(sessionId);
   const endSessionMutation = useEndTableSessionMutation();

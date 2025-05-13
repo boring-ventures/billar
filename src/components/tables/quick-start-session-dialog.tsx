@@ -8,7 +8,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { formatCurrency } from "@/lib/utils";
 import { Clock, PlayCircle } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/providers/auth-provider";
 
 import {
   Dialog,
@@ -51,7 +51,7 @@ export function QuickStartSessionDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const createSessionMutation = useCreateTableSessionMutation();
-  const { user } = useAuth();
+  const { profile } = useAuth();
 
   // Update current time every second
   useEffect(() => {
@@ -72,6 +72,7 @@ export function QuickStartSessionDialog({
         staffNotes: "",
       });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [table, open]);
 
   const form = useForm<FormValues>({
@@ -83,13 +84,13 @@ export function QuickStartSessionDialog({
   });
 
   const onSubmit = async (values: FormValues) => {
-    if (!table) return;
+    if (!table || !profile) return;
 
     setIsSubmitting(true);
     try {
       await createSessionMutation.mutateAsync({
         tableId: table.id,
-        staffId: user?.profile?.id,
+        staffId: profile.id,
         staffNotes: values.staffNotes,
       });
 

@@ -6,7 +6,7 @@ import { TableStatus } from "@prisma/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
-import { Loader2, MoreHorizontal, Edit, PlayCircle } from "lucide-react";
+import { MoreHorizontal, Edit, PlayCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
@@ -95,10 +95,6 @@ export function TablesGridView({ companyId, query }: TablesGridViewProps) {
   const handleEdit = (table: Table) => {
     setSelectedTable(table);
     setEditDialogOpen(true);
-  };
-
-  const handleViewDetails = (table: Table) => {
-    router.push(`/tables/${table.id}`);
   };
 
   const renderTableCard = (table: Table) => {

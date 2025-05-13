@@ -16,17 +16,13 @@ import {
 } from "lucide-react";
 import { SessionStatus } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { formatCurrency, formatDuration } from "@/lib/utils";
 import { SessionOrdersList } from "@/components/tables/session-orders-list";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useState, useEffect } from "react";
+import { SessionCancelDialog } from "@/components/tables/session-cancel-dialog";
 
 export default function TableSessionDetailsPage() {
   const params = useParams();
@@ -132,15 +128,18 @@ export default function TableSessionDetailsPage() {
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           {session.status === "ACTIVE" && (
-            <Button
-              onClick={handleEndSession}
-              size="sm"
-              variant="destructive"
-              disabled={endSessionMutation.isPending}
-            >
-              <StopCircle className="mr-2 h-4 w-4" />
-              End Session
-            </Button>
+            <>
+              <Button
+                onClick={handleEndSession}
+                size="sm"
+                variant="destructive"
+                disabled={endSessionMutation.isPending}
+              >
+                <StopCircle className="mr-2 h-4 w-4" />
+                End Session
+              </Button>
+              <SessionCancelDialog sessionId={sessionId} />
+            </>
           )}
         </div>
       </div>

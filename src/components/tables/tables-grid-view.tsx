@@ -6,7 +6,7 @@ import { TableStatus } from "@prisma/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
-import { MoreHorizontal, Edit, PlayCircle } from "lucide-react";
+import { MoreHorizontal, Edit, PlayCircle, StopCircle, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
@@ -20,6 +20,21 @@ import { SessionDialog } from "./session-dialog";
 import { TableDialog } from "./table-dialog";
 import { QuickStartSessionDialog } from "./quick-start-session-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  useCancelTableSessionMutation,
+  useTableSessionsQuery,
+  TableSession,
+} from "@/hooks/use-table-sessions-query";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface TablesGridViewProps {
   companyId?: string;
@@ -32,11 +47,21 @@ export function TablesGridView({ companyId, query }: TablesGridViewProps) {
     companyId,
     query,
   });
+  const { data: activeSessions = [] } = useTableSessionsQuery({
+    status: "ACTIVE",
+  });
 
   const [sessionDialogOpen, setSessionDialogOpen] = useState(false);
   const [quickStartDialogOpen, setQuickStartDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
+  const [isCancelSessionAlertOpen, setIsCancelSessionAlertOpen] =
+    useState(false);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
+    null
+  );
+
+  const cancelSessionMutation = useCancelTableSessionMutation();
 
   const getStatusColor = (status: TableStatus) => {
     switch (status) {
@@ -97,8 +122,23 @@ export function TablesGridView({ companyId, query }: TablesGridViewProps) {
     setEditDialogOpen(true);
   };
 
+  const handleCancelSession = async () => {
+    if (selectedSessionId) {
+      await cancelSessionMutation.mutateAsync(selectedSessionId);
+      setIsCancelSessionAlertOpen(false);
+      setSelectedSessionId(null);
+    }
+  };
+
   const renderTableCard = (table: Table) => {
     const statusColors = getStatusColor(table.status);
+    // Find active session for this table if it's occupied
+    const activeSession =
+      table.status === "OCCUPIED"
+        ? activeSessions.find(
+            (session: TableSession) => session.tableId === table.id
+          )
+        : null;
 
     return (
       <Card
@@ -150,6 +190,33 @@ export function TablesGridView({ companyId, query }: TablesGridViewProps) {
                     >
                       <PlayCircle className="mr-2 h-4 w-4" />
                       Start Session
+                    </DropdownMenuItem>
+                  </>
+                )}
+                {table.status === "OCCUPIED" && activeSession && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(
+                          `/tables/${table.id}/sessions/${activeSession.id}`
+                        );
+                      }}
+                    >
+                      <StopCircle className="mr-2 h-4 w-4" />
+                      View Session
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedSessionId(activeSession.id);
+                        setIsCancelSessionAlertOpen(true);
+                      }}
+                      className="text-destructive"
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Cancel Session
                     </DropdownMenuItem>
                   </>
                 )}
@@ -275,6 +342,33 @@ export function TablesGridView({ companyId, query }: TablesGridViewProps) {
           setSelectedTable(null);
         }}
       />
+
+      <AlertDialog
+        open={isCancelSessionAlertOpen}
+        onOpenChange={setIsCancelSessionAlertOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel this session?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will cancel the active session. No charges will be applied.
+              The table will be marked as available again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancelSession}
+              className="bg-destructive text-destructive-foreground"
+              disabled={cancelSessionMutation.isPending}
+            >
+              {cancelSessionMutation.isPending
+                ? "Processing..."
+                : "Cancel Session"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

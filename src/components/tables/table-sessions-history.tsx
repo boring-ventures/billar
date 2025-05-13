@@ -25,6 +25,11 @@ interface ExtendedTableSession extends TableSession {
     firstName?: string;
     lastName?: string;
   } | null;
+  table?: {
+    id: string;
+    name: string;
+    hourlyRate?: number;
+  } | null;
 }
 
 export function TableSessionsHistory({ tableId }: TableSessionsHistoryProps) {
@@ -40,6 +45,11 @@ export function TableSessionsHistory({ tableId }: TableSessionsHistoryProps) {
       return response.json();
     },
   });
+
+  // Only keep non-active sessions as active one is shown at the top
+  const filteredSessions = sessions.filter(
+    (session) => session.status !== "ACTIVE"
+  );
 
   const getStatusColor = (status: SessionStatus) => {
     switch (status) {
@@ -60,7 +70,7 @@ export function TableSessionsHistory({ tableId }: TableSessionsHistoryProps) {
 
   if (sessions.length === 0) {
     return (
-      <Card>
+      <Card className="overflow-hidden">
         <CardContent className="pt-6">
           <div className="text-center py-8 text-muted-foreground">
             No session history found for this table.
@@ -70,9 +80,21 @@ export function TableSessionsHistory({ tableId }: TableSessionsHistoryProps) {
     );
   }
 
+  if (filteredSessions.length === 0) {
+    return (
+      <Card className="overflow-hidden">
+        <CardContent className="pt-6">
+          <div className="text-center py-8 text-muted-foreground">
+            No past sessions found for this table.
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      {sessions.map((session: ExtendedTableSession) => {
+      {filteredSessions.map((session: ExtendedTableSession) => {
         const startDate = new Date(session.startedAt);
         const endDate = session.endedAt ? new Date(session.endedAt) : null;
         const durationMs = endDate

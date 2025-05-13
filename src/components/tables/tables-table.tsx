@@ -12,6 +12,7 @@ import {
 import {
   useTableSessionsQuery,
   useEndTableSessionMutation,
+  useCancelTableSessionMutation,
 } from "@/hooks/use-table-sessions-query";
 import { Badge } from "@/components/ui/badge";
 import { TableSkeleton } from "@/components/tables/table-skeleton";
@@ -31,6 +32,7 @@ import {
   Eye,
   PlayCircle,
   StopCircle,
+  X,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -59,6 +61,8 @@ export function TablesTable() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [isEndSessionAlertOpen, setIsEndSessionAlertOpen] = useState(false);
+  const [isCancelSessionAlertOpen, setIsCancelSessionAlertOpen] =
+    useState(false);
   const [selectedTable, setSelectedTable] = useState<TableType | null>(null);
   const [tableDialogOpen, setTableDialogOpen] = useState(false);
   const [quickStartDialogOpen, setQuickStartDialogOpen] = useState(false);
@@ -78,6 +82,7 @@ export function TablesTable() {
 
   const deleteTableMutation = useDeleteTableMutation();
   const endSessionMutation = useEndTableSessionMutation();
+  const cancelSessionMutation = useCancelTableSessionMutation();
 
   const handleDelete = async () => {
     if (selectedTable) {
@@ -94,6 +99,18 @@ export function TablesTable() {
       if (session) {
         await endSessionMutation.mutateAsync(session.id);
         setIsEndSessionAlertOpen(false);
+      }
+    }
+  };
+
+  const handleCancelSession = async () => {
+    if (selectedTable) {
+      const session = activeSessions.find(
+        (s: { tableId: string; id: string }) => s.tableId === selectedTable.id
+      );
+      if (session) {
+        await cancelSessionMutation.mutateAsync(session.id);
+        setIsCancelSessionAlertOpen(false);
       }
     }
   };
@@ -202,15 +219,27 @@ export function TablesTable() {
                 </DropdownMenuItem>
               )}
               {table.status === "OCCUPIED" && (
-                <DropdownMenuItem
-                  onClick={() => {
-                    setSelectedTable(table);
-                    setIsEndSessionAlertOpen(true);
-                  }}
-                >
-                  <StopCircle className="mr-2 h-4 w-4" />
-                  End Session
-                </DropdownMenuItem>
+                <>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setSelectedTable(table);
+                      setIsEndSessionAlertOpen(true);
+                    }}
+                  >
+                    <StopCircle className="mr-2 h-4 w-4" />
+                    End Session
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setSelectedTable(table);
+                      setIsCancelSessionAlertOpen(true);
+                    }}
+                    className="text-red-600"
+                  >
+                    <X className="mr-2 h-4 w-4" />
+                    Cancel Session
+                  </DropdownMenuItem>
+                </>
               )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -321,6 +350,33 @@ export function TablesTable() {
               disabled={endSessionMutation.isPending}
             >
               {endSessionMutation.isPending ? "Processing..." : "End Session"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={isCancelSessionAlertOpen}
+        onOpenChange={setIsCancelSessionAlertOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel this session?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will cancel the active session. No charges will be applied.
+              The table will be marked as available again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancelSession}
+              className="bg-destructive text-destructive-foreground"
+              disabled={cancelSessionMutation.isPending}
+            >
+              {cancelSessionMutation.isPending
+                ? "Processing..."
+                : "Cancel Session"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

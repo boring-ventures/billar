@@ -11,6 +11,12 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status");
     const companyId = searchParams.get("companyId");
 
+    // Early validation
+    if (companyId && status === "ACTIVE") {
+      // This is a priority query for POS, ensure we're fetching with latest data
+      await prisma.$executeRaw`SELECT 1`; // Force connection check to ensure DB is responsive
+    }
+
     const sessions = await prisma.tableSession.findMany({
       where: {
         ...(tableId ? { tableId } : {}),
@@ -55,6 +61,10 @@ export async function GET(request: NextRequest) {
         startedAt: "desc",
       },
     });
+
+    if (status === "ACTIVE" && sessions.length === 0 && companyId) {
+      console.log(`No active sessions found for company: ${companyId}`);
+    }
 
     return NextResponse.json(sessions);
   } catch (error) {

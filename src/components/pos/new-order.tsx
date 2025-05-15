@@ -47,6 +47,7 @@ import {
   ShoppingBag,
   Building,
   Trash2,
+  RefreshCw,
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -100,7 +101,7 @@ export function NewOrder() {
   const { toast } = useToast();
   const { createOrder } = usePosOrders({ companyId });
   const { items, isLoading: isLoadingItems } = useInventoryItems({ companyId });
-  const { activeSessions } =
+  const { activeSessions, activeSessionsLoading, refetchActiveSessions } =
     useTableSessions(companyId);
 
   // Reset cart when company changes
@@ -108,6 +109,13 @@ export function NewOrder() {
     setCart([]);
     setTableSessionId("none");
   }, [companyId]);
+
+  // Refetch active sessions when component mounts or company changes
+  useEffect(() => {
+    if (companyId) {
+      refetchActiveSessions();
+    }
+  }, [companyId, refetchActiveSessions]);
 
   // Calculate the total
   const cartTotal = cart.reduce(
@@ -472,7 +480,20 @@ export function NewOrder() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="table-session">Table (Optional)</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="table-session">Table (Optional)</Label>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => refetchActiveSessions()}
+                    disabled={activeSessionsLoading}
+                  >
+                    <RefreshCw
+                      className={`h-4 w-4 ${activeSessionsLoading ? "animate-spin" : ""}`}
+                    />
+                  </Button>
+                </div>
                 <Select
                   value={tableSessionId}
                   onValueChange={setTableSessionId}

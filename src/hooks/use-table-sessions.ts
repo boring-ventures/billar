@@ -50,6 +50,7 @@ export function useTableSessions(companyId: string) {
     data: activeSessions,
     isLoading: activeSessionsLoading,
     error: activeSessionsError,
+    refetch: refetchActiveSessions,
   } = useQuery({
     queryKey: ["tableSessions", companyId, "active"],
     queryFn: async () => {
@@ -62,10 +63,13 @@ export function useTableSessions(companyId: string) {
         return response.data as TableSession[];
       } catch (error) {
         console.error("Failed to fetch active table sessions:", error);
-        return [];
+        throw error;
       }
     },
     enabled: !!companyId,
+    staleTime: 1000 * 60, // 1 minute
+    refetchOnWindowFocus: true,
+    retry: 2,
   });
 
   // Fetch a specific table session
@@ -370,6 +374,7 @@ export function useTableSessions(companyId: string) {
     activeSessions: activeSessions || [],
     activeSessionsLoading,
     activeSessionsError,
+    refetchActiveSessions,
     useTableSession,
   };
 }

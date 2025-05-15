@@ -82,7 +82,7 @@ export default function Header() {
             <div className="pt-4 pb-3 border-t border-gray-800">
               <div className="flex items-center px-3">
                 <Link
-                  href="/login"
+                  href="/sign-in"
                   className="block w-full text-center px-3 py-2 text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-md"
                   onClick={() => setIsMenuOpen(false)}
                 >

@@ -39,10 +39,12 @@ export async function GET(
             id: true,
             startedAt: true,
             endedAt: true,
+            totalCost: true,
             table: {
               select: {
                 id: true,
                 name: true,
+                hourlyRate: true,
               },
             },
           },

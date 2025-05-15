@@ -221,20 +221,19 @@ export function useEndTableSessionMutation() {
   const router = useRouter();
 
   return useMutation({
-    mutationFn: endTableSessionApi,
+    mutationFn: async (sessionId: string) => {
+      const response = await endTableSessionApi(sessionId);
+      return response;
+    },
     onSuccess: (data) => {
       toast({
         title: "Success",
         description: "Table session ended successfully",
       });
 
-      // Invalidate all related queries to ensure consistency across views
+      // Invalidate related queries
       queryClient.invalidateQueries({
         queryKey: ["tableSessions"],
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: ["tables"],
       });
 
       queryClient.invalidateQueries({
@@ -245,10 +244,14 @@ export function useEndTableSessionMutation() {
         queryKey: ["table", data.tableId],
       });
 
-      // Navigate back to the table details page
-      router.push(`/tables/${data.tableId}`);
-
-      return data;
+      // If the session has a total cost, redirect to POS to finalize payment
+      if (data.totalCost) {
+        // Redirect to POS with the session ID as a parameter
+        router.push(`/pos?tab=new&sessionId=${data.id}`);
+      } else {
+        // Just go back to the table detail page if no cost
+        router.push(`/tables/${data.tableId}`);
+      }
     },
     onError: (error: Error) => {
       toast({

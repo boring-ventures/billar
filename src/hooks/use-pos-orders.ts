@@ -38,9 +38,11 @@ interface PosOrder {
     id: string;
     startedAt: string;
     endedAt: string | null;
+    totalCost: number | null;
     table: {
       id: string;
       name: string;
+      hourlyRate?: number | null;
     };
   };
   company?: {

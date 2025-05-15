@@ -69,10 +69,14 @@ export async function GET(request: NextRequest) {
         tableSession: {
           select: {
             id: true,
+            startedAt: true,
+            endedAt: true,
+            totalCost: true,
             table: {
               select: {
                 id: true,
                 name: true,
+                hourlyRate: true,
               },
             },
           },
@@ -153,10 +157,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Company not found" }, { status: 404 });
     }
 
-    // If tableSessionId is provided, check if it exists
+    // If tableSessionId is provided, check if it exists and retrieve its data
+    let tableSession = null;
     if (tableSessionId) {
-      const tableSession = await prisma.tableSession.findUnique({
+      tableSession = await prisma.tableSession.findUnique({
         where: { id: tableSessionId },
+        include: {
+          table: true, // Include table to get hourly rate
+        },
       });
 
       if (!tableSession) {
@@ -237,6 +245,23 @@ export async function POST(request: NextRequest) {
           amount: totalAmount,
           paymentMethod: paymentMethod || "CASH",
           paymentStatus: paymentStatus || "UNPAID",
+        },
+        include: {
+          tableSession: {
+            select: {
+              id: true,
+              startedAt: true,
+              endedAt: true,
+              totalCost: true,
+              table: {
+                select: {
+                  id: true,
+                  name: true,
+                  hourlyRate: true,
+                },
+              },
+            },
+          },
         },
       });
 

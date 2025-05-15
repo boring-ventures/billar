@@ -21,6 +21,7 @@ export interface TableSession {
     id: string;
     name: string;
     companyId: string;
+    hourlyRate?: number | null;
     company?: {
       name: string;
     };

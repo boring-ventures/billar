@@ -142,9 +142,19 @@ export function OrderDetailsDialog({
               </CardHeader>
               <CardContent>
                 <div>
-                  {order.tableSession
-                    ? order.tableSession.table.name
-                    : "No table assigned"}
+                  {order.tableSession ? (
+                    <div className="space-y-1">
+                      <div>{order.tableSession.table.name}</div>
+                      {order.tableSession.totalCost && (
+                        <div className="text-sm text-muted-foreground">
+                          Session Cost: $
+                          {Number(order.tableSession.totalCost).toFixed(2)}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    "No table assigned"
+                  )}
                 </div>
               </CardContent>
             </Card>

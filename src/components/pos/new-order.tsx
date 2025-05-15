@@ -7,6 +7,7 @@ import { useInventoryItems } from "@/hooks/use-inventory-items";
 import { useTableSessions } from "@/hooks/use-table-sessions";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useQueryClient } from "@tanstack/react-query";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -41,6 +42,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   MinusCircle,
   PlusCircle,
@@ -49,8 +51,12 @@ import {
   Building,
   Trash2,
   RefreshCw,
+  Clock,
+  DollarSign,
+  Info,
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { formatCurrency, formatDuration } from "@/lib/utils";
 
 // Cart Item interface
 interface CartItem {
@@ -69,6 +75,9 @@ interface Company {
 
 export function NewOrder() {
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const sessionId = searchParams.get("sessionId");
   const {
     companies,
     selectedCompany,
@@ -79,6 +88,79 @@ export function NewOrder() {
   const [companyId, setCompanyId] = useState<string>("");
   const isSuperAdmin = profile?.role === "SUPERADMIN";
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [sessionData, setSessionData] = useState<any>(null);
+  const [isLoadingSession, setIsLoadingSession] = useState(false);
+
+  // Fetch session data if sessionId is provided in URL
+  useEffect(() => {
+    const fetchSessionData = async () => {
+      if (!sessionId) return;
+
+      setIsLoadingSession(true);
+      try {
+        const response = await fetch(`/api/table-sessions/${sessionId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setSessionData(data);
+
+          // If session has a company, automatically set it
+          if (data.table?.companyId) {
+            setCompanyId(data.table.companyId);
+            if (isSuperAdmin) {
+              setSelectedCompanyId(data.table.companyId);
+            }
+          }
+
+          // Fetch tracked items instead of past orders
+          const trackedItemsResponse = await fetch(
+            `/api/table-sessions/${sessionId}/tracked-items`
+          );
+
+          if (trackedItemsResponse.ok) {
+            const trackedItems = await trackedItemsResponse.json();
+
+            if (trackedItems && trackedItems.length > 0) {
+              console.log("Loaded tracked items:", trackedItems.length);
+              processTrackedItems(trackedItems, data.table?.companyId);
+            } else {
+              console.log("No tracked items found for this session");
+            }
+          } else {
+            console.error("Failed to fetch tracked items");
+          }
+        } else {
+          console.error("Failed to fetch session data");
+        }
+      } catch (error) {
+        console.error("Error fetching session data:", error);
+      } finally {
+        setIsLoadingSession(false);
+      }
+    };
+
+    fetchSessionData();
+  }, [sessionId, isSuperAdmin, setSelectedCompanyId]);
+
+  // Process tracked items from the session to create a consolidated cart
+  const processTrackedItems = (trackedItems: any[], companyId: string) => {
+    if (!trackedItems || trackedItems.length === 0 || !companyId) return;
+
+    // Automatically select the session's table
+    if (sessionId) {
+      setTableSessionId(sessionId);
+    }
+
+    // Convert tracked items to cart format
+    const cartItems = trackedItems.map((item) => ({
+      itemId: item.itemId,
+      name: item.item?.name || "Unknown Item",
+      quantity: item.quantity,
+      unitPrice: Number(item.unitPrice),
+      availableQuantity: 1000, // Assuming this is available since it was already tracked
+    }));
+
+    setCart(cartItems);
+  };
 
   // Use either the selected company from context or manually selected for superadmin
   useEffect(() => {
@@ -121,10 +203,16 @@ export function NewOrder() {
   }, [companyId, refetchActiveSessions]);
 
   // Calculate the total
-  const cartTotal = cart.reduce(
+  const cartItemsTotal = cart.reduce(
     (total, item) => total + item.quantity * item.unitPrice,
     0
   );
+
+  // Add session cost if available
+  const sessionCost = sessionData?.totalCost
+    ? Number(sessionData.totalCost)
+    : 0;
+  const cartTotal = cartItemsTotal + sessionCost;
 
   // Handle company change for superadmin
   const handleCompanyChange = (id: string) => {
@@ -248,7 +336,7 @@ export function NewOrder() {
       return;
     }
 
-    if (cart.length === 0) {
+    if (cart.length === 0 && !sessionData?.totalCost) {
       toast({
         title: "Error",
         description: "Cart is empty. Add items to create an order.",
@@ -281,12 +369,26 @@ export function NewOrder() {
         queryKey: ["posOrders"],
         refetchType: "active",
       });
-      setIsRefreshing(false);
 
-      toast({
-        title: "Success",
-        description: "Order created successfully!",
-      });
+      // If this is a session closing payment, redirect to tables
+      if (sessionData) {
+        toast({
+          title: "Success",
+          description: "Session payment completed successfully!",
+        });
+
+        // Navigate back to tables
+        setTimeout(() => {
+          router.push(`/tables/${sessionData.tableId}`);
+        }, 1500);
+      } else {
+        toast({
+          title: "Success",
+          description: "Order created successfully!",
+        });
+      }
+
+      setIsRefreshing(false);
     } catch (error) {
       console.error("Failed to create order:", error);
       toast({
@@ -295,6 +397,7 @@ export function NewOrder() {
           error instanceof Error ? error.message : "Failed to create order",
         variant: "destructive",
       });
+      setIsRefreshing(false);
     }
   };
 
@@ -328,6 +431,53 @@ export function NewOrder() {
               </Select>
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {/* Show session information if available */}
+      {sessionData && (
+        <div className="lg:col-span-12">
+          <Alert className="bg-blue-50 border-blue-200">
+            <Info className="h-4 w-4 text-blue-500" />
+            <AlertTitle>Session Information</AlertTitle>
+            <AlertDescription className="mt-2">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Table
+                  </p>
+                  <p className="font-medium">
+                    {sessionData.table?.name || "Unknown"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Duration
+                  </p>
+                  <p className="font-medium">
+                    {formatDuration(
+                      new Date(sessionData.endedAt || new Date()).getTime() -
+                        new Date(sessionData.startedAt).getTime()
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Session Cost
+                  </p>
+                  <p className="font-medium">
+                    {sessionData.totalCost
+                      ? formatCurrency(sessionData.totalCost)
+                      : "--"}
+                  </p>
+                </div>
+              </div>
+              <p className="mt-3 text-sm">
+                Session ended and all consumed items have been added to your
+                cart. Complete the payment to finalize the bill.
+              </p>
+            </AlertDescription>
+          </Alert>
         </div>
       )}
 
@@ -417,7 +567,7 @@ export function NewOrder() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {cart.length === 0 ? (
+            {cart.length === 0 && !sessionData ? (
               <div className="text-center py-8 text-muted-foreground">
                 Your cart is empty. Add items to create an order.
               </div>
@@ -481,6 +631,26 @@ export function NewOrder() {
                       </TableCell>
                     </TableRow>
                   ))}
+
+                  {/* Show session cost as a separate line item */}
+                  {sessionData && sessionData.totalCost > 0 && (
+                    <TableRow className="border-t-2">
+                      <TableCell className="font-medium">
+                        <div className="flex items-center space-x-2">
+                          <Clock className="h-4 w-4 text-blue-500" />
+                          <span>Table Session ({sessionData.table?.name})</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">1</TableCell>
+                      <TableCell className="text-right">
+                        ${Number(sessionData.totalCost).toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        ${Number(sessionData.totalCost).toFixed(2)}
+                      </TableCell>
+                      <TableCell></TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             )}
@@ -517,14 +687,75 @@ export function NewOrder() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">No table</SelectItem>
-                    {activeSessions?.map((session) => (
-                      <SelectItem key={session.id} value={session.id}>
-                        {session.table?.name || "Unknown Table"} - Started{" "}
-                        {new Date(session.startedAt).toLocaleTimeString()}
-                      </SelectItem>
-                    ))}
+                    {activeSessions?.map((session) => {
+                      // Calculate current session cost if table has hourly rate
+                      const startTime = new Date(session.startedAt);
+                      const currentTime = new Date();
+                      const durationHours =
+                        (currentTime.getTime() - startTime.getTime()) /
+                        (1000 * 60 * 60);
+                      const hourlyRate = session.table?.hourlyRate
+                        ? Number(session.table.hourlyRate)
+                        : null;
+                      const estimatedCost = hourlyRate
+                        ? (durationHours * hourlyRate).toFixed(2)
+                        : null;
+
+                      return (
+                        <SelectItem key={session.id} value={session.id}>
+                          {session.table?.name || "Unknown Table"} - Started{" "}
+                          {new Date(session.startedAt).toLocaleTimeString()}
+                          {hourlyRate ? ` - $${hourlyRate}/hr` : ""}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
+
+                {/* Display estimated session cost if table is selected */}
+                {tableSessionId !== "none" && tableSessionId && (
+                  <div className="mt-2 text-sm">
+                    {(() => {
+                      const session = activeSessions?.find(
+                        (s) => s.id === tableSessionId
+                      );
+                      if (!session) return null;
+
+                      const startTime = new Date(session.startedAt);
+                      const currentTime = new Date();
+                      const durationHours =
+                        (currentTime.getTime() - startTime.getTime()) /
+                        (1000 * 60 * 60);
+                      const hourlyRate = session.table?.hourlyRate
+                        ? Number(session.table.hourlyRate)
+                        : null;
+
+                      if (!hourlyRate)
+                        return (
+                          <p className="text-muted-foreground">
+                            No hourly rate set for this table
+                          </p>
+                        );
+
+                      const estimatedCost = (
+                        durationHours * hourlyRate
+                      ).toFixed(2);
+                      return (
+                        <div className="flex flex-col gap-1">
+                          <p className="font-medium">Estimated session cost:</p>
+                          <p className="text-muted-foreground">
+                            {Math.floor(durationHours)}h{" "}
+                            {Math.floor((durationHours % 1) * 60)}m at $
+                            {hourlyRate}/hr ={" "}
+                            <span className="font-medium">
+                              ${estimatedCost}
+                            </span>
+                          </p>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">

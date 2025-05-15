@@ -13,6 +13,7 @@ import {
   StopCircle,
   ShoppingCart,
   User,
+  ClipboardList,
 } from "lucide-react";
 import { SessionStatus } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useState, useEffect } from "react";
 import { SessionCancelDialog } from "@/components/tables/session-cancel-dialog";
 import { SessionDetailsSkeleton } from "@/components/tables/session-details-skeleton";
+import { SessionOrderCreator } from "@/components/tables/session-order-creator";
+import { SessionTrackedItemsList } from "@/components/tables/session-tracked-items-list";
 
 export default function TableSessionDetailsPage() {
   const params = useParams();
@@ -207,13 +210,30 @@ export default function TableSessionDetailsPage() {
 
       <Separator />
 
-      <div className="space-y-4">
-        <h3 className="text-xl font-semibold flex items-center gap-2">
-          <ShoppingCart className="h-5 w-5" />
-          Orders
-        </h3>
-        <SessionOrdersList sessionId={sessionId} />
-      </div>
+      {/* Only show tracking component when session is active */}
+      {session.status === "ACTIVE" && (
+        <SessionOrderCreator
+          tableSessionId={session.id}
+          tableId={session.tableId}
+          companyId={
+            session.table?.company?.id || session.table?.companyId || ""
+          }
+        />
+      )}
+
+      {/* Show tracked items without duplicate heading */}
+      <SessionTrackedItemsList sessionId={sessionId} />
+
+      {/* Only show orders for completed or cancelled sessions */}
+      {session.status !== "ACTIVE" && (
+        <div className="space-y-4">
+          <h3 className="text-xl font-semibold flex items-center gap-2">
+            <ShoppingCart className="h-5 w-5" />
+            Orders
+          </h3>
+          <SessionOrdersList sessionId={sessionId} />
+        </div>
+      )}
     </div>
   );
 }

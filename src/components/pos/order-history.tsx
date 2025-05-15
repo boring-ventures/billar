@@ -71,6 +71,7 @@ interface Order {
   };
   tableSession?: {
     id: string;
+    totalCost?: number | null;
     table: {
       id: string;
       name: string;
@@ -374,9 +375,19 @@ export function OrderHistory() {
       header: "Table",
       cell: ({ row }) => (
         <div>
-          {row.original.tableSession
-            ? row.original.tableSession.table.name
-            : "-"}
+          {row.original.tableSession ? (
+            <div className="space-y-1">
+              <div>{row.original.tableSession.table.name}</div>
+              {row.original.tableSession.totalCost && (
+                <div className="text-xs text-muted-foreground">
+                  Session: $
+                  {Number(row.original.tableSession.totalCost).toFixed(2)}
+                </div>
+              )}
+            </div>
+          ) : (
+            "-"
+          )}
         </div>
       ),
     },

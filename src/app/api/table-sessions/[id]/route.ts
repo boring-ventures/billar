@@ -26,7 +26,16 @@ export async function GET(
     const session = await prisma.tableSession.findUnique({
       where: { id: sessionId },
       include: {
-        table: true,
+        table: {
+          include: {
+            company: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
         staff: {
           select: {
             id: true,
@@ -81,7 +90,16 @@ export async function PATCH(
     const session = await prisma.tableSession.findUnique({
       where: { id: sessionId },
       include: {
-        table: true,
+        table: {
+          include: {
+            company: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -135,7 +153,26 @@ export async function PATCH(
         return updatedSession;
       });
 
-      return NextResponse.json(result);
+      // Fetch all tracked items for this session to include in the response
+      const trackedItems = await prisma.sessionTrackedItem.findMany({
+        where: {
+          tableSessionId: sessionId,
+        },
+        include: {
+          item: {
+            select: {
+              name: true,
+              price: true,
+            },
+          },
+        },
+      });
+
+      // Return both the updated session and its tracked items
+      return NextResponse.json({
+        ...result,
+        trackedItems,
+      });
     }
 
     // Regular update (not ending session)

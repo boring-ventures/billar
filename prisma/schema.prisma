@@ -94,6 +94,7 @@ model TableSession {
   createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   posOrders   PosOrder[]
+  trackedItems SessionTrackedItem[]
   staff       Profile?      @relation(fields: [staffId], references: [id])
   table       Table         @relation(fields: [tableId], references: [id])
 
@@ -177,6 +178,7 @@ model InventoryItem {
   company           Company                @relation(fields: [companyId], references: [id])
   posOrderItems     PosOrderItem[]
   stockMovements    StockMovement[]
+  trackedItems      SessionTrackedItem[]
 
   @@map("inventory_items")
   @@schema("public")
@@ -338,5 +340,20 @@ enum FinanceCategoryType {
   INCOME
   EXPENSE
 
+  @@schema("public")
+}
+
+model SessionTrackedItem {
+  id            String      @id @default(uuid()) @db.Uuid
+  tableSessionId String     @map("table_session_id") @db.Uuid
+  itemId        String      @map("item_id") @db.Uuid
+  quantity      Int
+  unitPrice     Decimal     @map("unit_price") @db.Decimal(10, 2)
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tableSession  TableSession @relation(fields: [tableSessionId], references: [id])
+  item          InventoryItem @relation(fields: [itemId], references: [id])
+
+  @@map("session_tracked_items")
   @@schema("public")
 }

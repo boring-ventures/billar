@@ -25,7 +25,7 @@ export default function TablesPage() {
         : "tables"
   );
   const [tableView, setTableView] = useState(
-    viewParam === "grid" ? "grid" : "list"
+    viewParam === "list" ? "list" : "grid"
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [tableDialogOpen, setTableDialogOpen] = useState(false);
@@ -40,7 +40,7 @@ export default function TablesPage() {
           ? "all-sessions"
           : "tables"
     );
-    setTableView(viewParam === "grid" ? "grid" : "list");
+    setTableView(viewParam === "list" ? "list" : "grid");
   }, [tabParam, viewParam]);
 
   // Update URL when tab changes

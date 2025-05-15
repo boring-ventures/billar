@@ -4,14 +4,6 @@ import { useState, useEffect } from "react";
 import { useInventoryItems } from "@/hooks/use-inventory-items";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from "@/components/ui/card";
-import {
   Table,
   TableBody,
   TableCell,
@@ -34,7 +26,6 @@ import {
   MinusCircle,
   PlusCircle,
   Search,
-  ShoppingBag,
   Trash2,
   RefreshCw,
 } from "lucide-react";

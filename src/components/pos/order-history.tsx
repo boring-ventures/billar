@@ -4,21 +4,6 @@ import { useState, useEffect } from "react";
 import { useCompany } from "@/hooks/use-company";
 import { usePosOrdersQuery } from "@/hooks/use-pos-orders-query";
 import { format } from "date-fns";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,18 +20,34 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  CalendarIcon,
-  ChevronLeft,
-  ChevronRight,
-  Eye,
-  Search,
-  X,
-} from "lucide-react";
+import { CalendarIcon, Eye, Search, X, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { OrderDetailsDialog } from "@/components/pos/order-details-dialog";
 import { useQueryClient } from "@tanstack/react-query";
 import type { DateRange } from "react-day-picker";
+import { ColumnDef } from "@tanstack/react-table";
+import { DataTable } from "@/components/tables/data-table";
+import { OrderHistorySkeleton } from "./order-history-skeleton";
+
+// Define the structure of an order for column typing
+interface Order {
+  id: string;
+  createdAt: string;
+  company?: {
+    id: string;
+    name: string;
+  };
+  tableSession?: {
+    id: string;
+    table: {
+      id: string;
+      name: string;
+    };
+  };
+  amount: number;
+  paymentMethod: "CASH" | "QR" | "CREDIT_CARD";
+  paymentStatus: "PAID" | "UNPAID";
+}
 
 export function OrderHistory() {
   const queryClient = useQueryClient();
@@ -97,10 +98,6 @@ export function OrderHistory() {
 
   // Force refresh orders when filters change
   useEffect(() => {
-    console.log("Invalidating posOrders query with filters:", {
-      companyId: companyIdFilter,
-      filterByCompany,
-    });
     queryClient.invalidateQueries({ queryKey: ["posOrders"] });
   }, [companyIdFilter, filterByCompany, queryClient]);
 
@@ -167,7 +164,6 @@ export function OrderHistory() {
     return (
       order.id.toLowerCase().includes(termLower) ||
       order.tableSession?.table.name.toLowerCase().includes(termLower) ||
-      false ||
       order.company?.name.toLowerCase().includes(termLower) ||
       false
     );
@@ -179,236 +175,214 @@ export function OrderHistory() {
     setIsDetailsOpen(true);
   };
 
+  // Define table columns
+  const columns: ColumnDef<Order>[] = [
+    {
+      accessorKey: "id",
+      header: "Order ID",
+      cell: ({ row }) => (
+        <div className="font-medium">{row.original.id.substring(0, 8)}...</div>
+      ),
+    },
+    {
+      accessorKey: "createdAt",
+      header: "Date",
+      cell: ({ row }) => (
+        <div>{format(new Date(row.original.createdAt), "MMM dd, yyyy p")}</div>
+      ),
+    },
+    {
+      accessorKey: "company.name",
+      header: "Company",
+      cell: ({ row }) => <div>{row.original.company?.name || "-"}</div>,
+    },
+    {
+      accessorKey: "tableSession.table.name",
+      header: "Table",
+      cell: ({ row }) => (
+        <div>
+          {row.original.tableSession
+            ? row.original.tableSession.table.name
+            : "-"}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "amount",
+      header: "Amount",
+      cell: ({ row }) => <div>${Number(row.original.amount).toFixed(2)}</div>,
+    },
+    {
+      accessorKey: "paymentMethod",
+      header: "Payment",
+      cell: ({ row }) => (
+        <div>{getPaymentMethodText(row.original.paymentMethod)}</div>
+      ),
+    },
+    {
+      accessorKey: "paymentStatus",
+      header: "Status",
+      cell: ({ row }) => {
+        const status = row.original.paymentStatus;
+        return (
+          <Badge
+            variant={status === "PAID" ? "outline" : "secondary"}
+            className={status === "PAID" ? "bg-green-100 text-green-800" : ""}
+          >
+            {getPaymentStatusText(status)}
+          </Badge>
+        );
+      },
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => handleViewDetails(row.original.id)}
+        >
+          <Eye className="h-4 w-4" />
+        </Button>
+      ),
+    },
+  ];
+
+  // Status filter component to pass to DataTable
+  const statusFilterElement = (
+    <Select
+      value={filters.paymentStatus || "ALL"}
+      onValueChange={handleStatusChange}
+    >
+      <SelectTrigger className="w-full md:w-[180px]">
+        <SelectValue placeholder="Payment Status" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="ALL">All Statuses</SelectItem>
+        <SelectItem value="PAID">Paid</SelectItem>
+        <SelectItem value="UNPAID">Unpaid</SelectItem>
+      </SelectContent>
+    </Select>
+  );
+
+  // Filter row elements
+  const filterRow = (
+    <div className="flex flex-col space-y-4 md:flex-row md:items-center md:space-y-0 md:space-x-4">
+      {/* Company Filter */}
+      <Select
+        onValueChange={handleCompanyChange}
+        defaultValue={filterByCompany ? selectedCompanyId : "ALL"}
+        value={filterByCompany ? selectedCompanyId : "ALL"}
+      >
+        <SelectTrigger className="w-full md:w-[180px]">
+          <SelectValue placeholder="Select Company" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="ALL">All Companies</SelectItem>
+          {companies.map((company: { id: string; name: string }) => (
+            <SelectItem key={company.id} value={company.id}>
+              {company.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      {/* Date Range Picker */}
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className={cn(
+              "w-full md:w-[200px] justify-start text-left font-normal",
+              !dateRange?.from && "text-muted-foreground"
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {dateRange?.from ? (
+              dateRange.to ? (
+                <>
+                  {format(dateRange.from, "LLL dd, y")} -{" "}
+                  {format(dateRange.to, "LLL dd, y")}
+                </>
+              ) : (
+                format(dateRange.from, "LLL dd, y")
+              )
+            ) : (
+              <span>Date range</span>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            initialFocus
+            mode="range"
+            defaultMonth={dateRange?.from}
+            selected={dateRange}
+            onSelect={handleDateRangeChange}
+            numberOfMonths={2}
+          />
+        </PopoverContent>
+      </Popover>
+
+      {statusFilterElement}
+
+      {/* Clear Filters */}
+      <Button
+        variant="outline"
+        onClick={handleClearFilters}
+        className="w-full md:w-auto"
+      >
+        <X className="mr-2 h-4 w-4" />
+        Clear Filters
+      </Button>
+    </div>
+  );
+
+  // Render content based on loading state
+  const renderContent = () => {
+    if (isLoading) {
+      return <OrderHistorySkeleton />;
+    }
+
+    if (error) {
+      return <div className="text-red-500 py-4">{error}</div>;
+    }
+
+    return (
+      <div className="flex flex-col space-y-6">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center space-x-2">
+            <ShoppingBag className="h-5 w-5" />
+            <h3 className="text-xl font-semibold tracking-tight">
+              Orders History
+            </h3>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {filteredOrders.length} orders found
+            {pagination && (
+              <span className="ml-2">
+                (Page {pagination.page} of {pagination.totalPages}, Total:{" "}
+                {pagination.total})
+              </span>
+            )}
+          </p>
+        </div>
+
+        {filterRow}
+        <DataTable
+          columns={columns}
+          data={filteredOrders}
+          onSearch={setSearchTerm}
+          searchPlaceholder="Search orders..."
+        />
+      </div>
+    );
+  };
+
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Order Filters</CardTitle>
-          <CardDescription>
-            Filter orders by company, date, status, or search
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            {/* Company Filter */}
-            <Select
-              onValueChange={handleCompanyChange}
-              defaultValue={filterByCompany ? selectedCompanyId : "ALL"}
-              value={filterByCompany ? selectedCompanyId : "ALL"}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Company" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All Companies</SelectItem>
-                {companies.map((company: { id: string; name: string }) => (
-                  <SelectItem key={company.id} value={company.id}>
-                    {company.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Date Range Picker */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "justify-start text-left font-normal",
-                    !dateRange?.from && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateRange?.from ? (
-                    dateRange.to ? (
-                      <>
-                        {format(dateRange.from, "LLL dd, y")} -{" "}
-                        {format(dateRange.to, "LLL dd, y")}
-                      </>
-                    ) : (
-                      format(dateRange.from, "LLL dd, y")
-                    )
-                  ) : (
-                    <span>Date range</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  initialFocus
-                  mode="range"
-                  defaultMonth={dateRange?.from}
-                  selected={dateRange}
-                  onSelect={handleDateRangeChange}
-                  numberOfMonths={2}
-                />
-              </PopoverContent>
-            </Popover>
-
-            {/* Status Filter */}
-            <Select
-              onValueChange={handleStatusChange}
-              defaultValue={filters.paymentStatus || "ALL"}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Payment Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All Statuses</SelectItem>
-                <SelectItem value="PAID">Paid</SelectItem>
-                <SelectItem value="UNPAID">Unpaid</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Search orders..."
-                className="pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-
-            {/* Clear Filters */}
-            <Button variant="outline" onClick={handleClearFilters}>
-              <X className="mr-2 h-4 w-4" />
-              Clear Filters
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Order History</CardTitle>
-            <CardDescription>
-              {filteredOrders.length} orders found
-              {pagination && (
-                <span className="ml-2">
-                  (Page {pagination.page} of {pagination.totalPages}, Total:{" "}
-                  {pagination.total})
-                </span>
-              )}
-            </CardDescription>
-          </div>
-        </CardHeader>
-
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center py-8">Loading orders...</div>
-          ) : error ? (
-            <div className="text-red-500 py-4">{error}</div>
-          ) : filteredOrders.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No orders found matching your criteria
-            </div>
-          ) : (
-            <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Order ID</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Company</TableHead>
-                    <TableHead>Table</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Payment</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredOrders.map((order) => (
-                    <TableRow key={order.id}>
-                      <TableCell className="font-medium">
-                        {order.id.substring(0, 8)}...
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(order.createdAt), "MMM dd, yyyy p")}
-                      </TableCell>
-                      <TableCell>{order.company?.name || "-"}</TableCell>
-                      <TableCell>
-                        {order.tableSession
-                          ? order.tableSession.table.name
-                          : "-"}
-                      </TableCell>
-                      <TableCell>${Number(order.amount).toFixed(2)}</TableCell>
-                      <TableCell>
-                        {getPaymentMethodText(order.paymentMethod)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            order.paymentStatus === "PAID"
-                              ? "outline"
-                              : "secondary"
-                          }
-                          className={
-                            order.paymentStatus === "PAID"
-                              ? "bg-green-100 text-green-800"
-                              : ""
-                          }
-                        >
-                          {getPaymentStatusText(order.paymentStatus)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleViewDetails(order.id)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-
-              {/* Pagination Controls */}
-              {pagination && pagination.totalPages > 1 && (
-                <div className="flex items-center justify-between space-x-2 py-4">
-                  <div className="text-sm text-muted-foreground">
-                    Showing {(pagination.page - 1) * pagination.limit + 1}-
-                    {Math.min(
-                      pagination.page * pagination.limit,
-                      pagination.total
-                    )}{" "}
-                    of {pagination.total}
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={prevPage}
-                      disabled={pagination.page <= 1}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <div className="text-sm">
-                      Page {pagination.page} of {pagination.totalPages}
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={nextPage}
-                      disabled={pagination.page >= pagination.totalPages}
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </CardContent>
-      </Card>
+    <>
+      {renderContent()}
 
       {/* Order Details Dialog */}
       {selectedOrderId && (
@@ -418,6 +392,6 @@ export function OrderHistory() {
           onOpenChange={setIsDetailsOpen}
         />
       )}
-    </div>
+    </>
   );
 }

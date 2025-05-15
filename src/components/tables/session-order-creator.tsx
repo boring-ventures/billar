@@ -193,25 +193,65 @@ export function SessionOrderCreator({
       // Check if we have enough inventory
       if (newQuantity > item.quantity) {
         toast({
-          title: "Error",
-          description: `Not enough inventory. Only ${item.quantity} available.`,
+          title: "Inventario insuficiente",
+          description: `Solo hay ${item.quantity} unidades disponibles de ${item.name}.`,
           variant: "destructive",
         });
         return;
       }
 
       newCart[existingItemIndex].quantity = newQuantity;
+
+      // Update availableQuantity in cart item
+      const updatedAvailableQuantity = item.quantity - selectedQuantity;
+      newCart[existingItemIndex].availableQuantity = updatedAvailableQuantity;
+
+      // Optimistically update inventory items in the UI
+      queryClient.setQueryData(
+        ["inventoryItems", effectiveCompanyId],
+        (oldItems: any[] = []) => {
+          return oldItems.map((inventoryItem) => {
+            if (inventoryItem.id === selectedItem) {
+              return {
+                ...inventoryItem,
+                quantity: updatedAvailableQuantity,
+              };
+            }
+            return inventoryItem;
+          });
+        }
+      );
+
       setCart(newCart);
     } else {
       // Add new item to cart
       if (selectedQuantity > item.quantity) {
         toast({
-          title: "Error",
-          description: `Not enough inventory. Only ${item.quantity} available.`,
+          title: "Inventario insuficiente",
+          description: `Solo hay ${item.quantity} unidades disponibles de ${item.name}.`,
           variant: "destructive",
         });
         return;
       }
+
+      // Calculate updated available quantity
+      const updatedAvailableQuantity = item.quantity - selectedQuantity;
+
+      // Optimistically update inventory items in the UI
+      queryClient.setQueryData(
+        ["inventoryItems", effectiveCompanyId],
+        (oldItems: any[] = []) => {
+          return oldItems.map((inventoryItem) => {
+            if (inventoryItem.id === selectedItem) {
+              return {
+                ...inventoryItem,
+                quantity: updatedAvailableQuantity,
+              };
+            }
+            return inventoryItem;
+          });
+        }
+      );
 
       setCart([
         ...cart,
@@ -220,7 +260,7 @@ export function SessionOrderCreator({
           name: item.name,
           quantity: selectedQuantity,
           unitPrice: Number(item.price) || 0,
-          availableQuantity: item.quantity,
+          availableQuantity: updatedAvailableQuantity,
         },
       ]);
     }
@@ -231,36 +271,78 @@ export function SessionOrderCreator({
     setIsAddingItem(false);
 
     toast({
-      title: "Item Added",
-      description: `${item.name} added to tracking list`,
+      title: "Artículo agregado",
+      description: `${item.name} agregado a la lista de seguimiento`,
     });
   };
 
   // Update item quantity in cart
   const updateCartItemQuantity = (index: number, newQuantity: number) => {
     const item = cart[index];
+    const currentQuantity = item.quantity;
 
     // Validate quantity
     if (newQuantity <= 0) {
       return;
     }
 
-    if (newQuantity > item.availableQuantity) {
+    if (newQuantity > item.availableQuantity + currentQuantity) {
       toast({
-        title: "Error",
-        description: `Not enough inventory. Only ${item.availableQuantity} available.`,
+        title: "Inventario insuficiente",
+        description: `Solo hay ${item.availableQuantity + currentQuantity} unidades disponibles de ${item.name}.`,
         variant: "destructive",
       });
       return;
     }
 
+    const quantityDifference = newQuantity - currentQuantity;
+
+    // Update inventory in UI
+    queryClient.setQueryData(
+      ["inventoryItems", effectiveCompanyId],
+      (oldItems: any[] = []) => {
+        return oldItems.map((inventoryItem) => {
+          if (inventoryItem.id === item.itemId) {
+            // If increasing quantity, decrease inventory
+            // If decreasing quantity, increase inventory
+            return {
+              ...inventoryItem,
+              quantity: inventoryItem.quantity - quantityDifference,
+            };
+          }
+          return inventoryItem;
+        });
+      }
+    );
+
     const newCart = [...cart];
     newCart[index].quantity = newQuantity;
+    // Update available quantity
+    newCart[index].availableQuantity =
+      item.availableQuantity - quantityDifference;
     setCart(newCart);
   };
 
   // Remove item from cart
   const removeCartItem = (index: number) => {
+    const itemToRemove = cart[index];
+
+    // Return quantity to inventory in UI
+    queryClient.setQueryData(
+      ["inventoryItems", effectiveCompanyId],
+      (oldItems: any[] = []) => {
+        return oldItems.map((inventoryItem) => {
+          if (inventoryItem.id === itemToRemove.itemId) {
+            return {
+              ...inventoryItem,
+              quantity: inventoryItem.quantity + itemToRemove.quantity,
+            };
+          }
+          return inventoryItem;
+        });
+      }
+    );
+
     setCart(cart.filter((_, i) => i !== index));
   };
 
@@ -340,6 +422,27 @@ export function SessionOrderCreator({
         }
       );
 
+      // Optimistically update inventory quantities in the UI
+      queryClient.setQueryData(
+        ["inventoryItems", effectiveCompanyId],
+        (oldItems: any[] = []) => {
+          return oldItems.map((item) => {
+            // Find if this item is in our cart
+            const cartItem = currentCartItems.find(
+              (ci) => ci.itemId === item.id
+            );
+            if (cartItem) {
+              // Decrease the stock count
+              return {
+                ...item,
+                quantity: Math.max(0, item.quantity - cartItem.quantity),
+              };
+            }
+            return item;
+          });
+        }
+      );
+
       // Show success toast
       toast({
         title: "Success",
@@ -410,6 +513,11 @@ export function SessionOrderCreator({
 
       // Revert cart if there was an error
       setCart(cart);
+
+      // Revert the optimistic inventory update
+      queryClient.invalidateQueries({
+        queryKey: ["inventoryItems", effectiveCompanyId],
+      });
 
       // Invalidate the query to refresh with correct server state
       queryClient.invalidateQueries({
@@ -551,120 +659,97 @@ export function SessionOrderCreator({
 
       {/* Add Item Dialog */}
       <Dialog open={isAddingItem} onOpenChange={setIsAddingItem}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Add Item to Tracking</DialogTitle>
+            <DialogTitle>Agregar Artículo</DialogTitle>
             <DialogDescription>
-              Select an item and specify the quantity
+              Agrega artículos a la sesión para realizar seguimiento.
             </DialogDescription>
           </DialogHeader>
-
           <div className="grid gap-4 py-4">
-            {!isCompanyReady || !effectiveCompanyId ? (
-              <div className="flex justify-center items-center py-8">
-                <RefreshCw className="h-6 w-6 animate-spin mr-2" />
-                <span>Loading company data...</span>
+            <div className="space-y-2">
+              <Label htmlFor="item-select">Seleccionar Artículo</Label>
+              <select
+                id="item-select"
+                className="w-full p-2 border rounded-md"
+                value={selectedItem}
+                onChange={(e) => setSelectedItem(e.target.value)}
+              >
+                <option value="">Selecciona un artículo...</option>
+                {filteredItems.map((item) => (
+                  <option
+                    key={item.id}
+                    value={item.id}
+                    disabled={item.quantity <= 0}
+                  >
+                    {item.name}{" "}
+                    {item.quantity <= 0
+                      ? "(Sin stock)"
+                      : `(Disponible: ${item.quantity})`}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="quantity-input">Cantidad</Label>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() =>
+                    setSelectedQuantity(Math.max(1, selectedQuantity - 1))
+                  }
+                >
+                  <MinusCircle className="h-4 w-4" />
+                </Button>
+                <Input
+                  id="quantity-input"
+                  type="number"
+                  min={1}
+                  value={selectedQuantity}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    if (!isNaN(val) && val > 0) {
+                      setSelectedQuantity(val);
+                    }
+                  }}
+                  className="w-20 text-center"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setSelectedQuantity(selectedQuantity + 1)}
+                >
+                  <PlusCircle className="h-4 w-4" />
+                </Button>
               </div>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="item-select">Select Item</Label>
-                  <div className="relative flex-grow mb-2">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type="text"
-                      placeholder="Search items..."
-                      className="pl-8"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto border rounded-md p-2">
-                    {isLoadingItems ? (
-                      <div className="text-center py-4">Loading items...</div>
-                    ) : filteredItems.length === 0 ? (
-                      <div className="text-center py-4">
-                        {searchTerm
-                          ? "No items found matching your search"
-                          : "No inventory items available for this company"}
-                      </div>
-                    ) : (
-                      filteredItems.map((item) => (
-                        <div
-                          key={item.id}
-                          className={`p-2 border rounded-md cursor-pointer hover:bg-accent ${
-                            selectedItem === item.id
-                              ? "bg-primary/10 border-primary"
-                              : ""
-                          }`}
-                          onClick={() => setSelectedItem(item.id)}
-                        >
-                          <div className="font-medium">{item.name}</div>
-                          <div className="text-sm text-muted-foreground flex justify-between">
-                            <span>Available: {item.quantity}</span>
-                            <span>${Number(item.price).toFixed(2)}</span>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="quantity">Quantity</Label>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() =>
-                        setSelectedQuantity((q) => Math.max(1, q - 1))
-                      }
-                      disabled={isLoadingItems}
-                    >
-                      <MinusCircle className="h-4 w-4" />
-                    </Button>
-                    <Input
-                      id="quantity"
-                      type="number"
-                      min="1"
-                      className="text-center"
-                      value={selectedQuantity}
-                      onChange={(e) =>
-                        setSelectedQuantity(
-                          Math.max(1, parseInt(e.target.value) || 1)
-                        )
-                      }
-                      disabled={isLoadingItems}
-                    />
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setSelectedQuantity((q) => q + 1)}
-                      disabled={isLoadingItems}
-                    >
-                      <PlusCircle className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </>
-            )}
+              {selectedItem && (
+                <p className="text-sm text-muted-foreground">
+                  Disponible:{" "}
+                  {items.find((i) => i.id === selectedItem)?.quantity || 0}{" "}
+                  unidades
+                </p>
+              )}
+            </div>
           </div>
-
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddingItem(false)}>
-              Cancel
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsAddingItem(false)}
+            >
+              Cancelar
             </Button>
             <Button
+              type="button"
               onClick={handleAddToCart}
-              disabled={
-                !selectedItem ||
-                selectedQuantity <= 0 ||
-                isLoadingItems ||
-                !isCompanyReady ||
-                !effectiveCompanyId
-              }
+              disabled={!selectedItem || selectedQuantity <= 0}
             >
-              Add to List
+              Agregar
             </Button>
           </DialogFooter>
         </DialogContent>

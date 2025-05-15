@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { MovementType } from "@prisma/client";
 
 // GET /api/table-sessions/[id]/tracked-items - Get all tracked items for a specific table session
 export async function GET(
@@ -111,6 +112,13 @@ export async function POST(
           throw new Error(`Item with ID ${item.itemId} not found`);
         }
 
+        // Check if there's enough stock available
+        if (inventoryItem.quantity < item.quantity) {
+          throw new Error(
+            `Not enough stock for ${inventoryItem.name}. Only ${inventoryItem.quantity} available.`
+          );
+        }
+
         // Check if there's an existing tracked item for this session and item
         const existingTrackedItem = await tx.sessionTrackedItem.findFirst({
           where: {
@@ -119,9 +127,11 @@ export async function POST(
           },
         });
 
+        let trackedItem;
+
         if (existingTrackedItem) {
           // Update quantity of existing tracked item
-          const updatedItem = await tx.sessionTrackedItem.update({
+          trackedItem = await tx.sessionTrackedItem.update({
             where: { id: existingTrackedItem.id },
             data: {
               quantity: existingTrackedItem.quantity + item.quantity,
@@ -135,10 +145,9 @@ export async function POST(
               },
             },
           });
-          trackedItems.push(updatedItem);
         } else {
           // Create new tracked item
-          const trackedItem = await tx.sessionTrackedItem.create({
+          trackedItem = await tx.sessionTrackedItem.create({
             data: {
               tableSessionId: sessionId,
               itemId: item.itemId,
@@ -154,8 +163,32 @@ export async function POST(
               },
             },
           });
-          trackedItems.push(trackedItem);
         }
+
+        trackedItems.push(trackedItem);
+
+        // Create stock movement to deduct from inventory (negative quantity for removal)
+        await tx.stockMovement.create({
+          data: {
+            itemId: item.itemId,
+            quantity: -item.quantity, // Negative to indicate removal
+            type: MovementType.SALE,
+            reason: `Used in session ${sessionId}`,
+            reference: `Session: ${sessionId}`,
+            createdBy: session.staffId || "system",
+          },
+        });
+
+        // Update inventory item quantity
+        await tx.inventoryItem.update({
+          where: { id: item.itemId },
+          data: {
+            quantity: {
+              decrement: item.quantity,
+            },
+            lastStockUpdate: new Date(),
+          },
+        });
       }
 
       return trackedItems;
@@ -196,11 +229,47 @@ export async function DELETE(
       );
     }
 
-    // Delete all tracked items for this session
-    await prisma.sessionTrackedItem.deleteMany({
-      where: {
-        tableSessionId: sessionId,
-      },
+    // Use a transaction to handle the operation
+    await prisma.$transaction(async (tx) => {
+      // First, get all tracked items for this session
+      const trackedItems = await tx.sessionTrackedItem.findMany({
+        where: {
+          tableSessionId: sessionId,
+        },
+      });
+
+      // Return inventory for each tracked item
+      for (const item of trackedItems) {
+        // Create a stock movement to return the items to inventory
+        await tx.stockMovement.create({
+          data: {
+            itemId: item.itemId,
+            quantity: item.quantity, // Positive quantity for return to inventory
+            type: MovementType.RETURN,
+            reason: `Returned from cancelled session ${sessionId}`,
+            reference: `Session: ${sessionId}`,
+            createdBy: session.staffId || "system",
+          },
+        });
+
+        // Update inventory item quantity
+        await tx.inventoryItem.update({
+          where: { id: item.itemId },
+          data: {
+            quantity: {
+              increment: item.quantity,
+            },
+            lastStockUpdate: new Date(),
+          },
+        });
+      }
+
+      // Delete all tracked items for this session
+      await tx.sessionTrackedItem.deleteMany({
+        where: {
+          tableSessionId: sessionId,
+        },
+      });
     });
 
     return NextResponse.json({ success: true });

@@ -744,7 +744,7 @@ export function SessionOrderCreator({
 
       {/* Add Item Dialog */}
       <Dialog open={isAddingItem} onOpenChange={setIsAddingItem}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
           <DialogHeader>
             <DialogTitle>Agregar Artículo</DialogTitle>
             <DialogDescription>
@@ -757,84 +757,172 @@ export function SessionOrderCreator({
               <span>Cargando datos de inventario...</span>
             </div>
           ) : (
-            <div className="grid gap-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="item-select">Seleccionar Artículo</Label>
-                <select
-                  id="item-select"
-                  className="w-full p-2 border rounded-md"
-                  value={selectedItem}
-                  onChange={(e) => setSelectedItem(e.target.value)}
-                >
-                  <option value="">Selecciona un artículo...</option>
-                  {filteredItems.map((item) => (
-                    <option
-                      key={item.id}
-                      value={item.id}
-                      disabled={item.quantity <= 0}
-                    >
-                      {item.name}{" "}
-                      {item.quantity <= 0
-                        ? "(Sin stock)"
-                        : `(Disponible: ${getAdjustedAvailableQuantity(item.id, item.quantity)})`}
-                    </option>
-                  ))}
-                </select>
+            <div className="space-y-4">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Buscar artículos..."
+                  className="pl-8"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="quantity-input">Cantidad</Label>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() =>
-                      setSelectedQuantity(Math.max(1, selectedQuantity - 1))
-                    }
-                  >
-                    <MinusCircle className="h-4 w-4" />
-                  </Button>
-                  <Input
-                    id="quantity-input"
-                    type="number"
-                    min={1}
-                    value={selectedQuantity}
-                    onChange={(e) => {
-                      const val = parseInt(e.target.value);
-                      if (!isNaN(val) && val > 0) {
-                        setSelectedQuantity(val);
-                      }
-                    }}
-                    className="w-20 text-center"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => setSelectedQuantity(selectedQuantity + 1)}
-                  >
-                    <PlusCircle className="h-4 w-4" />
-                  </Button>
-                </div>
-                {selectedItem && (
-                  <p className="text-sm text-muted-foreground">
-                    Disponible:{" "}
-                    {selectedItem
-                      ? getAdjustedAvailableQuantity(
+
+              {/* Item Selection - Card Display */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[50vh] overflow-y-auto py-2 px-1">
+                {filteredItems.length === 0 ? (
+                  <div className="col-span-full text-center py-8 text-muted-foreground">
+                    No se encontraron artículos que coincidan con la búsqueda.
+                  </div>
+                ) : (
+                  filteredItems.map((item) => {
+                    const isSelected = selectedItem === item.id;
+                    const availableQty = getAdjustedAvailableQuantity(
+                      item.id,
+                      item.quantity
+                    );
+                    const isLowStock = availableQty <= item.criticalThreshold;
+
+                    return (
+                      <div
+                        key={item.id}
+                        className={
+                          isSelected
+                            ? "border rounded-md p-4 border-primary bg-primary/10 cursor-pointer transition-colors"
+                            : "border rounded-md p-4 hover:border-primary/50 cursor-pointer transition-colors"
+                        }
+                        onClick={() => setSelectedItem(item.id)}
+                      >
+                        <div className="font-medium">{item.name}</div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          {item.sku ? `SKU: ${item.sku}` : "Sin SKU"}
+                        </div>
+                        <div className="flex justify-between items-center mt-2">
+                          <span className="text-sm font-medium">
+                            ${Number(item.price).toFixed(2)}
+                          </span>
+                          <span
+                            className={
+                              isLowStock
+                                ? "text-sm text-red-500"
+                                : "text-sm text-green-600"
+                            }
+                          >
+                            Stock: {availableQty}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Quantity Selection */}
+              {selectedItem && (
+                <div className="mt-6 border-t pt-4">
+                  <h3 className="text-lg font-medium mb-2">
+                    {items.find((i) => i.id === selectedItem)?.name || ""}
+                  </h3>
+
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="quantity-input">Cantidad</Label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setSelectedQuantity(
+                              Math.max(1, selectedQuantity - 1)
+                            )
+                          }
+                        >
+                          <MinusCircle className="h-4 w-4" />
+                        </Button>
+                        <Input
+                          id="quantity-input"
+                          type="number"
+                          min={1}
+                          value={selectedQuantity}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value);
+                            if (!isNaN(val) && val > 0) {
+                              setSelectedQuantity(val);
+                            }
+                          }}
+                          className="w-20 text-center"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setSelectedQuantity(selectedQuantity + 1)
+                          }
+                        >
+                          <PlusCircle className="h-4 w-4" />
+                        </Button>
+
+                        <div className="ml-2 text-sm text-muted-foreground">
+                          Disponible:{" "}
+                          {(() => {
+                            const availableQty = getAdjustedAvailableQuantity(
+                              selectedItem,
+                              items.find((i) => i.id === selectedItem)
+                                ?.quantity || 0
+                            );
+                            const isOverLimit = availableQty < selectedQuantity;
+
+                            return (
+                              <span
+                                className={
+                                  isOverLimit
+                                    ? "text-red-500 font-medium"
+                                    : "text-green-600 font-medium"
+                                }
+                              >
+                                {availableQty} unidades
+                              </span>
+                            );
+                          })()}
+                        </div>
+                      </div>
+
+                      {(() => {
+                        const availableQty = getAdjustedAvailableQuantity(
                           selectedItem,
                           items.find((i) => i.id === selectedItem)?.quantity ||
                             0
-                        )
-                      : 0}{" "}
-                    unidades
-                  </p>
-                )}
-              </div>
+                        );
+
+                        if (availableQty < selectedQuantity) {
+                          return (
+                            <p className="text-red-500 text-sm mt-1">
+                              ¡Cantidad seleccionada mayor que el stock
+                              disponible!
+                            </p>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
+
+                    <div className="text-sm">
+                      <span className="font-medium">Subtotal:</span> $
+                      {(
+                        (items.find((i) => i.id === selectedItem)?.price || 0) *
+                        selectedQuantity
+                      ).toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="mt-6">
             <Button
               type="button"
               variant="outline"
@@ -846,7 +934,14 @@ export function SessionOrderCreator({
               type="button"
               onClick={handleAddToCart}
               disabled={
-                !selectedItem || selectedQuantity <= 0 || isTrackedItemsLoading
+                !selectedItem ||
+                selectedQuantity <= 0 ||
+                isTrackedItemsLoading ||
+                (selectedItem &&
+                  getAdjustedAvailableQuantity(
+                    selectedItem,
+                    items.find((i) => i.id === selectedItem)?.quantity || 0
+                  ) < selectedQuantity)
               }
             >
               Agregar

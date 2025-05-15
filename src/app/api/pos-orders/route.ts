@@ -201,6 +201,14 @@ export async function POST(request: NextRequest) {
       inventoryItems.map((item) => [item.id, item])
     );
 
+    // Update the interface for incoming items in the POST function
+    interface OrderItem {
+      itemId: string;
+      quantity: number;
+      unitPrice: number;
+      isTrackedItem?: boolean;
+    }
+
     // Validate each item
     for (const item of items) {
       // Skip validation for session-payment items
@@ -211,6 +219,7 @@ export async function POST(request: NextRequest) {
       const inventoryItem = inventoryItemMap.get(item.itemId);
 
       if (!inventoryItem) {
+        console.error(`Item with ID ${item.itemId} not found in inventory`);
         return NextResponse.json(
           { error: `Item with ID ${item.itemId} not found` },
           { status: 404 }
@@ -218,6 +227,9 @@ export async function POST(request: NextRequest) {
       }
 
       if (item.quantity <= 0) {
+        console.error(
+          `Invalid quantity for item ${inventoryItem.name}: ${item.quantity}`
+        );
         return NextResponse.json(
           {
             error: `Quantity must be greater than 0 for item ${inventoryItem.name}`,
@@ -226,16 +238,67 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (inventoryItem.quantity < item.quantity) {
+      // Special handling for inventory validation when using tracked items
+      // If this is part of a table session, check if these items are already tracked in the session
+      let effectiveInventoryQuantity = inventoryItem.quantity;
+
+      // Check if this is a tracked item from the client flag
+      const typedItem = item as OrderItem;
+
+      if (typedItem.isTrackedItem && tableSessionId) {
+        console.log(
+          `Found tracked item in order payload: ${inventoryItem.name}, adjusting inventory check`
+        );
+        // For items marked as tracked, don't check inventory as they've already been deducted
+        // when they were added to the tracked items
+        continue;
+      } else if (tableSessionId) {
+        try {
+          // Check if this item is already being tracked in this session
+          const trackedItems = await prisma.sessionTrackedItem.findMany({
+            where: {
+              tableSessionId,
+              itemId: item.itemId,
+            },
+          });
+
+          // If we found tracked items, their quantity was already deducted from inventory
+          // so we should adjust our check to avoid double-counting
+          if (trackedItems.length > 0) {
+            const trackedQuantity = trackedItems.reduce(
+              (sum, trackedItem) => sum + trackedItem.quantity,
+              0
+            );
+            console.log(
+              `Adjusting inventory check for item ${inventoryItem.name}: inventory=${inventoryItem.quantity}, tracked=${trackedQuantity}`
+            );
+
+            // Add back the tracked quantity to get the effective inventory for validation
+            effectiveInventoryQuantity += trackedQuantity;
+          }
+        } catch (err) {
+          console.error("Error checking tracked items:", err);
+          // Continue with the default check if we can't get tracked items
+        }
+      }
+
+      // Now check against the effective inventory quantity
+      if (effectiveInventoryQuantity < item.quantity) {
+        console.error(
+          `Not enough stock for item ${inventoryItem.name}. Available: ${effectiveInventoryQuantity}, Requested: ${item.quantity}`
+        );
         return NextResponse.json(
           {
-            error: `Not enough stock for item ${inventoryItem.name}. Available: ${inventoryItem.quantity}, Requested: ${item.quantity}`,
+            error: `Not enough stock for item ${inventoryItem.name}. Available: ${effectiveInventoryQuantity}, Requested: ${item.quantity}`,
           },
           { status: 400 }
         );
       }
 
       if (!item.unitPrice || item.unitPrice <= 0) {
+        console.error(
+          `No valid unit price for item ${inventoryItem.name}: ${item.unitPrice}`
+        );
         return NextResponse.json(
           { error: `Unit price is required for item ${inventoryItem.name}` },
           { status: 400 }
@@ -330,42 +393,124 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // Regular item processing
+        const typedItem = item as OrderItem;
+
+        // Create the order item normally
         const orderItem = await tx.posOrderItem.create({
           data: {
             orderId: order.id,
-            itemId: item.itemId,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
+            itemId: typedItem.itemId,
+            quantity: typedItem.quantity,
+            unitPrice: typedItem.unitPrice,
           },
         });
 
         orderItems.push(orderItem);
 
-        // Create stock movement (negative quantity for sales)
-        const stockMovement = await tx.stockMovement.create({
-          data: {
-            itemId: item.itemId,
-            quantity: -item.quantity, // Negative for sales
-            type: "SALE",
-            reason: `POS Order: ${order.id}`,
-            reference: order.id,
-            createdBy: session.user.id,
-          },
-        });
+        // For tracked items, we need special handling of inventory
+        if (typedItem.isTrackedItem && tableSessionId) {
+          console.log(
+            `Processing tracked item ${typedItem.itemId} with quantity ${typedItem.quantity}`
+          );
 
-        stockMovements.push(stockMovement);
-
-        // Update inventory item quantity
-        await tx.inventoryItem.update({
-          where: { id: item.itemId },
-          data: {
-            quantity: {
-              decrement: item.quantity,
+          // Find the tracked item in the session
+          const trackedItem = await tx.sessionTrackedItem.findFirst({
+            where: {
+              tableSessionId,
+              itemId: typedItem.itemId,
             },
-            lastStockUpdate: new Date(),
-          },
-        });
+          });
+
+          if (trackedItem) {
+            console.log(
+              `Found tracked item ${trackedItem.id} with quantity ${trackedItem.quantity}`
+            );
+
+            // Get the current inventory item to log its current quantity
+            const currentInventory = await tx.inventoryItem.findUnique({
+              where: { id: typedItem.itemId },
+              select: { quantity: true, name: true },
+            });
+            console.log(
+              `Current inventory for ${currentInventory?.name}: ${currentInventory?.quantity}`
+            );
+
+            // For tracked items, create a stock movement to record the purchase
+            // But DON'T update inventory as it was already deducted when tracking
+            const stockMovement = await tx.stockMovement.create({
+              data: {
+                itemId: typedItem.itemId,
+                quantity: -typedItem.quantity, // Show as negative for sales analytics
+                type: "SALE",
+                reason: `POS Order (from tracked): ${order.id}`,
+                reference: order.id,
+                createdBy: session.user.id,
+              },
+            });
+
+            stockMovements.push(stockMovement);
+
+            // Delete the tracked item as it's now part of a proper order
+            await tx.sessionTrackedItem.delete({
+              where: { id: trackedItem.id },
+            });
+
+            console.log(
+              `Deleted tracked item ${trackedItem.id} after converting to order`
+            );
+
+            // Important: DON'T update inventory because it was already deducted
+            // when the item was tracked. Adding this comment for clarity.
+          } else {
+            console.log(
+              `Warning: Could not find tracked item for ${typedItem.itemId} in session ${tableSessionId}`
+            );
+
+            // Fallback to normal inventory update if tracked item not found
+            console.log(
+              `Falling back to normal inventory update for ${typedItem.itemId}`
+            );
+            const stockMovement = await createStockMovementAndUpdateInventory(
+              tx,
+              typedItem,
+              order.id,
+              session.user.id
+            );
+            stockMovements.push(stockMovement);
+          }
+        } else {
+          // Regular (non-tracked) item - create stock movement and update inventory
+          console.log(
+            `Processing regular item ${typedItem.itemId} with quantity ${typedItem.quantity}`
+          );
+
+          // Get current inventory before update
+          const itemBefore = await tx.inventoryItem.findUnique({
+            where: { id: typedItem.itemId },
+            select: { id: true, name: true, quantity: true },
+          });
+          console.log(
+            `Current inventory for ${itemBefore?.name || typedItem.itemId}: ${itemBefore?.quantity || "unknown"}`
+          );
+
+          // Create the stock movement and update inventory
+          const stockMovement = await createStockMovementAndUpdateInventory(
+            tx,
+            typedItem,
+            order.id,
+            session.user.id
+          );
+          stockMovements.push(stockMovement);
+
+          // Verify inventory was updated
+          const itemAfter = await tx.inventoryItem.findUnique({
+            where: { id: typedItem.itemId },
+            select: { id: true, name: true, quantity: true },
+          });
+          console.log(
+            `Updated inventory for ${itemAfter?.name || typedItem.itemId}: ${itemAfter?.quantity || "unknown"} (updated from ${itemBefore?.quantity || "unknown"})`
+          );
+        }
       }
 
       return { order, orderItems, stockMovements };
@@ -379,6 +524,43 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// Helper function for creating stock movement and updating inventory
+async function createStockMovementAndUpdateInventory(
+  tx: any,
+  item: OrderItem,
+  orderId: string,
+  userId: string
+) {
+  console.log(
+    `Updating inventory for item ${item.itemId} - removing quantity: ${item.quantity}`
+  );
+
+  // Create stock movement (negative quantity for sales)
+  const stockMovement = await tx.stockMovement.create({
+    data: {
+      itemId: item.itemId,
+      quantity: -item.quantity, // Negative for sales
+      type: "SALE",
+      reason: `POS Order: ${orderId}`,
+      reference: orderId,
+      createdBy: userId,
+    },
+  });
+
+  // Update inventory item quantity
+  await tx.inventoryItem.update({
+    where: { id: item.itemId },
+    data: {
+      quantity: {
+        decrement: item.quantity,
+      },
+      lastStockUpdate: new Date(),
+    },
+  });
+
+  return stockMovement;
 }
 
 // PUT /api/pos-orders?id={id} - Update a POS order (payment status, payment method)

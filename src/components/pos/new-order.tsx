@@ -65,6 +65,7 @@ interface CartItem {
   quantity: number;
   unitPrice: number;
   availableQuantity: number;
+  isTrackedItem?: boolean; // Whether this item was loaded from tracked items
 }
 
 // Company interface
@@ -151,7 +152,49 @@ export function NewOrder() {
 
             if (trackedItems && trackedItems.length > 0) {
               console.log("Loaded tracked items:", trackedItems.length);
-              processTrackedItems(trackedItems, data.table?.companyId);
+
+              // Save the company ID to use for inventory data
+              const companyToUse = data.table?.companyId;
+
+              if (companyToUse) {
+                // First get inventory data to properly set available quantities
+                try {
+                  const inventoryResponse = await fetch(
+                    `/api/inventory-items?companyId=${companyToUse}`
+                  );
+
+                  if (inventoryResponse.ok) {
+                    const inventoryItems = await inventoryResponse.json();
+
+                    // Create an inventory map for quick lookups
+                    const inventoryMap = new Map(
+                      inventoryItems.map(
+                        (item: any) =>
+                          [item.id as string, item] as [string, any]
+                      )
+                    );
+
+                    // Now process tracked items with correct inventory data
+                    processTrackedItemsWithInventory(
+                      trackedItems,
+                      companyToUse,
+                      inventoryMap
+                    );
+                  } else {
+                    // Fallback to regular processing if inventory fetch fails
+                    processTrackedItems(trackedItems, companyToUse);
+                  }
+                } catch (err) {
+                  console.error(
+                    "Error fetching inventory for tracked items:",
+                    err
+                  );
+                  // Fallback to regular processing
+                  processTrackedItems(trackedItems, companyToUse);
+                }
+              } else {
+                processTrackedItems(trackedItems, data.table?.companyId);
+              }
             } else {
               console.log("No tracked items found for this session");
             }
@@ -169,7 +212,6 @@ export function NewOrder() {
     };
 
     fetchSessionData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, isSuperAdmin, setSelectedCompanyId]);
 
   // Process tracked items from the session to create a consolidated cart
@@ -190,10 +232,49 @@ export function NewOrder() {
       name: item.item?.name || "Unknown Item",
       quantity: item.quantity,
       unitPrice: Number(item.unitPrice),
-      availableQuantity: 1000, // Assuming this is available since it was already tracked
+      // Don't hardcode availability - it will be calculated dynamically
+      availableQuantity: 0, // Will be updated when inventory items load
+      isTrackedItem: true,
     }));
 
     console.log("Setting initial cart from tracked items:", cartItems);
+    setCart(cartItems);
+  };
+
+  // New helper function to process tracked items with inventory data
+  const processTrackedItemsWithInventory = (
+    trackedItems: TrackedItem[],
+    companyId: string,
+    inventoryMap: any
+  ) => {
+    if (!trackedItems || trackedItems.length === 0 || !companyId) return;
+
+    // Automatically select the session's table
+    if (sessionId) {
+      setTableSessionId(sessionId);
+    }
+
+    // Convert tracked items to cart format with correct availability
+    const cartItems = trackedItems.map((item) => {
+      // Get the current inventory for this item
+      const inventoryItem = inventoryMap.get(item.itemId);
+      const currentStock = inventoryItem ? inventoryItem.quantity : 0;
+
+      return {
+        itemId: item.itemId,
+        name: item.item?.name || "Unknown Item",
+        quantity: item.quantity,
+        unitPrice: Number(item.unitPrice),
+        // Set availableQuantity based on current inventory plus what's already tracked
+        availableQuantity: currentStock + item.quantity,
+        isTrackedItem: true,
+      };
+    });
+
+    console.log(
+      "Setting initial cart from tracked items with inventory data:",
+      cartItems
+    );
     setCart(cartItems);
   };
 
@@ -290,6 +371,28 @@ export function NewOrder() {
       (ci) => ci.itemId === selectedItem
     );
 
+    // Check if this item is already tracked in a session
+    // This is critically important to maintain inventory integrity
+    let actualAvailableQuantity = item.quantity;
+
+    // If we're handling a session with tracked items, we need to consider them already deducted
+    // from inventory, so don't double-count them when checking availability
+    if (sessionId && tableSessionId === sessionId) {
+      // Find if this item is already in the cart as a tracked item
+      const trackedItem = cart.find(
+        (ci) => ci.itemId === selectedItem && ci.isTrackedItem
+      );
+
+      // If tracked, the available quantity is the current inventory + what's already tracked
+      // This prevents double counting the deduction
+      if (trackedItem) {
+        actualAvailableQuantity += trackedItem.quantity;
+        console.log(
+          `Adjusting available quantity for tracked item ${selectedItem}: inventory=${item.quantity}, tracked=${trackedItem.quantity}, adjusted=${actualAvailableQuantity}`
+        );
+      }
+    }
+
     let updatedCart = [...cart];
 
     if (existingItemIndex >= 0) {
@@ -298,13 +401,27 @@ export function NewOrder() {
         updatedCart[existingItemIndex].quantity + selectedQuantity;
 
       // Check if we have enough inventory
-      if (newQuantity > item.quantity) {
-        toast({
-          title: "Inventario insuficiente",
-          description: `Inventario insuficiente. Solo ${item.quantity} disponible.`,
-          variant: "destructive",
-        });
-        return;
+      if (updatedCart[existingItemIndex].isTrackedItem) {
+        // If it's a tracked item, we can add more since it's already accounted for
+        // in inventory deductions, up to the adjusted available quantity
+        if (newQuantity > actualAvailableQuantity) {
+          toast({
+            title: "Inventario insuficiente",
+            description: `No hay suficiente inventario disponible.`,
+            variant: "destructive",
+          });
+          return;
+        }
+      } else {
+        // Regular item, check against actual inventory
+        if (newQuantity > actualAvailableQuantity) {
+          toast({
+            title: "Inventario insuficiente",
+            description: `Inventario insuficiente. Solo ${actualAvailableQuantity} disponible.`,
+            variant: "destructive",
+          });
+          return;
+        }
       }
 
       updatedCart[existingItemIndex] = {
@@ -313,10 +430,10 @@ export function NewOrder() {
       };
     } else {
       // Add new item to cart
-      if (selectedQuantity > item.quantity) {
+      if (selectedQuantity > actualAvailableQuantity) {
         toast({
           title: "Inventario insuficiente",
-          description: `Inventario insuficiente. Solo ${item.quantity} disponible.`,
+          description: `Inventario insuficiente. Solo ${actualAvailableQuantity} disponible.`,
           variant: "destructive",
         });
         return;
@@ -327,7 +444,8 @@ export function NewOrder() {
         name: item.name,
         quantity: selectedQuantity,
         unitPrice: Number(item.price) || 0,
-        availableQuantity: item.quantity,
+        availableQuantity: actualAvailableQuantity,
+        isTrackedItem: false, // This is a new item, not from tracked items
       };
 
       // Add the new item to cart
@@ -360,10 +478,24 @@ export function NewOrder() {
       return;
     }
 
-    if (newQuantity > item.availableQuantity) {
+    // For tracked items, we need to adjust the availability calculation
+    let effectiveAvailableQuantity = item.availableQuantity;
+
+    // If this is a tracked item, we need to consider the inventory differently
+    if (item.isTrackedItem && sessionId) {
+      // Find the actual inventory item to get its current quantity
+      const inventoryItem = items.find((i) => i.id === item.itemId);
+      if (inventoryItem) {
+        // For tracked items, available quantity = current inventory + current quantity in cart
+        // This prevents double counting the deduction
+        effectiveAvailableQuantity = inventoryItem.quantity + item.quantity;
+      }
+    }
+
+    if (newQuantity > effectiveAvailableQuantity) {
       toast({
         title: "Inventario insuficiente",
-        description: `Inventario insuficiente. Solo ${item.availableQuantity} disponible.`,
+        description: `Inventario insuficiente. Solo ${effectiveAvailableQuantity} disponible.`,
         variant: "destructive",
       });
       return;
@@ -470,11 +602,17 @@ export function NewOrder() {
       console.log("Current cart at order time:", currentCart);
 
       // Prepare the order items from the current cart
-      const orderItems = currentCart.map((item) => ({
-        itemId: item.itemId,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-      }));
+      const orderItems = currentCart.map((item) => {
+        // For tracked items, we need to include a flag so the server knows not to double-count inventory
+        const isTrackedItem = !!item.isTrackedItem;
+
+        return {
+          itemId: item.itemId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          isTrackedItem: isTrackedItem,
+        };
+      });
 
       // Log the items being included in the order for debugging
       console.log("Items being ordered:", orderItems);
@@ -489,56 +627,85 @@ export function NewOrder() {
       // Log the complete order data being sent
       console.log("Submitting order data:", orderData);
 
-      const result = await createOrder.mutateAsync(orderData);
-      console.log("Order created successfully:", result);
-
-      // Reset the cart after successful order
-      setCart([]);
-
-      // Explicitly invalidate the posOrders query to refresh the order history
-      // Force an immediate refetch by setting refetchType to 'active'
-      await queryClient.invalidateQueries({
-        queryKey: ["posOrders"],
-        refetchType: "active",
-      });
-
-      // If this is a session closing payment, redirect to tables
-      if (sessionData) {
-        toast({
-          title: "Success",
-          description: "Session payment completed successfully!",
+      try {
+        const response = await fetch("/api/pos-orders", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(orderData),
         });
 
-        // Navigate back to tables
-        setTimeout(() => {
-          router.push(`/tables/${sessionData.table?.id}`);
-        }, 1500);
-      } else {
-        toast({
-          title: "Success",
-          description: "Order created successfully!",
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error("Order creation failed with status:", response.status);
+          console.error("Error details:", errorData);
+          throw new Error(
+            errorData.error || `Request failed with status ${response.status}`
+          );
+        }
+
+        const result = await response.json();
+        console.log("Order created successfully:", result);
+
+        // Reset the cart after successful order
+        setCart([]);
+
+        // Explicitly invalidate the posOrders query to refresh the order history
+        // Force an immediate refetch by setting refetchType to 'active'
+        await queryClient.invalidateQueries({
+          queryKey: ["posOrders"],
+          refetchType: "active",
         });
 
-        // Navigate to order history and open the order details popup
-        setTimeout(() => {
-          // The result contains the created order ID
-          const orderId = result?.id;
-          if (orderId) {
-            router.push(`/pos?tab=history&viewOrder=${orderId}`);
-          } else {
-            router.push(`/pos?tab=history`);
-          }
-        }, 1000);
+        // If this is a session closing payment, redirect to tables
+        if (sessionData) {
+          toast({
+            title: "Success",
+            description: "Session payment completed successfully!",
+          });
+
+          // Navigate back to tables
+          setTimeout(() => {
+            router.push(`/tables/${sessionData.table?.id}`);
+          }, 1500);
+        } else {
+          toast({
+            title: "Success",
+            description: "Order created successfully!",
+          });
+
+          // Navigate to order history and open the order details popup
+          setTimeout(() => {
+            // The result contains the created order ID
+            const orderId = result?.id;
+            if (orderId) {
+              router.push(`/pos?tab=history&viewOrder=${orderId}`);
+            } else {
+              router.push(`/pos?tab=history`);
+            }
+          }, 1000);
+        }
+      } catch (error) {
+        console.error("Failed to create order:", error);
+        toast({
+          title: "Error",
+          description:
+            error instanceof Error ? error.message : "Failed to create order",
+          variant: "destructive",
+        });
+      } finally {
+        setIsRefreshing(false);
+        setIsCreatingOrder(false);
       }
     } catch (error) {
-      console.error("Failed to create order:", error);
+      console.error("Error preparing order:", error);
       toast({
         title: "Error",
         description:
-          error instanceof Error ? error.message : "Failed to create order",
+          error instanceof Error ? error.message : "Failed to prepare order",
         variant: "destructive",
       });
-    } finally {
       setIsRefreshing(false);
       setIsCreatingOrder(false);
     }

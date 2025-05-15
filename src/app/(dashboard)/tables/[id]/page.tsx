@@ -135,11 +135,13 @@ export default function TableDetailsPage() {
     return (
       <div className="p-8">
         <div className="flex items-center justify-between">
-          <h2 className="text-3xl font-bold tracking-tight">Table not found</h2>
+          <h2 className="text-3xl font-bold tracking-tight">
+            Mesa no encontrada
+          </h2>
         </div>
         <Button onClick={handleBack} className="mt-4" variant="outline">
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
+          Volver
         </Button>
       </div>
     );
@@ -163,7 +165,7 @@ export default function TableDetailsPage() {
         <div className="flex items-center gap-2">
           <Button onClick={handleBack} size="sm" variant="outline">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+            Volver
           </Button>
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
             {table.name}
@@ -174,12 +176,12 @@ export default function TableDetailsPage() {
           {table.status === "AVAILABLE" && (
             <Button onClick={handleStartSession} size="sm">
               <Play className="mr-2 h-4 w-4" />
-              Start Session
+              Iniciar Sesión
             </Button>
           )}
           <Button onClick={handleEditTable} size="sm" variant="outline">
             <Edit className="mr-2 h-4 w-4" />
-            Edit
+            Editar
           </Button>
         </div>
       </div>
@@ -191,15 +193,13 @@ export default function TableDetailsPage() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <Badge className="bg-red-600 text-white">
-                    ACTIVE SESSION
-                  </Badge>
+                  <Badge className="bg-red-600 text-white">SESIÓN ACTIVA</Badge>
                   <CardTitle>
                     {new Date(activeSession.startedAt).toLocaleString()}
                   </CardTitle>
                 </div>
                 <CardDescription>
-                  Session started at{" "}
+                  Sesión iniciada a las{" "}
                   {new Date(activeSession.startedAt).toLocaleTimeString()}
                 </CardDescription>
               </div>
@@ -210,7 +210,9 @@ export default function TableDetailsPage() {
                   size="sm"
                 >
                   <StopCircle className="mr-2 h-4 w-4" />
-                  {endSessionMutation.isPending ? "Ending..." : "End Session"}
+                  {endSessionMutation.isPending
+                    ? "Finalizando..."
+                    : "Finalizar Sesión"}
                 </Button>
                 <SessionCancelDialog sessionId={activeSession.id} size="sm" />
                 <Button
@@ -218,7 +220,7 @@ export default function TableDetailsPage() {
                   size="sm"
                   onClick={handleViewSessionDetails}
                 >
-                  View Details
+                  Ver Detalles
                 </Button>
               </div>
             </div>
@@ -226,25 +228,25 @@ export default function TableDetailsPage() {
           <CardContent className="py-4">
             <Alert className="mb-4 bg-red-100 border-red-200 text-red-800">
               <Timer className="h-4 w-4" />
-              <AlertTitle>Ongoing Session</AlertTitle>
+              <AlertTitle>Sesión en Curso</AlertTitle>
               <AlertDescription>
-                This table is currently in use. The timer is running and charges
-                are accruing.
+                Esta mesa está actualmente en uso. El tiempo está corriendo y
+                los cargos se están acumulando.
               </AlertDescription>
             </Alert>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
-                  Current Duration
+                  Duración Actual
                 </p>
                 <p className="flex items-center gap-1 text-xl font-bold text-red-700">
                   <Timer className="h-5 w-5" />
-                  {activeDuration || "Calculating..."}
+                  {activeDuration || "Calculando..."}
                 </p>
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
-                  Approx. Cost
+                  Costo Aproximado
                 </p>
                 <p className="text-xl font-bold text-red-700">
                   {calculateApproxCost()}
@@ -252,12 +254,12 @@ export default function TableDetailsPage() {
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
-                  Staff
+                  Personal
                 </p>
                 <p>
                   {activeSession.staff
                     ? `${activeSession.staff.firstName || ""} ${activeSession.staff.lastName || ""}`.trim()
-                    : "Not assigned"}
+                    : "No asignado"}
                 </p>
               </div>
             </div>
@@ -267,31 +269,31 @@ export default function TableDetailsPage() {
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle>Table Details</CardTitle>
-          <CardDescription>Basic information about this table</CardDescription>
+          <CardTitle>Detalles de la Mesa</CardTitle>
+          <CardDescription>Información básica sobre esta mesa</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
-            <p className="text-sm font-medium text-muted-foreground">Company</p>
+            <p className="text-sm font-medium text-muted-foreground">Empresa</p>
             <p>{table.company?.name || "N/A"}</p>
           </div>
           <div>
             <p className="text-sm font-medium text-muted-foreground">
-              Hourly Rate
+              Tarifa por Hora
             </p>
-            <p>{table.hourlyRate ? `$${table.hourlyRate}` : "N/A"}</p>
+            <p>{table.hourlyRate ? formatCurrency(table.hourlyRate) : "N/A"}</p>
           </div>
           <div>
-            <p className="text-sm font-medium text-muted-foreground">Status</p>
+            <p className="text-sm font-medium text-muted-foreground">Estado</p>
             <p>{table.status}</p>
           </div>
           <div>
-            <p className="text-sm font-medium text-muted-foreground">Created</p>
+            <p className="text-sm font-medium text-muted-foreground">Creada</p>
             <p>{new Date(table.createdAt).toLocaleDateString()}</p>
           </div>
           <div>
             <p className="text-sm font-medium text-muted-foreground">
-              Last Updated
+              Última Actualización
             </p>
             <p>{new Date(table.updatedAt).toLocaleDateString()}</p>
           </div>
@@ -300,10 +302,10 @@ export default function TableDetailsPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full max-w-2xl grid-cols-4">
-          <TabsTrigger value="sessions">Sessions</TabsTrigger>
-          <TabsTrigger value="activity">Activity Log</TabsTrigger>
-          <TabsTrigger value="reservations">Reservations</TabsTrigger>
-          <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
+          <TabsTrigger value="sessions">Sesiones</TabsTrigger>
+          <TabsTrigger value="activity">Registro de Actividad</TabsTrigger>
+          <TabsTrigger value="reservations">Reservas</TabsTrigger>
+          <TabsTrigger value="maintenance">Mantenimiento</TabsTrigger>
         </TabsList>
         <TabsContent value="sessions" className="mt-6">
           <TableSessionsHistory tableId={tableId} />

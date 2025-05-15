@@ -127,7 +127,7 @@ export function TableSessionsTable({
   const columns: ColumnDef<SessionWithDuration>[] = [
     {
       accessorKey: "table.name",
-      header: "Table",
+      header: "Mesa",
       cell: ({ row }) => {
         const original = row.original;
         return (
@@ -137,7 +137,7 @@ export function TableSessionsTable({
     },
     {
       accessorKey: "status",
-      header: "Status",
+      header: "Estado",
       cell: ({ row }) => {
         const status = row.getValue("status") as SessionStatus;
         let badgeClass = "";
@@ -159,7 +159,7 @@ export function TableSessionsTable({
     },
     {
       accessorKey: "startedAt",
-      header: "Started",
+      header: "Iniciada",
       cell: ({ row }) => {
         const date = new Date(row.getValue("startedAt"));
         return <div>{date.toLocaleString()}</div>;
@@ -167,7 +167,7 @@ export function TableSessionsTable({
     },
     {
       accessorKey: "endedAt",
-      header: "Ended",
+      header: "Finalizada",
       cell: ({ row }) => {
         const endDate = row.getValue("endedAt");
         return (
@@ -179,14 +179,14 @@ export function TableSessionsTable({
     },
     {
       accessorKey: "durationFormatted",
-      header: "Duration",
+      header: "Duración",
       cell: ({ row }) => {
         return <div>{row.getValue("durationFormatted")}</div>;
       },
     },
     {
       accessorKey: "totalCost",
-      header: "Cost",
+      header: "Costo",
       cell: ({ row }) => {
         const cost = row.getValue("totalCost") as number | null;
         return <div>{cost ? formatCurrency(cost) : "--"}</div>;
@@ -194,7 +194,7 @@ export function TableSessionsTable({
     },
     {
       accessorKey: "staff",
-      header: "Staff",
+      header: "Personal",
       cell: ({ row }) => {
         const original = row.original;
         const staff = original.staff;
@@ -209,7 +209,7 @@ export function TableSessionsTable({
     },
     {
       id: "actions",
-      header: "Actions",
+      header: "Acciones",
       cell: ({ row }) => {
         const session = row.original;
 
@@ -217,12 +217,12 @@ export function TableSessionsTable({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
+                <span className="sr-only">Abrir menú</span>
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuLabel>Acciones</DropdownMenuLabel>
               <DropdownMenuItem
                 onClick={() =>
                   router.push(
@@ -231,7 +231,7 @@ export function TableSessionsTable({
                 }
               >
                 <Eye className="mr-2 h-4 w-4" />
-                View Details
+                Ver Detalles
               </DropdownMenuItem>
 
               {session.status === "ACTIVE" && (
@@ -244,7 +244,7 @@ export function TableSessionsTable({
                     }}
                   >
                     <StopCircle className="mr-2 h-4 w-4" />
-                    End Session
+                    Finalizar Sesión
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => {
@@ -254,7 +254,7 @@ export function TableSessionsTable({
                     className="text-destructive"
                   >
                     <X className="mr-2 h-4 w-4" />
-                    Cancel Session
+                    Cancelar Sesión
                   </DropdownMenuItem>
                 </>
               )}
@@ -271,14 +271,14 @@ export function TableSessionsTable({
 
   const statusOptions = activeOnly ? (
     <>
-      <SelectItem value="ACTIVE">Active</SelectItem>
+      <SelectItem value="ACTIVE">Activa</SelectItem>
     </>
   ) : (
     <>
-      <SelectItem value="all">All Sessions</SelectItem>
-      <SelectItem value="ACTIVE">Active</SelectItem>
-      <SelectItem value="COMPLETED">Completed</SelectItem>
-      <SelectItem value="CANCELLED">Cancelled</SelectItem>
+      <SelectItem value="all">Todas las Sesiones</SelectItem>
+      <SelectItem value="ACTIVE">Activa</SelectItem>
+      <SelectItem value="COMPLETED">Completada</SelectItem>
+      <SelectItem value="CANCELLED">Cancelada</SelectItem>
     </>
   );
 
@@ -289,7 +289,7 @@ export function TableSessionsTable({
       disabled={activeOnly}
     >
       <SelectTrigger className="w-full md:w-[180px]">
-        <SelectValue placeholder="Filter by status" />
+        <SelectValue placeholder="Filtrar por estado" />
       </SelectTrigger>
       <SelectContent>{statusOptions}</SelectContent>
     </Select>
@@ -302,7 +302,7 @@ export function TableSessionsTable({
         data={sessionsWithDuration}
         statusFilter={statusFilterElement}
         onAddNew={handleStartNewSession}
-        addNewLabel="Start New Session"
+        addNewLabel="Iniciar Nueva Sesión"
       />
 
       <SessionDialog
@@ -319,19 +319,21 @@ export function TableSessionsTable({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>End this session?</AlertDialogTitle>
+            <AlertDialogTitle>¿Finalizar esta sesión?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will end the active session and calculate the final cost. The
-              table will be marked as available again.
+              Esto finalizará la sesión activa y calculará el costo final. La
+              mesa quedará disponible nuevamente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleEndSession}
               disabled={endSessionMutation.isPending}
             >
-              {endSessionMutation.isPending ? "Processing..." : "End Session"}
+              {endSessionMutation.isPending
+                ? "Procesando..."
+                : "Finalizar Sesión"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -343,22 +345,22 @@ export function TableSessionsTable({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancel this session?</AlertDialogTitle>
+            <AlertDialogTitle>¿Cancelar esta sesión?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will cancel the active session. No charges will be applied.
-              The table will be marked as available again.
+              Esto cancelará la sesión activa. No se aplicarán cargos. La mesa
+              quedará disponible nuevamente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleCancelSession}
               className="bg-destructive text-destructive-foreground"
               disabled={cancelSessionMutation.isPending}
             >
               {cancelSessionMutation.isPending
-                ? "Processing..."
-                : "Cancel Session"}
+                ? "Procesando..."
+                : "Cancelar Sesión"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

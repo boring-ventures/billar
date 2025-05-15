@@ -27,11 +27,11 @@ export function formatDuration(ms: number): string {
 /**
  * Format a number as currency
  * @param amount The amount to format
- * @param currency The currency code (default: USD)
+ * @param currency The currency code (default: BOB)
  * @returns Formatted currency string
  */
-export function formatCurrency(amount: number, currency = "USD"): string {
-  return new Intl.NumberFormat("en-US", {
+export function formatCurrency(amount: number, currency = "BOB"): string {
+  return new Intl.NumberFormat("es-BO", {
     style: "currency",
     currency,
     minimumFractionDigits: 2,
@@ -43,7 +43,7 @@ export function formatDate(date: Date | string) {
   if (!date) return "";
 
   const d = new Date(date);
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("es-BO", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(d);

@@ -46,8 +46,8 @@ interface TableDialogProps {
 }
 
 const formSchema = z.object({
-  name: z.string().min(1, "Table name is required"),
-  companyId: z.string().min(1, "Company is required"),
+  name: z.string().min(1, "El nombre de la mesa es obligatorio"),
+  companyId: z.string().min(1, "La empresa es obligatoria"),
   status: z.nativeEnum(TableStatus),
   hourlyRate: z
     .union([
@@ -55,7 +55,7 @@ const formSchema = z.object({
         .string()
         .min(0)
         .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) >= 0, {
-          message: "Hourly rate must be a positive number",
+          message: "La tarifa por hora debe ser un número positivo",
         }),
       z.literal(""),
     ])
@@ -158,12 +158,12 @@ export function TableDialog({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? "Edit Table" : "Create New Table"}
+            {isEditing ? "Editar Mesa" : "Crear Nueva Mesa"}
           </DialogTitle>
           <DialogDescription>
             {isEditing
-              ? "Update the table details below."
-              : "Fill in the details to create a new table."}
+              ? "Actualiza los detalles de la mesa a continuación."
+              : "Completa los detalles para crear una nueva mesa."}
           </DialogDescription>
         </DialogHeader>
 
@@ -174,12 +174,12 @@ export function TableDialog({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Table Name</FormLabel>
+                  <FormLabel>Nombre de la Mesa</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter table name" {...field} />
+                    <Input placeholder="Ingresa nombre de mesa" {...field} />
                   </FormControl>
                   <FormDescription>
-                    The name or number that identifies this table.
+                    El nombre o número que identifica esta mesa.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -191,14 +191,14 @@ export function TableDialog({
               name="companyId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Company</FormLabel>
+                  <FormLabel>Empresa</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a company" />
+                        <SelectValue placeholder="Selecciona una empresa" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -210,7 +210,7 @@ export function TableDialog({
                     </SelectContent>
                   </Select>
                   <FormDescription>
-                    The company this table belongs to.
+                    La empresa a la que pertenece esta mesa.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -222,25 +222,25 @@ export function TableDialog({
               name="status"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Status</FormLabel>
+                  <FormLabel>Estado</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a status" />
+                        <SelectValue placeholder="Selecciona un estado" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="AVAILABLE">Available</SelectItem>
-                      <SelectItem value="OCCUPIED">Occupied</SelectItem>
-                      <SelectItem value="RESERVED">Reserved</SelectItem>
-                      <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
+                      <SelectItem value="AVAILABLE">Disponible</SelectItem>
+                      <SelectItem value="OCCUPIED">Ocupada</SelectItem>
+                      <SelectItem value="RESERVED">Reservada</SelectItem>
+                      <SelectItem value="MAINTENANCE">Mantenimiento</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormDescription>
-                    The current status of this table.
+                    El estado actual de esta mesa.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -252,10 +252,10 @@ export function TableDialog({
               name="hourlyRate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Hourly Rate</FormLabel>
+                  <FormLabel>Tarifa por Hora</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Enter hourly rate (optional)"
+                      placeholder="Ingresa tarifa por hora (opcional)"
                       type="number"
                       step="0.01"
                       min="0"
@@ -267,8 +267,8 @@ export function TableDialog({
                     />
                   </FormControl>
                   <FormDescription>
-                    The hourly rate for this table (leave empty if not
-                    applicable).
+                    La tarifa por hora para esta mesa (dejar vacío si no
+                    aplica).
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -281,11 +281,11 @@ export function TableDialog({
                 variant="outline"
                 onClick={() => onOpenChange(false)}
               >
-                Cancel
+                Cancelar
               </Button>
               <Button type="submit" disabled={isPending}>
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isEditing ? "Update Table" : "Create Table"}
+                {isEditing ? "Actualizar Mesa" : "Crear Mesa"}
               </Button>
             </DialogFooter>
           </form>

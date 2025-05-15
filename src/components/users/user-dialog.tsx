@@ -45,12 +45,12 @@ interface UserDialogProps {
 }
 
 const formSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Invalid email format").optional(),
+  firstName: z.string().min(1, "El nombre es obligatorio"),
+  lastName: z.string().min(1, "El apellido es obligatorio"),
+  email: z.string().email("Formato de correo inválido").optional(),
   password: z
     .string()
-    .min(8, "Password must be at least 8 characters")
+    .min(8, "La contraseña debe tener al menos 8 caracteres")
     .optional(),
   role: z.enum(["SELLER", "ADMIN", "SUPERADMIN"] as const),
   companyId: z.string().optional(),
@@ -170,7 +170,8 @@ export function UserDialog({
         if (!values.email || !values.password) {
           toast({
             title: "Error",
-            description: "Email and password are required for new users",
+            description:
+              "El correo y la contraseña son obligatorios para nuevos usuarios",
             variant: "destructive",
           });
           setLoading(false);
@@ -196,7 +197,7 @@ export function UserDialog({
       console.error("Error submitting form:", error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred",
+        description: "Ha ocurrido un error inesperado",
         variant: "destructive",
       });
     } finally {
@@ -209,12 +210,12 @@ export function UserDialog({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? "Edit User" : "Create New User"}
+            {isEditing ? "Editar Usuario" : "Crear Nuevo Usuario"}
           </DialogTitle>
           <DialogDescription>
             {isEditing
-              ? "Update the user details below."
-              : "Fill in the details to create a new user."}
+              ? "Actualiza los detalles del usuario a continuación."
+              : "Completa los detalles para crear un nuevo usuario."}
           </DialogDescription>
         </DialogHeader>
 
@@ -225,9 +226,9 @@ export function UserDialog({
               name="firstName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>First Name</FormLabel>
+                  <FormLabel>Nombre</FormLabel>
                   <FormControl>
-                    <Input placeholder="John" {...field} />
+                    <Input placeholder="Juan" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -239,9 +240,9 @@ export function UserDialog({
               name="lastName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Last Name</FormLabel>
+                  <FormLabel>Apellido</FormLabel>
                   <FormControl>
-                    <Input placeholder="Doe" {...field} />
+                    <Input placeholder="Pérez" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -250,12 +251,12 @@ export function UserDialog({
 
             {isEditing && user?.email && (
               <div className="space-y-2">
-                <FormLabel>Email</FormLabel>
+                <FormLabel>Correo</FormLabel>
                 <div className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground">
                   {user.email}
                 </div>
                 <p className="text-[0.8rem] text-muted-foreground">
-                  Email cannot be changed after creation.
+                  El correo no se puede cambiar después de la creación.
                 </p>
               </div>
             )}
@@ -267,16 +268,16 @@ export function UserDialog({
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>Correo</FormLabel>
                       <FormControl>
                         <Input
                           type="email"
-                          placeholder="johndoe@example.com"
+                          placeholder="juanperez@ejemplo.com"
                           {...field}
                         />
                       </FormControl>
                       <FormDescription>
-                        Email cannot be changed after creation.
+                        El correo no se puede cambiar después de la creación.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -288,7 +289,7 @@ export function UserDialog({
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Password</FormLabel>
+                      <FormLabel>Contraseña</FormLabel>
                       <FormControl>
                         <Input
                           type="password"
@@ -308,7 +309,7 @@ export function UserDialog({
               name="role"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Role</FormLabel>
+                  <FormLabel>Rol</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     value={field.value}
@@ -316,13 +317,15 @@ export function UserDialog({
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a role" />
+                        <SelectValue placeholder="Seleccionar un rol" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="SELLER">Seller</SelectItem>
-                      <SelectItem value="ADMIN">Admin</SelectItem>
-                      <SelectItem value="SUPERADMIN">Super Admin</SelectItem>
+                      <SelectItem value="SELLER">Vendedor</SelectItem>
+                      <SelectItem value="ADMIN">Administrador</SelectItem>
+                      <SelectItem value="SUPERADMIN">
+                        Super Administrador
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -336,7 +339,7 @@ export function UserDialog({
                 name="companyId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Company</FormLabel>
+                    <FormLabel>Empresa</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       value={field.value}
@@ -344,11 +347,11 @@ export function UserDialog({
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a company" />
+                          <SelectValue placeholder="Seleccionar una empresa" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value={NO_COMPANY}>None</SelectItem>
+                        <SelectItem value={NO_COMPANY}>Ninguna</SelectItem>
                         {companies.map((company) => (
                           <SelectItem key={company.id} value={company.id}>
                             {company.name}
@@ -364,12 +367,13 @@ export function UserDialog({
 
             {isEditing && user?.companyId && (
               <div className="space-y-2">
-                <FormLabel>Company</FormLabel>
+                <FormLabel>Empresa</FormLabel>
                 <div className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground">
-                  {user.company?.name || "Assigned Company"}
+                  {user.company?.name || "Empresa Asignada"}
                 </div>
                 <p className="text-[0.8rem] text-muted-foreground">
-                  Company assignment cannot be changed after creation.
+                  La asignación de empresa no se puede cambiar después de la
+                  creación.
                 </p>
               </div>
             )}
@@ -386,9 +390,10 @@ export function UserDialog({
                     />
                   </FormControl>
                   <div className="leading-none">
-                    <FormLabel>Active</FormLabel>
+                    <FormLabel>Activo</FormLabel>
                     <FormDescription>
-                      Inactive users cannot login to the system.
+                      Los usuarios inactivos no pueden iniciar sesión en el
+                      sistema.
                     </FormDescription>
                   </div>
                 </FormItem>
@@ -400,12 +405,12 @@ export function UserDialog({
                 {loading || isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {isEditing ? "Updating..." : "Creating..."}
+                    {isEditing ? "Actualizando..." : "Creando..."}
                   </>
                 ) : isEditing ? (
-                  "Update User"
+                  "Actualizar Usuario"
                 ) : (
-                  "Create User"
+                  "Crear Usuario"
                 )}
               </Button>
             </DialogFooter>

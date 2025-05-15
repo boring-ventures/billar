@@ -40,7 +40,7 @@ interface CompanyDialogProps {
 const EMPTY_VALUE = "none";
 
 const formSchema = z.object({
-  name: z.string().min(1, "Company name is required"),
+  name: z.string().min(1, "El nombre de la empresa es obligatorio"),
   address: z.string(),
   phone: z.string(),
 });
@@ -116,7 +116,7 @@ export function CompanyDialog({
       console.error("Error submitting form:", error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred",
+        description: "Ha ocurrido un error inesperado",
         variant: "destructive",
       });
     }
@@ -127,12 +127,12 @@ export function CompanyDialog({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? "Edit Company" : "Create New Company"}
+            {isEditing ? "Editar Empresa" : "Crear Nueva Empresa"}
           </DialogTitle>
           <DialogDescription>
             {isEditing
-              ? "Update the company details below."
-              : "Fill in the details to create a new company."}
+              ? "Actualiza los detalles de la empresa a continuación."
+              : "Completa los detalles para crear una nueva empresa."}
           </DialogDescription>
         </DialogHeader>
 
@@ -143,9 +143,9 @@ export function CompanyDialog({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Company Name</FormLabel>
+                  <FormLabel>Nombre de la Empresa</FormLabel>
                   <FormControl>
-                    <Input placeholder="ACME Corporation" {...field} />
+                    <Input placeholder="Corporación ACME" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -157,10 +157,10 @@ export function CompanyDialog({
               name="address"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Address</FormLabel>
+                  <FormLabel>Dirección</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="123 Main St, City, Country"
+                      placeholder="Calle Principal 123, Ciudad, País"
                       {...field}
                       value={field.value === EMPTY_VALUE ? "" : field.value}
                       onChange={(e) => {
@@ -179,10 +179,10 @@ export function CompanyDialog({
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Phone</FormLabel>
+                  <FormLabel>Teléfono</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="+1 234 567 8900"
+                      placeholder="+34 123 456 789"
                       {...field}
                       value={field.value === EMPTY_VALUE ? "" : field.value}
                       onChange={(e) => {
@@ -200,11 +200,11 @@ export function CompanyDialog({
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting
                   ? isEditing
-                    ? "Updating..."
-                    : "Creating..."
+                    ? "Actualizando..."
+                    : "Creando..."
                   : isEditing
-                    ? "Update Company"
-                    : "Create Company"}
+                    ? "Actualizar Empresa"
+                    : "Crear Empresa"}
               </Button>
             </DialogFooter>
           </form>

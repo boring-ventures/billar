@@ -74,7 +74,7 @@ export function UserTable() {
     },
     {
       accessorKey: "name",
-      header: "Name",
+      header: "Nombre",
       cell: ({ row }: { row: { original: User } }) => {
         const user = row.original;
         return <div>{`${user.firstName || ""} ${user.lastName || ""}`}</div>;
@@ -82,7 +82,7 @@ export function UserTable() {
     },
     {
       accessorKey: "role",
-      header: "Role",
+      header: "Rol",
       cell: ({ row }: { row: { original: User } }) => {
         const role = row.original.role;
         const variant =
@@ -97,19 +97,19 @@ export function UserTable() {
     },
     {
       accessorKey: "company",
-      header: "Company",
+      header: "Empresa",
       cell: ({ row }: { row: { original: User } }) => {
         return <div>{row.original.company?.name || "N/A"}</div>;
       },
     },
     {
       accessorKey: "active",
-      header: "Status",
+      header: "Estado",
       cell: ({ row }: { row: { original: User } }) => {
         const isActive = row.original.active;
         return (
           <Badge variant={isActive ? "default" : "secondary"}>
-            {isActive ? "Active" : "Inactive"}
+            {isActive ? "Activo" : "Inactivo"}
           </Badge>
         );
       },
@@ -123,15 +123,15 @@ export function UserTable() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
+                <span className="sr-only">Abrir menú</span>
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuLabel>Acciones</DropdownMenuLabel>
               <DropdownMenuItem onClick={() => handleAddEdit(user)}>
                 <Edit className="mr-2 h-4 w-4" />
-                Edit
+                Editar
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -142,7 +142,7 @@ export function UserTable() {
                 className="text-destructive"
               >
                 <Trash className="mr-2 h-4 w-4" />
-                Delete
+                Eliminar
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -161,9 +161,9 @@ export function UserTable() {
         columns={columns}
         data={users}
         onSearch={setSearchQuery}
-        searchPlaceholder="Search users..."
+        searchPlaceholder="Buscar usuarios..."
         onAddNew={() => handleAddEdit()}
-        addNewLabel="Add User"
+        addNewLabel="Añadir Usuario"
       />
 
       <UserDialog
@@ -177,20 +177,20 @@ export function UserTable() {
       <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogTitle>¿Estás completamente seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the
-              user and remove their data from our servers.
+              Esta acción no se puede deshacer. Se eliminará permanentemente el
+              usuario y se borrarán sus datos de nuestros servidores.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground"
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Deleting..." : "Delete"}
+              {isSubmitting ? "Eliminando..." : "Eliminar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

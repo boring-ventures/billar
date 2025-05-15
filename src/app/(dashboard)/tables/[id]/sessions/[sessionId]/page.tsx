@@ -101,12 +101,12 @@ export default function TableSessionDetailsPage() {
       <div className="p-8">
         <div className="flex items-center justify-between">
           <h2 className="text-3xl font-bold tracking-tight">
-            Session not found
+            Sesión no encontrada
           </h2>
         </div>
         <Button onClick={handleBack} className="mt-4" variant="outline">
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
+          Volver
         </Button>
       </div>
     );
@@ -118,10 +118,10 @@ export default function TableSessionDetailsPage() {
         <div className="flex items-center gap-2">
           <Button onClick={handleBack} size="sm" variant="outline">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+            Volver
           </Button>
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-            Session for {session.table?.name}
+            Sesión para {session.table?.name}
           </h2>
           <Badge className={getStatusColor(session.status)}>
             {session.status}
@@ -137,7 +137,7 @@ export default function TableSessionDetailsPage() {
                 disabled={endSessionMutation.isPending}
               >
                 <StopCircle className="mr-2 h-4 w-4" />
-                End Session
+                Finalizar Sesión
               </Button>
               <SessionCancelDialog sessionId={sessionId} />
             </>
@@ -148,9 +148,9 @@ export default function TableSessionDetailsPage() {
       {isActive && (
         <Alert className="bg-amber-50 text-amber-800 border-amber-200">
           <Clock className="h-4 w-4" />
-          <AlertTitle>Active Session</AlertTitle>
+          <AlertTitle>Sesión Activa</AlertTitle>
           <AlertDescription>
-            This session is currently active and the timer is running.
+            Esta sesión está actualmente activa y el tiempo está corriendo.
           </AlertDescription>
         </Alert>
       )}
@@ -160,17 +160,17 @@ export default function TableSessionDetailsPage() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5" />
-              Duration
+              Duración
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">{duration}</p>
             <p className="text-sm text-muted-foreground">
-              Started: {new Date(session.startedAt).toLocaleString()}
+              Iniciada: {new Date(session.startedAt).toLocaleString()}
             </p>
             {session.endedAt && (
               <p className="text-sm text-muted-foreground">
-                Ended: {new Date(session.endedAt).toLocaleString()}
+                Finalizada: {new Date(session.endedAt).toLocaleString()}
               </p>
             )}
           </CardContent>
@@ -180,7 +180,7 @@ export default function TableSessionDetailsPage() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5" />
-              Cost
+              Costo
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -188,10 +188,10 @@ export default function TableSessionDetailsPage() {
               {session.totalCost ? formatCurrency(session.totalCost) : "--"}
             </p>
             <p className="text-sm text-muted-foreground">
-              Hourly Rate:{" "}
+              Tarifa por Hora:{" "}
               {session.table?.hourlyRate
                 ? formatCurrency(session.table.hourlyRate)
-                : "Not set"}
+                : "No establecida"}
             </p>
           </CardContent>
         </Card>
@@ -200,14 +200,14 @@ export default function TableSessionDetailsPage() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
-              Staff
+              Personal
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-xl font-medium">
               {session.staff
                 ? `${session.staff.firstName} ${session.staff.lastName}`
-                : "Not assigned"}
+                : "No asignado"}
             </p>
           </CardContent>
         </Card>
@@ -221,15 +221,15 @@ export default function TableSessionDetailsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ShoppingCart className="h-5 w-5" />
-              Session Items
+              Artículos de la Sesión
             </CardTitle>
             <CardDescription>
-              Track and manage items consumed during this session
+              Seguimiento y gestión de artículos consumidos durante esta sesión
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
-              <h3 className="text-md font-medium mb-2">Add Items</h3>
+              <h3 className="text-md font-medium mb-2">Añadir Artículos</h3>
               <SessionOrderCreator
                 tableSessionId={session.id}
                 tableId={session.tableId}
@@ -242,7 +242,9 @@ export default function TableSessionDetailsPage() {
             <Separator className="my-4" />
 
             <div>
-              <h3 className="text-md font-medium mb-2">Tracked Items</h3>
+              <h3 className="text-md font-medium mb-2">
+                Artículos Registrados
+              </h3>
               <SessionTrackedItemsList
                 sessionId={sessionId}
                 showHeading={false}
@@ -263,7 +265,7 @@ export default function TableSessionDetailsPage() {
         <div className="space-y-4">
           <h3 className="text-xl font-semibold flex items-center gap-2">
             <ShoppingCart className="h-5 w-5" />
-            Orders
+            Pedidos
           </h3>
           <SessionOrdersList sessionId={sessionId} />
         </div>

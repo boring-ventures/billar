@@ -133,14 +133,14 @@ export function TablesTable() {
   const columns: ColumnDef<TableType>[] = [
     {
       accessorKey: "name",
-      header: "Table Name",
+      header: "Nombre de Mesa",
       cell: ({ row }) => (
         <div className="font-medium">{row.getValue("name")}</div>
       ),
     },
     {
       accessorKey: "status",
-      header: "Status",
+      header: "Estado",
       cell: ({ row }) => {
         const status = row.getValue("status") as TableStatus;
         let badgeClass = "";
@@ -165,7 +165,7 @@ export function TablesTable() {
     },
     {
       accessorKey: "company.name",
-      header: "Company",
+      header: "Empresa",
       cell: ({ row }) => {
         const original = row.original;
         return <div>{original.company?.name || "N/A"}</div>;
@@ -173,15 +173,15 @@ export function TablesTable() {
     },
     {
       accessorKey: "hourlyRate",
-      header: "Hourly Rate",
+      header: "Tarifa por Hora",
       cell: ({ row }) => {
         const hourlyRate = row.getValue("hourlyRate") as number | null;
-        return <div>{hourlyRate ? `$${hourlyRate}` : "N/A"}</div>;
+        return <div>{hourlyRate ? formatCurrency(hourlyRate) : "N/A"}</div>;
       },
     },
     {
       accessorKey: "_count.sessions",
-      header: "Sessions",
+      header: "Sesiones",
       cell: ({ row }) => {
         const original = row.original;
         return <div>{original._count?.sessions || 0}</div>;
@@ -189,7 +189,7 @@ export function TablesTable() {
     },
     {
       id: "actions",
-      header: "Actions",
+      header: "Acciones",
       cell: ({ row }) => {
         const table = row.original;
 
@@ -197,26 +197,26 @@ export function TablesTable() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
+                <span className="sr-only">Abrir menú</span>
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuLabel>Acciones</DropdownMenuLabel>
               <DropdownMenuItem
                 onClick={() => router.push(`/tables/${table.id}`)}
               >
                 <Eye className="mr-2 h-4 w-4" />
-                View
+                Ver
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleEditTable(table)}>
                 <Edit className="mr-2 h-4 w-4" />
-                Edit
+                Editar
               </DropdownMenuItem>
               {table.status === "AVAILABLE" && (
                 <DropdownMenuItem onClick={() => handleStartSession(table)}>
                   <PlayCircle className="mr-2 h-4 w-4" />
-                  Start Session
+                  Iniciar Sesión
                 </DropdownMenuItem>
               )}
               {table.status === "OCCUPIED" && (
@@ -228,7 +228,7 @@ export function TablesTable() {
                     }}
                   >
                     <StopCircle className="mr-2 h-4 w-4" />
-                    End Session
+                    Finalizar Sesión
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => {
@@ -238,7 +238,7 @@ export function TablesTable() {
                     className="text-red-600"
                   >
                     <X className="mr-2 h-4 w-4" />
-                    Cancel Session
+                    Cancelar Sesión
                   </DropdownMenuItem>
                 </>
               )}
@@ -251,7 +251,7 @@ export function TablesTable() {
                 className="text-destructive"
               >
                 <Trash className="mr-2 h-4 w-4" />
-                Delete
+                Eliminar
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -267,14 +267,14 @@ export function TablesTable() {
   const statusFilterElement = (
     <Select value={statusFilter} onValueChange={setStatusFilter}>
       <SelectTrigger className="w-full md:w-[180px]">
-        <SelectValue placeholder="Filter by status" />
+        <SelectValue placeholder="Filtrar por estado" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="all">All Statuses</SelectItem>
-        <SelectItem value="AVAILABLE">Available</SelectItem>
-        <SelectItem value="OCCUPIED">Occupied</SelectItem>
-        <SelectItem value="RESERVED">Reserved</SelectItem>
-        <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
+        <SelectItem value="all">Todos los Estados</SelectItem>
+        <SelectItem value="AVAILABLE">Disponible</SelectItem>
+        <SelectItem value="OCCUPIED">Ocupada</SelectItem>
+        <SelectItem value="RESERVED">Reservada</SelectItem>
+        <SelectItem value="MAINTENANCE">Mantenimiento</SelectItem>
       </SelectContent>
     </Select>
   );
@@ -285,9 +285,9 @@ export function TablesTable() {
         columns={columns}
         data={tables}
         onSearch={setSearchQuery}
-        searchPlaceholder="Search tables..."
+        searchPlaceholder="Buscar mesas..."
         onAddNew={handleCreateNewTable}
-        addNewLabel="Add New Table"
+        addNewLabel="Añadir Nueva Mesa"
         statusFilter={statusFilterElement}
       />
 
@@ -313,20 +313,20 @@ export function TablesTable() {
       <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogTitle>¿Estás completamente seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the
-              table and remove all its data from our servers.
+              Esta acción no se puede deshacer. Se eliminará permanentemente la
+              mesa y todos sus datos de nuestros servidores.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground"
               disabled={deleteTableMutation.isPending}
             >
-              {deleteTableMutation.isPending ? "Deleting..." : "Delete"}
+              {deleteTableMutation.isPending ? "Eliminando..." : "Eliminar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -338,19 +338,21 @@ export function TablesTable() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>End this session?</AlertDialogTitle>
+            <AlertDialogTitle>¿Finalizar esta sesión?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will end the active session and calculate the final cost. The
-              table will be marked as available again.
+              Esto finalizará la sesión activa y calculará el costo final. La
+              mesa quedará disponible nuevamente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleEndSession}
               disabled={endSessionMutation.isPending}
             >
-              {endSessionMutation.isPending ? "Processing..." : "End Session"}
+              {endSessionMutation.isPending
+                ? "Procesando..."
+                : "Finalizar Sesión"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -362,22 +364,22 @@ export function TablesTable() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancel this session?</AlertDialogTitle>
+            <AlertDialogTitle>¿Cancelar esta sesión?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will cancel the active session. No charges will be applied.
-              The table will be marked as available again.
+              Esto cancelará la sesión activa. No se aplicarán cargos. La mesa
+              quedará disponible nuevamente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleCancelSession}
               className="bg-destructive text-destructive-foreground"
               disabled={cancelSessionMutation.isPending}
             >
               {cancelSessionMutation.isPending
-                ? "Processing..."
-                : "Cancel Session"}
+                ? "Procesando..."
+                : "Cancelar Sesión"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

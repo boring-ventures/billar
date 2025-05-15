@@ -61,25 +61,25 @@ export function CompanyTable() {
   const columns = [
     {
       accessorKey: "name",
-      header: "Name",
+      header: "Nombre",
     },
     {
       accessorKey: "address",
-      header: "Address",
+      header: "Dirección",
       cell: ({ row }: { row: { original: CompanyFromHook } }) => {
         return <div>{row.original.address || "N/A"}</div>;
       },
     },
     {
       accessorKey: "phone",
-      header: "Phone",
+      header: "Teléfono",
       cell: ({ row }: { row: { original: CompanyFromHook } }) => {
         return <div>{row.original.phone || "N/A"}</div>;
       },
     },
     {
       id: "profiles",
-      header: "Users",
+      header: "Usuarios",
       cell: ({ row }: { row: { original: CompanyFromHook } }) => {
         const count = row.original._count?.profiles || 0;
         return (
@@ -92,7 +92,7 @@ export function CompanyTable() {
     },
     {
       id: "tables",
-      header: "Tables",
+      header: "Mesas",
       cell: ({ row }: { row: { original: CompanyFromHook } }) => {
         const count = row.original._count?.tables || 0;
         return (
@@ -112,15 +112,15 @@ export function CompanyTable() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
+                <span className="sr-only">Abrir menú</span>
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuLabel>Acciones</DropdownMenuLabel>
               <DropdownMenuItem onClick={() => handleAddEdit(company)}>
                 <Edit className="mr-2 h-4 w-4" />
-                Edit
+                Editar
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -131,7 +131,7 @@ export function CompanyTable() {
                 className="text-destructive"
               >
                 <Trash className="mr-2 h-4 w-4" />
-                Delete
+                Eliminar
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -150,9 +150,9 @@ export function CompanyTable() {
         columns={columns}
         data={companies}
         onSearch={setSearchQuery}
-        searchPlaceholder="Search companies..."
+        searchPlaceholder="Buscar empresas..."
         onAddNew={() => handleAddEdit()}
-        addNewLabel="Add Company"
+        addNewLabel="Añadir Empresa"
       />
 
       <CompanyDialog
@@ -166,20 +166,20 @@ export function CompanyTable() {
       <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogTitle>¿Estás completamente seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the
-              company and remove all of its data from our servers.
+              Esta acción no se puede deshacer. Se eliminará permanentemente la
+              empresa y se borrarán todos sus datos de nuestros servidores.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground"
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Deleting..." : "Delete"}
+              {isSubmitting ? "Eliminando..." : "Eliminar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

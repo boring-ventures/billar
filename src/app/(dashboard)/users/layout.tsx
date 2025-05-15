@@ -1,8 +1,8 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "User Management",
-  description: "Manage users and companies in the system",
+  title: "Gestión de Usuarios",
+  description: "Administra usuarios y empresas en el sistema",
 };
 
 export default function UsersLayout({

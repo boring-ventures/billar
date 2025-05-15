@@ -1,8 +1,8 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Table Management",
-  description: "Manage tables and table sessions in the system",
+  title: "Gestión de Mesas",
+  description: "Administra mesas y sesiones de mesas en el sistema",
 };
 
 export default function TablesLayout({

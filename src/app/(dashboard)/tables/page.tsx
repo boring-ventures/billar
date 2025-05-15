@@ -10,7 +10,7 @@ import { LayoutGrid, Table as TableIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TableDialog } from "@/components/tables/table-dialog";
-import { SessionDialog } from "@/components/tables/session-dialog";;
+import { SessionDialog } from "@/components/tables/session-dialog";
 
 export default function TablesPage() {
   const searchParams = useSearchParams();
@@ -74,7 +74,7 @@ export default function TablesPage() {
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-2">
                 <Input
-                  placeholder="Search tables..."
+                  placeholder="Buscar mesas..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full md:w-[300px]"
@@ -82,13 +82,13 @@ export default function TablesPage() {
               </div>
               <div className="flex space-x-2">
                 <Button onClick={() => setTableDialogOpen(true)}>
-                  Add New Table
+                  Añadir Nueva Mesa
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => setSessionDialogOpen(true)}
                 >
-                  Start Session
+                  Iniciar Sesión
                 </Button>
               </div>
             </div>
@@ -114,9 +114,9 @@ export default function TablesPage() {
   return (
     <div className="flex flex-col space-y-6 p-4 md:p-8">
       <div className="flex flex-col gap-2">
-        <h2 className="text-3xl font-bold tracking-tight">Table Management</h2>
+        <h2 className="text-3xl font-bold tracking-tight">Gestión de Mesas</h2>
         <p className="text-muted-foreground">
-          Manage tables and active sessions in the system.
+          Administra mesas y sesiones activas en el sistema.
         </p>
       </div>
 
@@ -127,9 +127,9 @@ export default function TablesPage() {
           className="w-full max-w-md"
         >
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="tables">Tables</TabsTrigger>
-            <TabsTrigger value="sessions">Active Sessions</TabsTrigger>
-            <TabsTrigger value="all-sessions">All Sessions</TabsTrigger>
+            <TabsTrigger value="tables">Mesas</TabsTrigger>
+            <TabsTrigger value="sessions">Sesiones Activas</TabsTrigger>
+            <TabsTrigger value="all-sessions">Todas las Sesiones</TabsTrigger>
           </TabsList>
         </Tabs>
 
@@ -141,7 +141,7 @@ export default function TablesPage() {
               onClick={() => handleViewChange("list")}
             >
               <TableIcon className="h-4 w-4 mr-2" />
-              List
+              Lista
             </Button>
             <Button
               variant={tableView === "grid" ? "default" : "outline"}
@@ -149,7 +149,7 @@ export default function TablesPage() {
               onClick={() => handleViewChange("grid")}
             >
               <LayoutGrid className="h-4 w-4 mr-2" />
-              Grid
+              Cuadrícula
             </Button>
           </div>
         )}

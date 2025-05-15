@@ -26,27 +26,27 @@ export const sidebarData: SidebarData = {
       title: "General",
       items: [
         {
-          title: "Dashboard",
+          title: "Panel Principal",
           url: "/dashboard",
           icon: LayoutDashboard,
         },
         {
-          title: "User Management",
+          title: "Gestión de Usuarios",
           url: "/users",
           icon: Users,
         },
         {
-          title: "Table Management",
+          title: "Gestión de Mesas",
           url: "/tables",
           icon: TableProperties,
         },
         {
-          title: "Inventory Management",
+          title: "Gestión de Inventario",
           url: "/inventory",
           icon: PackageOpen,
         },
         {
-          title: "POS Orders",
+          title: "Punto de Venta",
           url: "/pos",
           icon: ShoppingCart,
         },

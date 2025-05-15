@@ -4,11 +4,11 @@ import { cn } from "@/lib/utils";
 
 export default function About() {
   const benefits = [
-    "Developed specifically for billiard parlour owners",
-    "Comprehensive management of all aspects of your business",
-    "Built by experts with years of experience in pool halls",
-    "Regular updates with new features based on feedback",
-    "Cloud-based system accessible from anywhere",
+    "Desarrollado específicamente para propietarios de salones de billar",
+    "Gestión integral de todos los aspectos de tu negocio",
+    "Creado por expertos con años de experiencia en salones de billar",
+    "Actualizaciones regulares con nuevas funciones basadas en feedback",
+    "Sistema basado en la nube accesible desde cualquier lugar",
   ];
 
   return (
@@ -34,7 +34,7 @@ export default function About() {
               <div className="absolute -bottom-6 -right-6 bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-800 max-w-[240px]">
                 <div className="text-2xl font-bold text-red-500 mb-1">100%</div>
                 <div className="text-sm text-gray-400">
-                  Designed for pool hall owners
+                  Diseñado para propietarios de salones de billar
                 </div>
               </div>
 
@@ -48,13 +48,14 @@ export default function About() {
             <div className="space-y-6">
               <div>
                 <h2 className="text-3xl font-bold text-white mb-4">
-                  Why Choose Our Billiard Management App?
+                  ¿Por qué Elegir Nuestra App de Gestión de Billar?
                 </h2>
                 <p className="text-lg text-gray-400 mb-6">
-                  We&apos;ve created the most intuitive mobile-first solution
-                  that addresses the unique challenges faced by billiard parlour
-                  owners. From table management to financial reporting, our
-                  platform streamlines every aspect of your business.
+                  Hemos creado la solución más intuitiva orientada a
+                  dispositivos móviles que aborda los desafíos únicos que
+                  enfrentan los propietarios de salones de billar. Desde la
+                  gestión de mesas hasta informes financieros, nuestra
+                  plataforma agiliza todos los aspectos de tu negocio.
                 </p>
               </div>
 
@@ -77,12 +78,13 @@ export default function About() {
               <div className="pt-6">
                 <div className="p-4 bg-gray-900 rounded-lg border border-gray-800">
                   <p className="text-gray-300 italic">
-                    &ldquo;As a billiard parlour owner, I needed a system that
-                    could scale with my business. This app does exactly that,
-                    while being incredibly user-friendly and affordable.&rdquo;
+                    &ldquo;Como propietario de un salón de billar, necesitaba un
+                    sistema que pudiera crecer con mi negocio. Esta aplicación
+                    hace exactamente eso, mientras es increíblemente fácil de
+                    usar y asequible.&rdquo;
                   </p>
                   <div className="mt-3 text-sm text-gray-500 font-medium">
-                    &mdash; Daniel R., Owner of Premier Billiards
+                    &mdash; Daniel R., Propietario de Premier Billiards
                   </div>
                 </div>
               </div>

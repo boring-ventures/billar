@@ -5,11 +5,11 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   const footerLinks = [
-    { name: "Features", href: "/#features" },
-    { name: "Pricing", href: "/#pricing" },
-    { name: "About", href: "/#about" },
-    { name: "Terms", href: "/terms" },
-    { name: "Privacy", href: "/privacy" },
+    { name: "Características", href: "/#features" },
+    { name: "Precios", href: "/#pricing" },
+    { name: "Nosotros", href: "/#about" },
+    { name: "Términos", href: "/terms" },
+    { name: "Privacidad", href: "/privacy" },
   ];
 
   const socialLinks = [
@@ -29,8 +29,7 @@ export default function Footer() {
               <span className="text-xl font-bold text-white">BILLAR</span>
             </Link>
             <p className="text-sm max-w-xs">
-              Comprehensive management system for billiard parlours and pool
-              halls.
+              Sistema de gestión integral para salones de billar.
             </p>
           </div>
 
@@ -66,7 +65,7 @@ export default function Footer() {
             </div>
 
             <p className="text-sm text-gray-500">
-              &copy; {currentYear} BILLAR. All rights reserved.
+              &copy; {currentYear} BILLAR. Todos los derechos reservados.
             </p>
           </div>
         </div>

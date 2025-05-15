@@ -21,9 +21,9 @@ export default function Hero() {
               <BlurFade>
                 <div className="inline-flex items-center rounded-full bg-white/5 border border-white/10 px-4 py-1.5 mb-4 shadow-sm backdrop-blur-sm">
                   <span className="text-sm font-medium text-white">
-                    All-in-one Management for{" "}
+                    Gestión todo-en-uno por{" "}
                     <span className="text-red-500 font-semibold">$20</span>
-                    /month
+                    /mes
                   </span>
                 </div>
               </BlurFade>
@@ -31,9 +31,9 @@ export default function Hero() {
               <BlurFade delay={0.1}>
                 <AnimatedShinyText>
                   <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-tight tracking-tight">
-                    Run Your Billiard Parlour
+                    Administra Tu Salón de Billar
                     <span className="block text-red-500 mt-2">
-                      Without The Hassle
+                      Sin Complicaciones
                     </span>
                   </h1>
                 </AnimatedShinyText>
@@ -41,9 +41,10 @@ export default function Hero() {
 
               <BlurFade delay={0.2}>
                 <p className="text-xl text-gray-300 max-w-2xl mx-auto mt-6">
-                  Manage tables, track revenue, handle inventory, and boost your
-                  billiard business with our all-in-one platform designed
-                  specifically for pool hall owners.
+                  Gestiona mesas, controla ingresos, maneja inventario, y mejora
+                  tu negocio de billar con nuestra plataforma todo-en-uno
+                  diseñada específicamente para propietarios de salones de
+                  billar.
                 </p>
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-10">
@@ -52,7 +53,7 @@ export default function Hero() {
                       href="/sign-up"
                       className="inline-flex items-center px-8 py-3 text-lg font-medium"
                     >
-                      Get Started
+                      Empezar Ahora
                       <ArrowRight
                         className="ml-2 group-hover:translate-x-1 transition-transform"
                         size={20}
@@ -64,7 +65,7 @@ export default function Hero() {
                     href="/#pricing"
                     className="inline-flex items-center text-gray-300 hover:text-red-500 transition-colors px-8 py-3"
                   >
-                    View Pricing
+                    Ver Precios
                   </Link>
                 </div>
               </BlurFade>
@@ -75,20 +76,20 @@ export default function Hero() {
               {[
                 {
                   icon: Clock,
-                  label: "Real-time Table Management",
-                  desc: "Track table usage and reservations",
+                  label: "Gestión de Mesas en Tiempo Real",
+                  desc: "Seguimiento de uso y reservas de mesas",
                   color: "bg-gray-800 text-white",
                 },
                 {
                   icon: BarChart3,
-                  label: "Business Analytics",
-                  desc: "Comprehensive financial reporting",
+                  label: "Análisis de Negocio",
+                  desc: "Informes financieros completos",
                   color: "bg-red-500/10 text-red-500",
                 },
                 {
                   icon: CreditCard,
-                  label: "POS System",
-                  desc: "Handle payments with ease",
+                  label: "Sistema de Punto de Venta",
+                  desc: "Maneja pagos con facilidad",
                   color: "bg-green-500/10 text-green-500",
                 },
               ].map((feature, i) => (

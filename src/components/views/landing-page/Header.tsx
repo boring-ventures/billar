@@ -9,9 +9,9 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navigation = [
-    { name: "Features", href: "/#features" },
-    { name: "Pricing", href: "/#pricing" },
-    { name: "About", href: "/#about" },
+    { name: "Características", href: "/#features" },
+    { name: "Precios", href: "/#pricing" },
+    { name: "Nosotros", href: "/#about" },
   ];
 
   return (
@@ -43,7 +43,7 @@ export default function Header() {
               href="/sign-in"
               className="text-gray-300 hover:text-white transition-colors text-sm font-medium px-2"
             >
-              Log in
+              Iniciar Sesión
             </Link>
           </div>
 
@@ -54,7 +54,7 @@ export default function Header() {
               className="text-gray-300 hover:text-white"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
-              <span className="sr-only">Open main menu</span>
+              <span className="sr-only">Abrir menú</span>
               {isMenuOpen ? (
                 <X className="h-6 w-6" aria-hidden="true" />
               ) : (
@@ -86,7 +86,7 @@ export default function Header() {
                   className="block w-full text-center px-3 py-2 text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-md"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  Log in
+                  Iniciar Sesión
                 </Link>
               </div>
               <div className="mt-3 px-3">
@@ -94,7 +94,7 @@ export default function Header() {
                   className="w-full bg-red-500 hover:bg-red-600"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  <Link href="/sign-up">Get Started</Link>
+                  <Link href="/sign-up">Registrarse</Link>
                 </Button>
               </div>
             </div>

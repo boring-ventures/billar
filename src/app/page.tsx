@@ -7,9 +7,9 @@ import PricingCTA from "@/components/views/landing-page/CTA";
 import Footer from "@/components/views/landing-page/Footer";
 
 export const metadata: Metadata = {
-  title: "BILLAR - Billiard Parlour Management App",
+  title: "BILLAR - Aplicación de Gestión para Salones de Billar",
   description:
-    "Comprehensive management app for billiard parlours. Manage tables, inventory, reservations, and payments for just $20/month.",
+    "Aplicación completa de gestión para salones de billar. Gestiona mesas, inventario, reservas y pagos por solo $20 al mes.",
 };
 
 export default function Home() {

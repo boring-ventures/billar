@@ -5,13 +5,13 @@ import { GlowingStarsBackgroundCard } from "@/components/magicui/glowing-stars-b
 
 export default function PricingCTA() {
   const features = [
-    "Unlimited tables management",
-    "Complete POS system",
-    "Inventory tracking",
-    "Reservation management",
-    "Financial reporting",
-    "Customer database",
-    "Staff management",
+    "Gestión ilimitada de mesas",
+    "Sistema completo de punto de venta",
+    "Seguimiento de inventario",
+    "Gestión de reservas",
+    "Informes financieros",
+    "Base de datos de clientes",
+    "Gestión de personal",
   ];
 
   return (
@@ -29,11 +29,11 @@ export default function PricingCTA() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-3xl mx-auto text-center mb-16">
           <h2 className="text-4xl font-bold tracking-tight mb-4 text-white">
-            Simple, Transparent Pricing
+            Precios Simples y Transparentes
           </h2>
           <p className="text-xl text-gray-400">
-            One affordable plan with everything you need to run your billiard
-            parlour efficiently
+            Un plan asequible con todo lo que necesitas para administrar tu
+            salón de billar de manera eficiente
           </p>
         </div>
 
@@ -46,15 +46,15 @@ export default function PricingCTA() {
 
               <div className="bg-gradient-to-r from-red-500/20 to-green-500/20 text-white text-sm font-medium rounded-full inline-flex px-4 py-1 mb-4">
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-green-500">
-                  Full-featured plan
+                  Plan completo
                 </span>
               </div>
               <div className="flex items-center justify-center mb-3">
                 <span className="text-5xl font-bold text-white">$20</span>
-                <span className="text-gray-400 ml-2">/month</span>
+                <span className="text-gray-400 ml-2">/mes</span>
               </div>
               <p className="text-gray-400 mb-6 text-sm">
-                Billed monthly or $200/year (save $40)
+                Facturado mensualmente o $200/año (ahorra $40)
               </p>
 
               <ShimmerButton
@@ -66,7 +66,7 @@ export default function PricingCTA() {
                   href="/sign-up"
                   className="inline-flex items-center justify-center w-full px-6 py-3 text-base font-medium"
                 >
-                  Get Started
+                  Empezar Ahora
                   <ArrowRight
                     className="ml-2 group-hover:translate-x-1 transition-transform"
                     size={18}

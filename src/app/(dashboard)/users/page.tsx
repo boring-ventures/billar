@@ -21,16 +21,18 @@ export default function UsersPage() {
   return (
     <div className="flex flex-col space-y-6 p-4 md:p-8">
       <div className="flex flex-col gap-2">
-        <h2 className="text-3xl font-bold tracking-tight">User Management</h2>
+        <h2 className="text-3xl font-bold tracking-tight">
+          Gestión de Usuarios
+        </h2>
         <p className="text-muted-foreground">
-          Manage users and companies in the system.
+          Administra usuarios y empresas en el sistema.
         </p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="users">Users</TabsTrigger>
-          <TabsTrigger value="companies">Companies</TabsTrigger>
+          <TabsTrigger value="users">Usuarios</TabsTrigger>
+          <TabsTrigger value="companies">Empresas</TabsTrigger>
         </TabsList>
         <TabsContent value="users" className="mt-6">
           <UserTable />

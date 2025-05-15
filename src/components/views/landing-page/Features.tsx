@@ -15,58 +15,58 @@ export default function Features() {
   const features = [
     {
       icon: LayoutDashboard,
-      title: "Table Management",
+      title: "Gestión de Mesas",
       description:
-        "Monitor and manage all your billiard tables in real-time. Track table status, availability, and efficiently handle maintenance schedules.",
+        "Monitorea y administra todas tus mesas de billar en tiempo real. Controla el estado de las mesas, disponibilidad y maneja eficientemente los programas de mantenimiento.",
       color: "bg-red-500/10 text-red-500",
     },
     {
       icon: Calendar,
-      title: "Reservation System",
+      title: "Sistema de Reservas",
       description:
-        "Allow customers to book tables in advance. Manage reservations with an intuitive calendar interface and prevent double bookings.",
+        "Permite a los clientes reservar mesas con anticipación. Gestiona reservas con una interfaz de calendario intuitiva y previene reservas duplicadas.",
       color: "bg-green-500/10 text-green-500",
     },
     {
       icon: Clock,
-      title: "Time Tracking",
+      title: "Control de Tiempo",
       description:
-        "Automatically track table usage time with precise hourly rates. End sessions with a click and generate accurate bills.",
+        "Controla automáticamente el tiempo de uso de mesas con tarifas por hora precisas. Finaliza sesiones con un clic y genera facturas exactas.",
       color: "bg-red-500/10 text-red-500",
     },
     {
       icon: ShoppingCart,
-      title: "POS & Inventory",
+      title: "Punto de Venta e Inventario",
       description:
-        "Sell food, drinks, and equipment with the built-in point of sale system. Track inventory levels and get low stock alerts.",
+        "Vende alimentos, bebidas y equipos con el sistema de punto de venta integrado. Controla niveles de inventario y recibe alertas de stock bajo.",
       color: "bg-green-500/20 text-green-500",
     },
     {
       icon: DollarSign,
-      title: "Payment Processing",
+      title: "Procesamiento de Pagos",
       description:
-        "Accept multiple payment methods including cash, credit cards, and QR payments. Easily manage unpaid bills and payment status.",
+        "Acepta múltiples métodos de pago incluyendo efectivo, tarjetas de crédito y pagos por QR. Gestiona fácilmente facturas no pagadas y estados de pago.",
       color: "bg-red-500/20 text-red-500",
     },
     {
       icon: BarChart2,
-      title: "Financial Reports",
+      title: "Informes Financieros",
       description:
-        "Generate comprehensive financial reports with breakdowns of income from table rentals, food and beverages, and other revenue streams.",
+        "Genera informes financieros completos con desgloses de ingresos por alquiler de mesas, alimentos y bebidas, y otras fuentes de ingresos.",
       color: "bg-green-500/10 text-green-500",
     },
     {
       icon: Users,
-      title: "Customer Management",
+      title: "Gestión de Clientes",
       description:
-        "Build a database of your regular customers. Track preferences, reservation history, and create loyalty programs.",
+        "Construye una base de datos de tus clientes habituales. Realiza seguimiento de preferencias, historial de reservas y crea programas de fidelización.",
       color: "bg-pink-500/10 text-pink-500",
     },
     {
       icon: ClipboardList,
-      title: "Staff Management",
+      title: "Gestión de Personal",
       description:
-        "Manage employee accounts with different access levels. Track staff performance and table session assignments.",
+        "Administra cuentas de empleados con diferentes niveles de acceso. Controla el desempeño del personal y asignaciones de sesiones de mesa.",
       color: "bg-teal-500/10 text-teal-500",
     },
   ];
@@ -85,12 +85,15 @@ export default function Features() {
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-3xl mx-auto text-center mb-16">
-          <p className="text-red-500 font-medium mb-2">Powerful Features</p>
+          <p className="text-red-500 font-medium mb-2">
+            Características Poderosas
+          </p>
           <h2 className="text-4xl font-bold tracking-tight mb-4 text-white">
-            Everything You Need For Your Pool Hall
+            Todo lo que Necesitas Para Tu Salón de Billar
           </h2>
           <p className="text-xl text-gray-400">
-            Our platform combines all essential tools into one unified system
+            Nuestra plataforma combina todas las herramientas esenciales en un
+            único sistema
           </p>
 
           <div className="flex justify-center gap-10 mt-8">
@@ -101,7 +104,9 @@ export default function Features() {
                 to={40}
                 duration={2.5}
               />
-              <p className="text-sm text-gray-500">Fewer hours on admin work</p>
+              <p className="text-sm text-gray-500">
+                Menos horas en trabajo administrativo
+              </p>
             </div>
             <div className="text-center">
               <TickingCounter
@@ -111,7 +116,7 @@ export default function Features() {
                 duration={2.5}
                 suffix="%"
               />
-              <p className="text-sm text-gray-500">Increase in revenues</p>
+              <p className="text-sm text-gray-500">Aumento en ingresos</p>
             </div>
           </div>
         </div>

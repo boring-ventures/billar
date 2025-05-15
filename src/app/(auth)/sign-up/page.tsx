@@ -5,8 +5,8 @@ import { SignUpForm } from "@/components/auth/sign-up/components/sign-up-form";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Sign Up",
-  description: "Create a new account",
+  title: "Registrarse",
+  description: "Crear una nueva cuenta",
 };
 
 export default function SignUpPage() {
@@ -15,34 +15,34 @@ export default function SignUpPage() {
       <Card className="p-6">
         <div className="mb-2 flex flex-col space-y-2 text-left">
           <h1 className="text-lg font-semibold tracking-tight">
-            Create an account
+            Crear una cuenta
           </h1>
           <p className="text-sm text-muted-foreground">
-            Enter your email and password to create an account. <br />
-            Already have an account?{" "}
+            Ingresa tu correo y contraseña para crear una cuenta. <br />
+            ¿Ya tienes una cuenta?{" "}
             <Link
               href="/sign-in"
               className="underline underline-offset-4 hover:text-primary"
             >
-              Sign In
+              Iniciar Sesión
             </Link>
           </p>
         </div>
         <SignUpForm />
         <p className="mt-4 px-8 text-center text-sm text-muted-foreground">
-          By creating an account, you agree to our{" "}
+          Al crear una cuenta, aceptas nuestros{" "}
           <Link
             href="/terms"
             className="underline underline-offset-4 hover:text-primary"
           >
-            Terms of Service
+            Términos de Servicio
           </Link>{" "}
-          and{" "}
+          y{" "}
           <Link
             href="/privacy"
             className="underline underline-offset-4 hover:text-primary"
           >
-            Privacy Policy
+            Política de Privacidad
           </Link>
           .
         </p>

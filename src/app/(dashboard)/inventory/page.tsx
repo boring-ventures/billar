@@ -83,7 +83,7 @@ export default function InventoryPage() {
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-2">
                 <Input
-                  placeholder="Search items..."
+                  placeholder="Buscar artículos..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full md:w-[300px]"
@@ -91,13 +91,13 @@ export default function InventoryPage() {
               </div>
               <div className="flex space-x-2">
                 <Button onClick={() => setItemDialogOpen(true)}>
-                  Add New Item
+                  Añadir Nuevo Artículo
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => setCategoryDialogOpen(true)}
                 >
-                  Add Category
+                  Añadir Categoría
                 </Button>
               </div>
             </div>
@@ -127,10 +127,10 @@ export default function InventoryPage() {
     <div className="flex flex-col space-y-6 p-4 md:p-8">
       <div className="flex flex-col gap-2">
         <h2 className="text-3xl font-bold tracking-tight">
-          Inventory Management
+          Gestión de Inventario
         </h2>
         <p className="text-muted-foreground">
-          Manage inventory items, categories, and stock levels.
+          Administra artículos de inventario, categorías y niveles de stock.
         </p>
       </div>
 
@@ -141,11 +141,11 @@ export default function InventoryPage() {
           className="w-full max-w-md"
         >
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="items">Items</TabsTrigger>
-            <TabsTrigger value="categories">Categories</TabsTrigger>
+            <TabsTrigger value="items">Artículos</TabsTrigger>
+            <TabsTrigger value="categories">Categorías</TabsTrigger>
             <TabsTrigger value="low-stock" className="flex items-center">
               <AlertTriangle className="h-4 w-4 mr-2 text-amber-500" />
-              Low Stock
+              Stock Bajo
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -158,7 +158,7 @@ export default function InventoryPage() {
               onClick={() => handleViewChange("list")}
             >
               <TableIcon className="h-4 w-4 mr-2" />
-              List
+              Lista
             </Button>
             <Button
               variant={inventoryView === "grid" ? "default" : "outline"}
@@ -166,7 +166,7 @@ export default function InventoryPage() {
               onClick={() => handleViewChange("grid")}
             >
               <LayoutGrid className="h-4 w-4 mr-2" />
-              Grid
+              Cuadrícula
             </Button>
           </div>
         )}

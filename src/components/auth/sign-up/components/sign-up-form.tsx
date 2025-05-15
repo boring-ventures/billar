@@ -89,9 +89,9 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
           } catch (error) {
             console.error("Avatar upload failed:", error);
             toast({
-              title: "Warning",
+              title: "Advertencia",
               description:
-                "Failed to upload avatar, you can add it later from your profile.",
+                "Error al subir el avatar, puedes agregarlo más tarde desde tu perfil.",
               variant: "default",
             });
           }
@@ -136,9 +136,9 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
         }
 
         toast({
-          title: "Success",
+          title: "Éxito",
           description:
-            "Your account has been created! Please verify your email to continue.",
+            "¡Tu cuenta ha sido creada! Por favor verifica tu correo para continuar.",
         });
 
         // Redirect to verification page instead of dashboard if email confirmation is required
@@ -153,7 +153,7 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
       const errorMessage =
         error instanceof Error
           ? error.message
-          : "Something went wrong. Please try again.";
+          : "Algo salió mal. Por favor intenta de nuevo.";
 
       toast({
         title: "Error",
@@ -174,7 +174,7 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
               {avatarPreview ? (
                 <Image
                   src={avatarPreview}
-                  alt="Avatar preview"
+                  alt="Vista previa del avatar"
                   fill
                   className="rounded-full object-cover"
                 />
@@ -197,9 +197,9 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel>Correo</FormLabel>
                 <FormControl>
-                  <Input placeholder="name@example.com" {...field} />
+                  <Input placeholder="nombre@ejemplo.com" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -212,9 +212,9 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
               name="firstName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>First Name</FormLabel>
+                  <FormLabel>Nombre</FormLabel>
                   <FormControl>
-                    <Input placeholder="John" {...field} />
+                    <Input placeholder="Juan" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -225,9 +225,9 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
               name="lastName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Last Name</FormLabel>
+                  <FormLabel>Apellido</FormLabel>
                   <FormControl>
-                    <Input placeholder="Doe" {...field} />
+                    <Input placeholder="Pérez" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -240,7 +240,7 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Password</FormLabel>
+                <FormLabel>Contraseña</FormLabel>
                 <FormControl>
                   <PasswordInput
                     placeholder="********"
@@ -259,7 +259,7 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
             name="confirmPassword"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Confirm Password</FormLabel>
+                <FormLabel>Confirmar Contraseña</FormLabel>
                 <FormControl>
                   <PasswordInput placeholder="********" {...field} />
                 </FormControl>
@@ -269,7 +269,7 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
           />
 
           <Button className="w-full" disabled={isLoading}>
-            Create Account
+            Registrarse
           </Button>
         </form>
       </Form>

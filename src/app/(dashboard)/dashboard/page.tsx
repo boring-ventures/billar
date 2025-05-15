@@ -4,7 +4,9 @@ import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
   const supabase = createServerComponentClient({ cookies });
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
   if (!session) {
     redirect("/sign-in");
@@ -13,13 +15,14 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-8">
       <div className="bg-card rounded-lg p-6">
-        <h2 className="text-2xl font-semibold mb-4">Dashboard Overview</h2>
+        <h2 className="text-2xl font-semibold mb-4">Panel de Control</h2>
         <p className="text-muted-foreground">
-          This is your protected dashboard page. You can start adding your content here.
+          Esta es tu página de panel de control protegida. Puedes comenzar a
+          añadir tu contenido aquí.
         </p>
       </div>
-      
-      {/* Add more dashboard sections here */}
+
+      {/* Añade más secciones al panel aquí */}
     </div>
   );
-} 
+}

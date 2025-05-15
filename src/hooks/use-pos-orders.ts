@@ -210,8 +210,8 @@ export const usePosOrders = (filters: PosOrderFilters) => {
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "Order created successfully",
+        title: "Éxito",
+        description: "Orden creada exitosamente",
       });
 
       // Invalidate orders
@@ -262,8 +262,8 @@ export const usePosOrders = (filters: PosOrderFilters) => {
     },
     onSuccess: (_, variables) => {
       toast({
-        title: "Success",
-        description: "Order updated successfully",
+        title: "Éxito",
+        description: "Orden actualizada exitosamente",
       });
 
       // Invalidate orders list with broader pattern
@@ -301,8 +301,8 @@ export const usePosOrders = (filters: PosOrderFilters) => {
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "Order deleted successfully",
+        title: "Éxito",
+        description: "Orden eliminada exitosamente",
       });
 
       // Invalidate orders list
@@ -343,8 +343,8 @@ export const usePosOrders = (filters: PosOrderFilters) => {
     },
     onSuccess: (_, variables) => {
       toast({
-        title: "Success",
-        description: "Item added to order successfully",
+        title: "Éxito",
+        description: "Artículo añadido a la orden exitosamente",
       });
 
       // Invalidate the specific order
@@ -400,8 +400,8 @@ export const usePosOrders = (filters: PosOrderFilters) => {
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "Order item updated successfully",
+        title: "Éxito",
+        description: "Artículo de la orden actualizado exitosamente",
       });
 
       // Invalidate orders list
@@ -450,8 +450,8 @@ export const usePosOrders = (filters: PosOrderFilters) => {
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "Item removed from order successfully",
+        title: "Éxito",
+        description: "Artículo eliminado de la orden exitosamente",
       });
 
       // Invalidate orders list
@@ -483,11 +483,11 @@ export const usePosOrders = (filters: PosOrderFilters) => {
   const getPaymentMethodText = (method: PaymentMethod) => {
     switch (method) {
       case "CASH":
-        return "Cash";
+        return "Efectivo";
       case "QR":
-        return "QR Payment";
+        return "Pago QR";
       case "CREDIT_CARD":
-        return "Credit Card";
+        return "Tarjeta de Crédito";
       default:
         return method;
     }
@@ -497,9 +497,9 @@ export const usePosOrders = (filters: PosOrderFilters) => {
   const getPaymentStatusText = (status: PaymentStatus) => {
     switch (status) {
       case "PAID":
-        return "Paid";
+        return "Pagado";
       case "UNPAID":
-        return "Unpaid";
+        return "Pendiente";
       default:
         return status;
     }

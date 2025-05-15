@@ -300,8 +300,8 @@ export function NewOrder() {
       // Check if we have enough inventory
       if (newQuantity > item.quantity) {
         toast({
-          title: "Error",
-          description: `Not enough inventory. Only ${item.quantity} available.`,
+          title: "Inventario insuficiente",
+          description: `Inventario insuficiente. Solo ${item.quantity} disponible.`,
           variant: "destructive",
         });
         return;
@@ -315,8 +315,8 @@ export function NewOrder() {
       // Add new item to cart
       if (selectedQuantity > item.quantity) {
         toast({
-          title: "Error",
-          description: `Not enough inventory. Only ${item.quantity} available.`,
+          title: "Inventario insuficiente",
+          description: `Inventario insuficiente. Solo ${item.quantity} disponible.`,
           variant: "destructive",
         });
         return;
@@ -346,8 +346,8 @@ export function NewOrder() {
     setIsAddingItem(false);
 
     toast({
-      title: "Item Added",
-      description: `${item.name} added to cart`,
+      title: "Producto añadido",
+      description: `${item.name} añadido al carrito`,
     });
   };
 
@@ -362,8 +362,8 @@ export function NewOrder() {
 
     if (newQuantity > item.availableQuantity) {
       toast({
-        title: "Error",
-        description: `Not enough inventory. Only ${item.availableQuantity} available.`,
+        title: "Inventario insuficiente",
+        description: `Inventario insuficiente. Solo ${item.availableQuantity} disponible.`,
         variant: "destructive",
       });
       return;
@@ -597,10 +597,10 @@ export function NewOrder() {
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center">
                 <Building className="h-5 w-5 mr-2" />
-                Select Company
+                Seleccionar Empresa
               </CardTitle>
               <CardDescription>
-                Choose a company to view its inventory
+                Elija una empresa para ver su inventario
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -626,20 +626,20 @@ export function NewOrder() {
         <div className="lg:col-span-12">
           <Alert className="bg-blue-50 border-blue-200">
             <Info className="h-4 w-4 text-blue-500" />
-            <AlertTitle>Session Information</AlertTitle>
+            <AlertTitle>Información de Sesión</AlertTitle>
             <AlertDescription className="mt-2">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
-                    Table
+                    Mesa
                   </p>
                   <p className="font-medium">
-                    {sessionData.table?.name || "Unknown"}
+                    {sessionData.table?.name || "Desconocido"}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
-                    Duration
+                    Duración
                   </p>
                   <p className="font-medium">
                     {formatDuration(
@@ -650,7 +650,7 @@ export function NewOrder() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
-                    Session Cost
+                    Costo de Sesión
                   </p>
                   <p className="font-medium">
                     {sessionData.totalCost
@@ -660,8 +660,9 @@ export function NewOrder() {
                 </div>
               </div>
               <p className="mt-3 text-sm">
-                Session ended and all consumed items have been added to your
-                cart. Complete the payment to finalize the bill.
+                La sesión ha terminado y todos los artículos consumidos se han
+                añadido a su carrito. Complete el pago para finalizar la
+                factura.
               </p>
             </AlertDescription>
           </Alert>
@@ -672,15 +673,15 @@ export function NewOrder() {
       <div className="lg:col-span-7 space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Inventory Items</CardTitle>
+            <CardTitle>Inventario de Artículos</CardTitle>
             <CardDescription>
-              Add items to the order from your inventory
+              Añada artículos a la orden desde su inventario
             </CardDescription>
             <div className="relative mt-2">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="Search items..."
+                placeholder="Buscar artículos..."
                 className="pl-8"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -691,14 +692,16 @@ export function NewOrder() {
             {!companyId ? (
               <div className="text-center py-8 text-muted-foreground">
                 {isSuperAdmin
-                  ? "Please select a company to view inventory items"
-                  : "No company selected"}
+                  ? "Por favor, seleccione una empresa para ver los artículos del inventario"
+                  : "No hay empresa seleccionada"}
               </div>
             ) : isLoadingItems ? (
-              <div className="text-center py-4">Loading inventory items...</div>
+              <div className="text-center py-4">
+                Cargando artículos del inventario...
+              </div>
             ) : filteredItems.length === 0 ? (
               <div className="text-center py-4 text-muted-foreground">
-                No items found matching your search
+                No se encontraron artículos que coincidan con su búsqueda
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -707,15 +710,15 @@ export function NewOrder() {
                     <CardHeader className="p-4">
                       <CardTitle className="text-md">{item.name}</CardTitle>
                       <CardDescription>
-                        {item.sku ? `SKU: ${item.sku}` : "No SKU"}
+                        {item.sku ? `SKU: ${item.sku}` : "Sin SKU"}
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
                       <div className="text-sm text-muted-foreground">
-                        Available: {item.quantity}
+                        Disponible: {item.quantity}
                       </div>
                       <div className="mt-1 font-bold text-xl">
-                        ${Number(item.price).toFixed(2)}
+                        Bs. {Number(item.price).toFixed(2)}
                       </div>
                     </CardContent>
                     <CardFooter className="p-4 pt-0 flex justify-end">
@@ -730,7 +733,7 @@ export function NewOrder() {
                         disabled={item.quantity <= 0}
                       >
                         <PlusCircle className="h-4 w-4 mr-2" />
-                        Add to Order
+                        Añadir al Pedido
                       </Button>
                     </CardFooter>
                   </Card>
@@ -745,28 +748,29 @@ export function NewOrder() {
       <div className="lg:col-span-5 space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <ShoppingBag className="h-5 w-5 mr-2" />
-              Current Order {selectedCompany && `- ${selectedCompany.name}`}
+            <CardTitle className="text-lg font-semibold">
+              Orden Actual {selectedCompany && `- ${selectedCompany.name}`}
             </CardTitle>
             <CardDescription>
-              {cart.length} {cart.length === 1 ? "item" : "items"} in cart
+              Gestiona productos y pagos para esta orden
             </CardDescription>
           </CardHeader>
           <CardContent>
             {cart.length === 0 && !sessionData ? (
               <div className="text-center py-8 text-muted-foreground">
-                Your cart is empty. Add items to create an order.
+                Su carrito está vacío. Agregue artículos para crear una orden.
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Item</TableHead>
-                    <TableHead className="text-center">Qty</TableHead>
-                    <TableHead className="text-right">Price</TableHead>
+                    <TableHead>Producto</TableHead>
+                    <TableHead className="text-right">Cantidad</TableHead>
+                    <TableHead className="text-right">
+                      Precio Unitario
+                    </TableHead>
                     <TableHead className="text-right">Subtotal</TableHead>
-                    <TableHead></TableHead>
+                    <TableHead>Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -801,10 +805,10 @@ export function NewOrder() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        ${item.unitPrice.toFixed(2)}
+                        Bs. {item.unitPrice.toFixed(2)}
                       </TableCell>
                       <TableCell className="text-right">
-                        ${(item.quantity * item.unitPrice).toFixed(2)}
+                        Bs. {(item.quantity * item.unitPrice).toFixed(2)}
                       </TableCell>
                       <TableCell>
                         <Button
@@ -828,16 +832,16 @@ export function NewOrder() {
                           <div className="flex items-center space-x-2">
                             <Clock className="h-4 w-4 text-blue-500" />
                             <span>
-                              Table Session ({sessionData.table?.name})
+                              Mesa / Sesión ({sessionData.table?.name})
                             </span>
                           </div>
                         </TableCell>
                         <TableCell className="text-center">1</TableCell>
                         <TableCell className="text-right">
-                          ${Number(sessionData.totalCost).toFixed(2)}
+                          Bs. {Number(sessionData.totalCost).toFixed(2)}
                         </TableCell>
                         <TableCell className="text-right">
-                          ${Number(sessionData.totalCost).toFixed(2)}
+                          Bs. {Number(sessionData.totalCost).toFixed(2)}
                         </TableCell>
                         <TableCell></TableCell>
                       </TableRow>
@@ -850,22 +854,24 @@ export function NewOrder() {
             <div className="w-full space-y-4">
               <div className="flex items-center justify-between text-lg font-semibold">
                 <span>Total</span>
-                <span>${cartTotal.toFixed(2)}</span>
+                <span>Bs. {cartTotal.toFixed(2)}</span>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="table-session">Table (Optional)</Label>
+                <label className="text-sm font-medium">Mesa / Sesión</label>
                 <div className="flex items-center justify-between">
                   <Select
                     value={tableSessionId}
-                    onValueChange={setTableSessionId}
-                    disabled={!companyId || !!sessionId} // Disable selection if we're loading from a session
+                    onValueChange={(value) => setTableSessionId(value)}
+                    disabled={sessionId !== null}
                   >
-                    <SelectTrigger id="table-session" className="w-full">
-                      <SelectValue placeholder="Select a table session" />
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar mesa o sesión" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">No table</SelectItem>
+                      <SelectItem value="none">
+                        Sin mesa (venta directa)
+                      </SelectItem>
                       {activeSessions?.map((session) => {
                         // Check if table has hourly rate
                         const hourlyRate = session.table?.hourlyRate
@@ -874,9 +880,10 @@ export function NewOrder() {
 
                         return (
                           <SelectItem key={session.id} value={session.id}>
-                            {session.table?.name || "Unknown Table"} - Started{" "}
+                            {session.table?.name || "Mesa Desconocida"} -
+                            Iniciada{" "}
                             {new Date(session.startedAt).toLocaleTimeString()}
-                            {hourlyRate ? ` - $${hourlyRate}/hr` : ""}
+                            {hourlyRate ? ` - Bs. ${hourlyRate}/hora` : ""}
                           </SelectItem>
                         );
                       })}
@@ -897,46 +904,32 @@ export function NewOrder() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="payment-method">Payment Method</Label>
+                <label className="text-sm font-medium">Método de Pago</label>
                 <Select
                   value={paymentMethod}
-                  onValueChange={setPaymentMethod}
-                  disabled={!companyId}
+                  onValueChange={(value) => setPaymentMethod(value)}
                 >
-                  <SelectTrigger id="payment-method">
-                    <SelectValue placeholder="Select payment method" />
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar método de pago" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="CASH">Cash</SelectItem>
-                    <SelectItem value="QR">QR Payment</SelectItem>
-                    <SelectItem value="CREDIT_CARD">Credit Card</SelectItem>
+                    <SelectItem value="CASH">Efectivo</SelectItem>
+                    <SelectItem value="QR">Pago QR</SelectItem>
+                    <SelectItem value="CREDIT_CARD">
+                      Tarjeta de Crédito
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
             <Button
-              className="w-full"
-              size="lg"
+              variant="default"
               onClick={handleCreateOrder}
-              disabled={
-                !companyId ||
-                (cart.length === 0 && !sessionData?.totalCost) ||
-                createOrder.isPending ||
-                isRefreshing ||
-                isCreatingOrder
-              }
+              disabled={cart.length === 0 || isCreatingOrder}
             >
-              {createOrder.isPending || isRefreshing || isCreatingOrder ? (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  {createOrder.isPending
-                    ? "Creating Order..."
-                    : "Processing..."}
-                </>
-              ) : (
-                "Create Order"
-              )}
+              <ShoppingBag className="mr-2 h-4 w-4" />
+              {isCreatingOrder ? "Procesando..." : "Completar Orden"}
             </Button>
           </CardFooter>
         </Card>
@@ -946,22 +939,24 @@ export function NewOrder() {
       <Dialog open={isAddingItem} onOpenChange={setIsAddingItem}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Add Item to Order</DialogTitle>
+            <DialogTitle>Añadir Productos al Carrito</DialogTitle>
             <DialogDescription>
-              Specify quantity for the selected item
+              Busca y añade productos a la orden actual
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="selected-item">Selected Item</Label>
+              <label className="text-sm font-medium">
+                Producto Seleccionado
+              </label>
               <div id="selected-item" className="font-medium">
                 {items.find((i) => i.id === selectedItem)?.name || "Loading..."}
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="quantity">Quantity</Label>
+              <label className="text-sm font-medium">Cantidad</label>
               <div className="flex items-center space-x-2">
                 <Button
                   variant="outline"
@@ -993,16 +988,16 @@ export function NewOrder() {
             </div>
 
             <div className="text-sm text-muted-foreground">
-              Available:{" "}
+              Disponible:{" "}
               {items.find((i) => i.id === selectedItem)?.quantity || 0}
             </div>
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddingItem(false)}>
-              Cancel
+              Cancelar
             </Button>
-            <Button onClick={handleAddToCart}>Add to Cart</Button>
+            <Button onClick={handleAddToCart}>Añadir al Carrito</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

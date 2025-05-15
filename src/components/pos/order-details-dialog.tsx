@@ -72,8 +72,8 @@ export function OrderDetailsDialog({
       });
 
       toast({
-        title: "Success",
-        description: "Order payment updated successfully",
+        title: "Éxito",
+        description: "Pago de orden actualizado exitosamente",
       });
     } catch (error) {
       console.error("Failed to update payment:", error);
@@ -87,7 +87,7 @@ export function OrderDetailsDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Loading Order Details...</DialogTitle>
+            <DialogTitle>Cargando Detalles de Orden...</DialogTitle>
           </DialogHeader>
         </DialogContent>
       </Dialog>
@@ -98,9 +98,9 @@ export function OrderDetailsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px]">
         <DialogHeader>
-          <DialogTitle>Order Details</DialogTitle>
+          <DialogTitle>Detalles de la Orden</DialogTitle>
           <DialogDescription>
-            Order #{order.id.substring(0, 8)} created on{" "}
+            Orden #{order.id.substring(0, 8)} creada el{" "}
             {format(new Date(order.createdAt), "MMM dd, yyyy 'at' h:mm a")}
           </DialogDescription>
         </DialogHeader>
@@ -111,7 +111,7 @@ export function OrderDetailsDialog({
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Payment Status
+                  Estado de Pago
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -128,7 +128,7 @@ export function OrderDetailsDialog({
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Payment Method
+                  Método de Pago
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -138,7 +138,7 @@ export function OrderDetailsDialog({
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Table</CardTitle>
+                <CardTitle className="text-sm font-medium">Mesa</CardTitle>
               </CardHeader>
               <CardContent>
                 <div>
@@ -147,13 +147,13 @@ export function OrderDetailsDialog({
                       <div>{order.tableSession.table.name}</div>
                       {order.tableSession.totalCost && (
                         <div className="text-sm text-muted-foreground">
-                          Session Cost: $
+                          Costo de Sesión: Bs.
                           {Number(order.tableSession.totalCost).toFixed(2)}
                         </div>
                       )}
                     </div>
                   ) : (
-                    "No table assigned"
+                    "Sin mesa asignada"
                   )}
                 </div>
               </CardContent>
@@ -162,12 +162,12 @@ export function OrderDetailsDialog({
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Total Amount
+                  Monto Total
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-xl font-bold">
-                  ${Number(order.amount).toFixed(2)}
+                  Bs. {Number(order.amount).toFixed(2)}
                 </div>
               </CardContent>
             </Card>
@@ -176,18 +176,20 @@ export function OrderDetailsDialog({
           {/* Order Items */}
           <Card>
             <CardHeader>
-              <CardTitle>Order Items</CardTitle>
+              <CardTitle>Ítems de la Orden</CardTitle>
               <CardDescription>
-                {order.orderItems.length} items in this order
+                {order.orderItems.length} ítems en esta orden
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Item</TableHead>
-                    <TableHead className="text-right">Quantity</TableHead>
-                    <TableHead className="text-right">Unit Price</TableHead>
+                    <TableHead>Ítem</TableHead>
+                    <TableHead className="text-right">Cantidad</TableHead>
+                    <TableHead className="text-right">
+                      Precio Unitario
+                    </TableHead>
                     <TableHead className="text-right">Subtotal</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -195,16 +197,17 @@ export function OrderDetailsDialog({
                   {order.orderItems.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell className="font-medium">
-                        {item.item?.name || "Unknown Item"}
+                        {item.item?.name || "Ítem Desconocido"}
                       </TableCell>
                       <TableCell className="text-right">
                         {item.quantity}
                       </TableCell>
                       <TableCell className="text-right">
-                        ${Number(item.unitPrice).toFixed(2)}
+                        Bs. {Number(item.unitPrice).toFixed(2)}
                       </TableCell>
                       <TableCell className="text-right">
-                        ${(Number(item.unitPrice) * item.quantity).toFixed(2)}
+                        Bs.{" "}
+                        {(Number(item.unitPrice) * item.quantity).toFixed(2)}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -214,7 +217,7 @@ export function OrderDetailsDialog({
             <CardFooter className="flex justify-between">
               <div>Total</div>
               <div className="font-bold">
-                ${Number(order.amount).toFixed(2)}
+                Bs. {Number(order.amount).toFixed(2)}
               </div>
             </CardFooter>
           </Card>
@@ -222,32 +225,34 @@ export function OrderDetailsDialog({
           {/* Update Payment */}
           <Card>
             <CardHeader>
-              <CardTitle>Update Payment</CardTitle>
+              <CardTitle>Actualizar Pago</CardTitle>
               <CardDescription>
-                Update payment method or status for this order
+                Actualizar método de pago o estado para esta orden
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Payment Method</label>
+                  <label className="text-sm font-medium">Método de Pago</label>
                   <Select
                     defaultValue={order.paymentMethod}
                     onValueChange={setPaymentMethod}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select payment method" />
+                      <SelectValue placeholder="Seleccionar método de pago" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="CASH">Cash</SelectItem>
-                      <SelectItem value="QR">QR Payment</SelectItem>
-                      <SelectItem value="CREDIT_CARD">Credit Card</SelectItem>
+                      <SelectItem value="CASH">Efectivo</SelectItem>
+                      <SelectItem value="QR">Pago QR</SelectItem>
+                      <SelectItem value="CREDIT_CARD">
+                        Tarjeta de Crédito
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Payment Status</label>
+                  <label className="text-sm font-medium">Estado de Pago</label>
                   <Select
                     defaultValue={order.paymentStatus}
                     onValueChange={setPaymentStatus}
@@ -256,8 +261,8 @@ export function OrderDetailsDialog({
                       <SelectValue placeholder="Select payment status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="PAID">Paid</SelectItem>
-                      <SelectItem value="UNPAID">Unpaid</SelectItem>
+                      <SelectItem value="PAID">Pagado</SelectItem>
+                      <SelectItem value="UNPAID">Pendiente de Pago</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -268,7 +273,7 @@ export function OrderDetailsDialog({
                 onClick={handleUpdatePayment}
                 disabled={isUpdating || (!paymentMethod && !paymentStatus)}
               >
-                {isUpdating ? "Updating..." : "Update Payment"}
+                {isUpdating ? "Actualizando..." : "Actualizar Pago"}
               </Button>
             </CardFooter>
           </Card>

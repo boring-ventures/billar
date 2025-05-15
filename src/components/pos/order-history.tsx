@@ -250,8 +250,8 @@ export function OrderHistory() {
       .then(() => {
         setIsRefreshing(false);
         toast({
-          title: "Data Refreshed",
-          description: "Order data has been updated",
+          title: "Datos Actualizados",
+          description: "Los datos de órdenes han sido actualizados",
         });
       });
   };
@@ -266,8 +266,8 @@ export function OrderHistory() {
   const performPrint = () => {
     // In a real app, this would trigger a print API call or open a print dialog
     toast({
-      title: "Invoice Printing",
-      description: `Printing invoice for order #${selectedOrderId?.substring(0, 8)}`,
+      title: "Imprimiendo Factura",
+      description: `Imprimiendo factura para orden #${selectedOrderId?.substring(0, 8)}`,
     });
     setIsPrintDialogOpen(false);
   };
@@ -282,8 +282,8 @@ export function OrderHistory() {
   const performPrintPdf = () => {
     // In a real app, this would generate and print a PDF
     toast({
-      title: "PDF Printing",
-      description: `Printing PDF for order #${selectedOrderId?.substring(0, 8)}`,
+      title: "Imprimiendo PDF",
+      description: `Imprimiendo PDF para orden #${selectedOrderId?.substring(0, 8)}`,
     });
     setIsPrintPdfDialogOpen(false);
   };
@@ -298,8 +298,8 @@ export function OrderHistory() {
   const performExport = () => {
     // In a real app, this would generate and download a file
     toast({
-      title: "Order Exported",
-      description: `Order #${selectedOrderId?.substring(0, 8)} has been exported to PDF`,
+      title: "Orden Exportada",
+      description: `Orden #${selectedOrderId?.substring(0, 8)} ha sido exportada a PDF`,
     });
     setIsExportDialogOpen(false);
   };
@@ -313,8 +313,8 @@ export function OrderHistory() {
   const performExportAll = () => {
     // In a real app, this would generate and download all filtered orders
     toast({
-      title: "Orders Exported",
-      description: `${filteredOrders.length} orders have been exported`,
+      title: "Órdenes Exportadas",
+      description: `${filteredOrders.length} órdenes han sido exportadas`,
     });
     setIsExportAllDialogOpen(false);
   };
@@ -360,8 +360,8 @@ export function OrderHistory() {
       }
 
       toast({
-        title: "Success",
-        description: "Order marked as paid",
+        title: "Éxito",
+        description: "Orden marcada como pagada",
       });
     } catch (error) {
       console.error("Failed to mark order as paid:", error);
@@ -381,26 +381,26 @@ export function OrderHistory() {
   const columns: ColumnDef<Order>[] = [
     {
       accessorKey: "id",
-      header: "Order ID",
+      header: "ID de Orden",
       cell: ({ row }) => (
         <div className="font-medium">{row.original.id.substring(0, 8)}...</div>
       ),
     },
     {
       accessorKey: "createdAt",
-      header: "Date",
+      header: "Fecha",
       cell: ({ row }) => (
         <div>{format(new Date(row.original.createdAt), "MMM dd, yyyy p")}</div>
       ),
     },
     {
       accessorKey: "company.name",
-      header: "Company",
+      header: "Empresa",
       cell: ({ row }) => <div>{row.original.company?.name || "-"}</div>,
     },
     {
       accessorKey: "tableSession.table.name",
-      header: "Table",
+      header: "Mesa",
       cell: ({ row }) => (
         <div>
           {row.original.tableSession ? (
@@ -408,7 +408,7 @@ export function OrderHistory() {
               <div>{row.original.tableSession.table.name}</div>
               {row.original.tableSession.totalCost && (
                 <div className="text-xs text-muted-foreground">
-                  Session: $
+                  Sesión: Bs.
                   {Number(row.original.tableSession.totalCost).toFixed(2)}
                 </div>
               )}
@@ -421,8 +421,10 @@ export function OrderHistory() {
     },
     {
       accessorKey: "amount",
-      header: "Amount",
-      cell: ({ row }) => <div>${Number(row.original.amount).toFixed(2)}</div>,
+      header: "Monto",
+      cell: ({ row }) => (
+        <div>Bs. {Number(row.original.amount).toFixed(2)}</div>
+      ),
     },
     {
       accessorKey: "paymentMethod",
@@ -448,7 +450,7 @@ export function OrderHistory() {
     },
     {
       id: "actions",
-      header: "Actions",
+      header: "Acciones",
       cell: ({ row }) => {
         const order = row.original;
         return (
@@ -460,27 +462,27 @@ export function OrderHistory() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuLabel>Acciones</DropdownMenuLabel>
               <DropdownMenuItem onClick={() => handleViewDetails(order.id)}>
                 <Eye className="mr-2 h-4 w-4" />
-                View Details
+                Ver Detalles
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handlePrint(order.id)}>
                 <Printer className="mr-2 h-4 w-4" />
-                Print Invoice
+                Imprimir Factura
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handlePrintPdf(order.id)}>
                 <FileText className="mr-2 h-4 w-4" />
-                Print PDF
+                Imprimir PDF
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleExport(order.id)}>
                 <Download className="mr-2 h-4 w-4" />
-                Export Order
+                Exportar Orden
               </DropdownMenuItem>
               {order.paymentStatus !== "PAID" && (
                 <DropdownMenuItem onClick={() => handleMarkAsPaid(order.id)}>
                   <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
-                  Mark as Paid
+                  Marcar como Pagado
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>

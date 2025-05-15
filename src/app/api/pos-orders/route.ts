@@ -4,6 +4,14 @@ import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { PaymentMethod, PaymentStatus, Prisma } from "@prisma/client";
 
+// Define interfaces
+interface OrderItem {
+  itemId: string;
+  quantity: number;
+  unitPrice: number;
+  isTrackedItem?: boolean;
+}
+
 // GET /api/pos-orders - Get all pos orders
 export async function GET(request: NextRequest) {
   try {
@@ -200,14 +208,6 @@ export async function POST(request: NextRequest) {
     const inventoryItemMap = new Map(
       inventoryItems.map((item) => [item.id, item])
     );
-
-    // Update the interface for incoming items in the POST function
-    interface OrderItem {
-      itemId: string;
-      quantity: number;
-      unitPrice: number;
-      isTrackedItem?: boolean;
-    }
 
     // Validate each item
     for (const item of items) {
@@ -528,7 +528,7 @@ export async function POST(request: NextRequest) {
 
 // Helper function for creating stock movement and updating inventory
 async function createStockMovementAndUpdateInventory(
-  tx: any,
+  tx: Prisma.TransactionClient,
   item: OrderItem,
   orderId: string,
   userId: string

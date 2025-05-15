@@ -187,7 +187,7 @@ export function SessionTrackedItemsList({
       if (companyId) {
         queryClient.setQueryData(
           ["inventoryItems", companyId],
-          (oldItems: any[] = []) => {
+          (oldItems: { id: string; quantity: number }[] = []) => {
             return oldItems.map((item) => {
               // If this is the inventory item that was tracked
               if (item.id === inventoryItemId) {

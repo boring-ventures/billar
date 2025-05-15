@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DataTable } from "./data-table";
+import { formatCurrency } from "@/lib/utils";
 import {
   MoreHorizontal,
   Edit,

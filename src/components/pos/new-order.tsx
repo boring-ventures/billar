@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useCompany } from "@/hooks/use-company";
 import { usePosOrders } from "@/hooks/use-pos-orders";
 import { useInventoryItems } from "@/hooks/use-inventory-items";
@@ -41,7 +41,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   MinusCircle,
@@ -99,6 +98,16 @@ interface TrackedItem {
   };
 }
 
+interface InventoryItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  sku?: string;
+  criticalThreshold?: number;
+  currentThreshold?: number;
+}
+
 export function NewOrder() {
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -114,10 +123,83 @@ export function NewOrder() {
   const { profile } = useCurrentUser();
   const [companyId, setCompanyId] = useState<string>("");
   const isSuperAdmin = profile?.role === "SUPERADMIN";
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [sessionData, setSessionData] = useState<SessionData | null>(null);
   const [isSessionLoading, setIsSessionLoading] = useState(!!sessionId);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+  const [tableSessionId, setTableSessionId] = useState<string>("");
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [paymentMethod, setPaymentMethod] = useState<string>("CASH");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isAddingItem, setIsAddingItem] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<string>("");
+  const [selectedQuantity, setSelectedQuantity] = useState<number>(1);
+
+  // Process tracked items from the session to create a consolidated cart
+  const processTrackedItems = useCallback(
+    (trackedItems: TrackedItem[], companyId: string) => {
+      if (!trackedItems || trackedItems.length === 0 || !companyId) return;
+
+      // Automatically select the session's table
+      if (sessionId) {
+        setTableSessionId(sessionId);
+      }
+
+      // Convert tracked items to cart format
+      const cartItems = trackedItems.map((item) => ({
+        itemId: item.itemId,
+        name: item.item?.name || "Unknown Item",
+        quantity: item.quantity,
+        unitPrice: Number(item.unitPrice),
+        // Don't hardcode availability - it will be calculated dynamically
+        availableQuantity: 0, // Will be updated when inventory items load
+        isTrackedItem: true,
+      }));
+
+      console.log("Setting initial cart from tracked items:", cartItems);
+      setCart(cartItems);
+    },
+    [sessionId, setTableSessionId, setCart]
+  );
+
+  // New helper function to process tracked items with inventory data
+  const processTrackedItemsWithInventory = useCallback(
+    (
+      trackedItems: TrackedItem[],
+      companyId: string,
+      inventoryMap: Map<string, InventoryItem>
+    ) => {
+      if (!trackedItems || trackedItems.length === 0 || !companyId) return;
+
+      // Automatically select the session's table
+      if (sessionId) {
+        setTableSessionId(sessionId);
+      }
+
+      // Convert tracked items to cart format with correct availability
+      const cartItems = trackedItems.map((item) => {
+        // Get the current inventory for this item
+        const inventoryItem = inventoryMap.get(item.itemId);
+        const currentStock = inventoryItem ? inventoryItem.quantity : 0;
+
+        return {
+          itemId: item.itemId,
+          name: item.item?.name || "Unknown Item",
+          quantity: item.quantity,
+          unitPrice: Number(item.unitPrice),
+          // Set availableQuantity based on current inventory plus what's already tracked
+          availableQuantity: currentStock + item.quantity,
+          isTrackedItem: true,
+        };
+      });
+
+      console.log(
+        "Setting initial cart from tracked items with inventory data:",
+        cartItems
+      );
+      setCart(cartItems);
+    },
+    [sessionId, setTableSessionId, setCart]
+  );
 
   // Fetch session data if sessionId is provided in URL
   useEffect(() => {
@@ -167,11 +249,11 @@ export function NewOrder() {
                     const inventoryItems = await inventoryResponse.json();
 
                     // Create an inventory map for quick lookups
-                    const inventoryMap = new Map(
-                      inventoryItems.map(
-                        (item: any) =>
-                          [item.id as string, item] as [string, any]
-                      )
+                    const inventoryMap = new Map<string, InventoryItem>(
+                      inventoryItems.map((item: InventoryItem) => [
+                        item.id,
+                        item,
+                      ])
                     );
 
                     // Now process tracked items with correct inventory data
@@ -212,71 +294,13 @@ export function NewOrder() {
     };
 
     fetchSessionData();
-  }, [sessionId, isSuperAdmin, setSelectedCompanyId]);
-
-  // Process tracked items from the session to create a consolidated cart
-  const processTrackedItems = (
-    trackedItems: TrackedItem[],
-    companyId: string
-  ) => {
-    if (!trackedItems || trackedItems.length === 0 || !companyId) return;
-
-    // Automatically select the session's table
-    if (sessionId) {
-      setTableSessionId(sessionId);
-    }
-
-    // Convert tracked items to cart format
-    const cartItems = trackedItems.map((item) => ({
-      itemId: item.itemId,
-      name: item.item?.name || "Unknown Item",
-      quantity: item.quantity,
-      unitPrice: Number(item.unitPrice),
-      // Don't hardcode availability - it will be calculated dynamically
-      availableQuantity: 0, // Will be updated when inventory items load
-      isTrackedItem: true,
-    }));
-
-    console.log("Setting initial cart from tracked items:", cartItems);
-    setCart(cartItems);
-  };
-
-  // New helper function to process tracked items with inventory data
-  const processTrackedItemsWithInventory = (
-    trackedItems: TrackedItem[],
-    companyId: string,
-    inventoryMap: any
-  ) => {
-    if (!trackedItems || trackedItems.length === 0 || !companyId) return;
-
-    // Automatically select the session's table
-    if (sessionId) {
-      setTableSessionId(sessionId);
-    }
-
-    // Convert tracked items to cart format with correct availability
-    const cartItems = trackedItems.map((item) => {
-      // Get the current inventory for this item
-      const inventoryItem = inventoryMap.get(item.itemId);
-      const currentStock = inventoryItem ? inventoryItem.quantity : 0;
-
-      return {
-        itemId: item.itemId,
-        name: item.item?.name || "Unknown Item",
-        quantity: item.quantity,
-        unitPrice: Number(item.unitPrice),
-        // Set availableQuantity based on current inventory plus what's already tracked
-        availableQuantity: currentStock + item.quantity,
-        isTrackedItem: true,
-      };
-    });
-
-    console.log(
-      "Setting initial cart from tracked items with inventory data:",
-      cartItems
-    );
-    setCart(cartItems);
-  };
+  }, [
+    sessionId,
+    isSuperAdmin,
+    setSelectedCompanyId,
+    processTrackedItems,
+    processTrackedItemsWithInventory,
+  ]);
 
   // Use either the selected company from context or manually selected for superadmin
   useEffect(() => {
@@ -288,15 +312,6 @@ export function NewOrder() {
       setCompanyId(selectedCompany.id);
     }
   }, [selectedCompanyId, selectedCompany, isSuperAdmin, companyId]);
-
-  // State for the cart
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [tableSessionId, setTableSessionId] = useState<string>("none");
-  const [paymentMethod, setPaymentMethod] = useState<string>("CASH");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isAddingItem, setIsAddingItem] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<string>("");
-  const [selectedQuantity, setSelectedQuantity] = useState<number>(1);
 
   // Hooks
   const { toast } = useToast();
@@ -535,7 +550,6 @@ export function NewOrder() {
 
         try {
           setIsCreatingOrder(true);
-          setIsRefreshing(true);
 
           // Ensure we're using the session ID from the URL if it exists
           const sessionPaymentTableId = sessionId || undefined;
@@ -575,7 +589,6 @@ export function NewOrder() {
                 : "Failed to create session payment",
             variant: "destructive",
           });
-          setIsRefreshing(false);
           setIsCreatingOrder(false);
           return;
         }
@@ -591,7 +604,6 @@ export function NewOrder() {
 
     try {
       setIsCreatingOrder(true);
-      setIsRefreshing(true);
 
       // Ensure we're using the session ID from the URL if it exists
       const finalTableSessionId =
@@ -695,7 +707,6 @@ export function NewOrder() {
           variant: "destructive",
         });
       } finally {
-        setIsRefreshing(false);
         setIsCreatingOrder(false);
       }
     } catch (error) {
@@ -706,7 +717,6 @@ export function NewOrder() {
           error instanceof Error ? error.message : "Failed to prepare order",
         variant: "destructive",
       });
-      setIsRefreshing(false);
       setIsCreatingOrder(false);
     }
   };

@@ -114,7 +114,7 @@ export function SessionOrderCreator({
   }, [effectiveCompanyId, queryClient]);
 
   // Only fetch items when we have a valid company ID
-  const { items, isLoading: isLoadingItems } = useInventoryItems({
+  const { items } = useInventoryItems({
     companyId: effectiveCompanyId,
   });
 
@@ -253,7 +253,7 @@ export function SessionOrderCreator({
       // Optimistically update inventory items in the UI
       queryClient.setQueryData(
         ["inventoryItems", effectiveCompanyId],
-        (oldItems: any[] = []) => {
+        (oldItems: typeof items = []) => {
           return oldItems.map((inventoryItem) => {
             if (inventoryItem.id === selectedItem) {
               return {
@@ -287,7 +287,7 @@ export function SessionOrderCreator({
       // Optimistically update inventory items in the UI
       queryClient.setQueryData(
         ["inventoryItems", effectiveCompanyId],
-        (oldItems: any[] = []) => {
+        (oldItems: typeof items = []) => {
           return oldItems.map((inventoryItem) => {
             if (inventoryItem.id === selectedItem) {
               return {
@@ -361,7 +361,7 @@ export function SessionOrderCreator({
     // Update inventory in UI
     queryClient.setQueryData(
       ["inventoryItems", effectiveCompanyId],
-      (oldItems: any[] = []) => {
+      (oldItems: typeof items = []) => {
         return oldItems.map((inventoryItem) => {
           if (inventoryItem.id === item.itemId) {
             // If increasing quantity, decrease inventory
@@ -391,7 +391,7 @@ export function SessionOrderCreator({
     // Return quantity to inventory in UI
     queryClient.setQueryData(
       ["inventoryItems", effectiveCompanyId],
-      (oldItems: any[] = []) => {
+      (oldItems: typeof items = []) => {
         return oldItems.map((inventoryItem) => {
           if (inventoryItem.id === itemToRemove.itemId) {
             return {
@@ -487,7 +487,7 @@ export function SessionOrderCreator({
       // Optimistically update inventory quantities in the UI
       queryClient.setQueryData(
         ["inventoryItems", effectiveCompanyId],
-        (oldItems: any[] = []) => {
+        (oldItems: typeof items = []) => {
           return oldItems.map((item) => {
             // Find if this item is in our cart
             const cartItem = currentCartItems.find(
@@ -937,11 +937,13 @@ export function SessionOrderCreator({
                 !selectedItem ||
                 selectedQuantity <= 0 ||
                 isTrackedItemsLoading ||
-                (selectedItem &&
+                !!(
+                  selectedItem &&
                   getAdjustedAvailableQuantity(
                     selectedItem,
                     items.find((i) => i.id === selectedItem)?.quantity || 0
-                  ) < selectedQuantity)
+                  ) < selectedQuantity
+                )
               }
             >
               Agregar

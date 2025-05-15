@@ -13,7 +13,6 @@ import {
   StopCircle,
   ShoppingCart,
   User,
-  ClipboardList,
 } from "lucide-react";
 import { SessionStatus } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";

@@ -52,7 +52,6 @@ import {
   Trash2,
   RefreshCw,
   Clock,
-  DollarSign,
   Info,
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
@@ -73,6 +72,31 @@ interface Company {
   name: string;
 }
 
+interface SessionData {
+  id: string;
+  startedAt: string;
+  endedAt?: string;
+  totalCost?: number;
+  table?: {
+    id: string;
+    name: string;
+    companyId: string;
+    hourlyRate?: number;
+  };
+}
+
+interface TrackedItem {
+  id: string;
+  tableSessionId: string;
+  itemId: string;
+  quantity: number;
+  unitPrice: number;
+  item?: {
+    name: string;
+    price: number;
+  };
+}
+
 export function NewOrder() {
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -88,15 +112,13 @@ export function NewOrder() {
   const [companyId, setCompanyId] = useState<string>("");
   const isSuperAdmin = profile?.role === "SUPERADMIN";
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [sessionData, setSessionData] = useState<any>(null);
-  const [isLoadingSession, setIsLoadingSession] = useState(false);
+  const [sessionData, setSessionData] = useState<SessionData | null>(null);
 
   // Fetch session data if sessionId is provided in URL
   useEffect(() => {
     const fetchSessionData = async () => {
       if (!sessionId) return;
 
-      setIsLoadingSession(true);
       try {
         const response = await fetch(`/api/table-sessions/${sessionId}`);
         if (response.ok) {
@@ -133,16 +155,18 @@ export function NewOrder() {
         }
       } catch (error) {
         console.error("Error fetching session data:", error);
-      } finally {
-        setIsLoadingSession(false);
       }
     };
 
     fetchSessionData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, isSuperAdmin, setSelectedCompanyId]);
 
   // Process tracked items from the session to create a consolidated cart
-  const processTrackedItems = (trackedItems: any[], companyId: string) => {
+  const processTrackedItems = (
+    trackedItems: TrackedItem[],
+    companyId: string
+  ) => {
     if (!trackedItems || trackedItems.length === 0 || !companyId) return;
 
     // Automatically select the session's table
@@ -379,7 +403,7 @@ export function NewOrder() {
 
         // Navigate back to tables
         setTimeout(() => {
-          router.push(`/tables/${sessionData.tableId}`);
+          router.push(`/tables/${sessionData.table?.id}`);
         }, 1500);
       } else {
         toast({
@@ -633,24 +657,28 @@ export function NewOrder() {
                   ))}
 
                   {/* Show session cost as a separate line item */}
-                  {sessionData && sessionData.totalCost > 0 && (
-                    <TableRow className="border-t-2">
-                      <TableCell className="font-medium">
-                        <div className="flex items-center space-x-2">
-                          <Clock className="h-4 w-4 text-blue-500" />
-                          <span>Table Session ({sessionData.table?.name})</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">1</TableCell>
-                      <TableCell className="text-right">
-                        ${Number(sessionData.totalCost).toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        ${Number(sessionData.totalCost).toFixed(2)}
-                      </TableCell>
-                      <TableCell></TableCell>
-                    </TableRow>
-                  )}
+                  {sessionData &&
+                    sessionData.totalCost &&
+                    sessionData.totalCost > 0 && (
+                      <TableRow className="border-t-2">
+                        <TableCell className="font-medium">
+                          <div className="flex items-center space-x-2">
+                            <Clock className="h-4 w-4 text-blue-500" />
+                            <span>
+                              Table Session ({sessionData.table?.name})
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">1</TableCell>
+                        <TableCell className="text-right">
+                          ${Number(sessionData.totalCost).toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          ${Number(sessionData.totalCost).toFixed(2)}
+                        </TableCell>
+                        <TableCell></TableCell>
+                      </TableRow>
+                    )}
                 </TableBody>
               </Table>
             )}
@@ -688,17 +716,9 @@ export function NewOrder() {
                   <SelectContent>
                     <SelectItem value="none">No table</SelectItem>
                     {activeSessions?.map((session) => {
-                      // Calculate current session cost if table has hourly rate
-                      const startTime = new Date(session.startedAt);
-                      const currentTime = new Date();
-                      const durationHours =
-                        (currentTime.getTime() - startTime.getTime()) /
-                        (1000 * 60 * 60);
+                      // Check if table has hourly rate
                       const hourlyRate = session.table?.hourlyRate
                         ? Number(session.table.hourlyRate)
-                        : null;
-                      const estimatedCost = hourlyRate
-                        ? (durationHours * hourlyRate).toFixed(2)
                         : null;
 
                       return (
@@ -711,51 +731,6 @@ export function NewOrder() {
                     })}
                   </SelectContent>
                 </Select>
-
-                {/* Display estimated session cost if table is selected */}
-                {tableSessionId !== "none" && tableSessionId && (
-                  <div className="mt-2 text-sm">
-                    {(() => {
-                      const session = activeSessions?.find(
-                        (s) => s.id === tableSessionId
-                      );
-                      if (!session) return null;
-
-                      const startTime = new Date(session.startedAt);
-                      const currentTime = new Date();
-                      const durationHours =
-                        (currentTime.getTime() - startTime.getTime()) /
-                        (1000 * 60 * 60);
-                      const hourlyRate = session.table?.hourlyRate
-                        ? Number(session.table.hourlyRate)
-                        : null;
-
-                      if (!hourlyRate)
-                        return (
-                          <p className="text-muted-foreground">
-                            No hourly rate set for this table
-                          </p>
-                        );
-
-                      const estimatedCost = (
-                        durationHours * hourlyRate
-                      ).toFixed(2);
-                      return (
-                        <div className="flex flex-col gap-1">
-                          <p className="font-medium">Estimated session cost:</p>
-                          <p className="text-muted-foreground">
-                            {Math.floor(durationHours)}h{" "}
-                            {Math.floor((durationHours % 1) * 60)}m at $
-                            {hourlyRate}/hr ={" "}
-                            <span className="font-medium">
-                              ${estimatedCost}
-                            </span>
-                          </p>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                )}
               </div>
 
               <div className="space-y-2">

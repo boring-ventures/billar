@@ -19,15 +19,34 @@ import {
 } from "@/components/ui/table";
 import { ClipboardList, RefreshCw } from "lucide-react";
 
+interface TrackedItem {
+  id: string;
+  itemId: string;
+  quantity: number;
+  unitPrice: number;
+  item?: {
+    name: string;
+    price: number;
+  };
+}
+
 interface SessionTrackedItemsListProps {
   sessionId: string;
+}
+
+// Define an interface for the query cache event
+interface QueryCacheEvent {
+  type: string;
+  query?: {
+    queryKey?: unknown[];
+  };
 }
 
 export function SessionTrackedItemsList({
   sessionId,
 }: SessionTrackedItemsListProps) {
   const queryClient = useQueryClient();
-  const [trackedItems, setTrackedItems] = useState<any[]>([]);
+  const [trackedItems, setTrackedItems] = useState<TrackedItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,30 +91,34 @@ export function SessionTrackedItemsList({
     const updateFromCache = () => {
       const cachedData = queryClient.getQueryData(["trackedItems", sessionId]);
       if (cachedData) {
-        setTrackedItems(cachedData as any[]);
+        setTrackedItems(cachedData as TrackedItem[]);
         setIsLoading(false);
       }
     };
 
     // Subscribe to cache changes
-    const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
-      // When the query is invalidated
-      if (
-        event.type === "invalidated" &&
-        event.query.queryKey[0] === "trackedItems" &&
-        event.query.queryKey[1] === sessionId
-      ) {
-        fetchTrackedItems();
-      }
-      // When the query data changes directly (optimistic updates)
-      else if (
-        event.type === "updated" &&
-        event.query.queryKey[0] === "trackedItems" &&
-        event.query.queryKey[1] === sessionId
-      ) {
-        updateFromCache();
-      }
-    });
+    const unsubscribe = queryClient
+      .getQueryCache()
+      .subscribe((event: QueryCacheEvent) => {
+        // When the query is invalidated
+        if (
+          event.type === "invalidated" &&
+          Array.isArray(event.query?.queryKey) &&
+          event.query?.queryKey[0] === "trackedItems" &&
+          event.query?.queryKey[1] === sessionId
+        ) {
+          fetchTrackedItems();
+        }
+        // When the query data changes directly (optimistic updates)
+        else if (
+          event.type === "updated" &&
+          Array.isArray(event.query?.queryKey) &&
+          event.query?.queryKey[0] === "trackedItems" &&
+          event.query?.queryKey[1] === sessionId
+        ) {
+          updateFromCache();
+        }
+      });
 
     return () => {
       unsubscribe();

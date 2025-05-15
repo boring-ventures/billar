@@ -48,6 +48,18 @@ interface CartItem {
   availableQuantity: number;
 }
 
+interface TrackedItem {
+  id: string;
+  tableSessionId: string;
+  itemId: string;
+  quantity: number;
+  unitPrice: number;
+  item?: {
+    name: string;
+    price: number;
+  };
+}
+
 interface SessionOrderCreatorProps {
   tableSessionId: string;
   tableId: string;
@@ -56,7 +68,6 @@ interface SessionOrderCreatorProps {
 
 export function SessionOrderCreator({
   tableSessionId,
-  tableId,
   companyId,
 }: SessionOrderCreatorProps) {
   const queryClient = useQueryClient();
@@ -125,7 +136,7 @@ export function SessionOrderCreator({
           if (response.ok) {
             const trackedItems = await response.json();
             // Convert tracked items to cart format
-            const cartItems = trackedItems.map((item: any) => ({
+            const cartItems = trackedItems.map((item: TrackedItem) => ({
               itemId: item.itemId,
               name: item.item?.name || "Unknown Item",
               quantity: item.quantity,
@@ -299,11 +310,9 @@ export function SessionOrderCreator({
       setCart([]);
 
       // Optimistic update to query cache
-      const previousData =
-        queryClient.getQueryData(["trackedItems", tableSessionId]) || [];
       queryClient.setQueryData(
         ["trackedItems", tableSessionId],
-        (old: any[] = []) => {
+        (old: TrackedItem[] = []) => {
           // Map the cart items to the format of tracked items
           const result = [...old];
 
@@ -369,7 +378,7 @@ export function SessionOrderCreator({
       // Update with real server data
       queryClient.setQueryData(
         ["trackedItems", tableSessionId],
-        (old: any[] = []) => {
+        (old: TrackedItem[] = []) => {
           // Remove our temporary items
           const filteredOld = old.filter(
             (item) => !item.id.toString().startsWith("temp-")
@@ -379,7 +388,7 @@ export function SessionOrderCreator({
           const finalResult = [...filteredOld];
 
           // Add the server-returned items
-          result.forEach((serverItem) => {
+          result.forEach((serverItem: TrackedItem) => {
             // Check if this item already exists
             const existingIndex = finalResult.findIndex(
               (item) => item.id === serverItem.id

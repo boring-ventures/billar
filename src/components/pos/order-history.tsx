@@ -6,7 +6,6 @@ import { usePosOrdersQuery } from "@/hooks/use-pos-orders-query";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -23,7 +22,6 @@ import {
 import {
   CalendarIcon,
   Eye,
-  Search,
   X,
   MoreHorizontal,
   Printer,
@@ -40,13 +38,12 @@ import type { DateRange } from "react-day-picker";
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/tables/data-table";
 import { OrderHistorySkeleton } from "./order-history-skeleton";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -85,7 +82,6 @@ interface Order {
 export function OrderHistory() {
   const queryClient = useQueryClient();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { toast } = useToast();
   const { companies, selectedCompany } = useCompany();
   const [filterByCompany, setFilterByCompany] = useState(false);
@@ -114,16 +110,12 @@ export function OrderHistory() {
     orders,
     pagination,
     isLoading,
-    error,
     filters,
     updateFilters,
     resetFilters,
     getPaymentMethodText,
     getPaymentStatusText,
     updateOrder,
-    // Pagination methods
-    nextPage,
-    prevPage,
   } = usePosOrdersQuery({
     companyId: companyIdFilter || "", // Pass empty string instead of undefined
     dateFrom: dateRange?.from?.toISOString(),
@@ -314,38 +306,55 @@ export function OrderHistory() {
     setIsMarkPaidDialogOpen(true);
   };
 
-  // Perform mark as paid
+  // Handle marking order as paid
   const performMarkAsPaid = async () => {
     try {
+      setIsRefreshing(true);
+
+      // First find the order to get its current total
+      const orderResponse = await fetch(`/api/orders/${selectedOrderId}`);
+      if (!orderResponse.ok) {
+        throw new Error("Failed to fetch order details");
+      }
+
+      // Update order with PAID status
+      const response = await fetch(`/api/orders/${selectedOrderId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          paymentStatus: "PAID",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update order");
+      }
+
+      // Update the order in UI optimistically
       if (selectedOrderId) {
-        // In a real app, this would call the API to update the order
-        // This is a simplified example
-        await updateOrder.mutateAsync({
+        updateOrder.mutate({
           id: selectedOrderId,
           paymentStatus: "PAID",
         });
-
-        // Refresh the orders data immediately
-        setIsRefreshing(true);
-        await queryClient.invalidateQueries({
-          queryKey: ["posOrders"],
-          refetchType: "active",
-        });
-        setIsRefreshing(false);
-
-        toast({
-          title: "Order Updated",
-          description: `Order #${selectedOrderId.substring(0, 8)} has been marked as paid`,
-        });
       }
+
+      toast({
+        title: "Success",
+        description: "Order marked as paid",
+      });
     } catch (error) {
+      console.error("Failed to mark order as paid:", error);
       toast({
         title: "Error",
-        description: "Failed to update order status",
+        description: "Failed to mark order as paid",
         variant: "destructive",
       });
     } finally {
+      setIsRefreshing(false);
       setIsMarkPaidDialogOpen(false);
+      setSelectedOrderId(null);
     }
   };
 
@@ -577,14 +586,10 @@ export function OrderHistory() {
     </div>
   );
 
-  // Render content based on loading state
+  // Render function for main content based on loading/error state
   const renderContent = () => {
-    if (isLoading) {
+    if (isLoading && orders.length === 0) {
       return <OrderHistorySkeleton />;
-    }
-
-    if (error) {
-      return <div className="text-red-500 py-4">{error}</div>;
     }
 
     return (

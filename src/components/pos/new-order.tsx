@@ -6,6 +6,7 @@ import { usePosOrders } from "@/hooks/use-pos-orders";
 import { useInventoryItems } from "@/hooks/use-inventory-items";
 import { useTableSessions } from "@/hooks/use-table-sessions";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
@@ -67,6 +68,7 @@ interface Company {
 }
 
 export function NewOrder() {
+  const queryClient = useQueryClient();
   const {
     companies,
     selectedCompany,
@@ -76,6 +78,7 @@ export function NewOrder() {
   const { profile } = useCurrentUser();
   const [companyId, setCompanyId] = useState<string>("");
   const isSuperAdmin = profile?.role === "SUPERADMIN";
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Use either the selected company from context or manually selected for superadmin
   useEffect(() => {
@@ -270,6 +273,16 @@ export function NewOrder() {
 
       // Reset the cart after successful order
       setCart([]);
+
+      // Explicitly invalidate the posOrders query to refresh the order history
+      // Force an immediate refetch by setting refetchType to 'active'
+      setIsRefreshing(true);
+      await queryClient.invalidateQueries({
+        queryKey: ["posOrders"],
+        refetchType: "active",
+      });
+      setIsRefreshing(false);
+
       toast({
         title: "Success",
         description: "Order created successfully!",
@@ -538,10 +551,22 @@ export function NewOrder() {
               size="lg"
               onClick={handleCreateOrder}
               disabled={
-                !companyId || cart.length === 0 || createOrder.isPending
+                !companyId ||
+                cart.length === 0 ||
+                createOrder.isPending ||
+                isRefreshing
               }
             >
-              {createOrder.isPending ? "Creating Order..." : "Create Order"}
+              {createOrder.isPending || isRefreshing ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  {createOrder.isPending
+                    ? "Creating Order..."
+                    : "Processing..."}
+                </>
+              ) : (
+                "Create Order"
+              )}
             </Button>
           </CardFooter>
         </Card>

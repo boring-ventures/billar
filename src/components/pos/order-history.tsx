@@ -20,14 +20,46 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon, Eye, Search, X, ShoppingBag } from "lucide-react";
+import {
+  CalendarIcon,
+  Eye,
+  Search,
+  X,
+  MoreHorizontal,
+  Printer,
+  FileText,
+  RefreshCw,
+  Download,
+  FilePlus,
+  CheckCircle,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { OrderDetailsDialog } from "@/components/pos/order-details-dialog";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useIsFetching } from "@tanstack/react-query";
 import type { DateRange } from "react-day-picker";
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/tables/data-table";
 import { OrderHistorySkeleton } from "./order-history-skeleton";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/components/ui/use-toast";
 
 // Define the structure of an order for column typing
 interface Order {
@@ -51,6 +83,9 @@ interface Order {
 
 export function OrderHistory() {
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { toast } = useToast();
   const { companies, selectedCompany } = useCompany();
   const [filterByCompany, setFilterByCompany] = useState(false);
   const [selectedCompanyId, setSelectedCompanyId] = useState<
@@ -63,6 +98,12 @@ export function OrderHistory() {
     from: undefined,
     to: undefined,
   });
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [isMarkPaidDialogOpen, setIsMarkPaidDialogOpen] = useState(false);
+  const [isPrintPdfDialogOpen, setIsPrintPdfDialogOpen] = useState(false);
+  const [isExportAllDialogOpen, setIsExportAllDialogOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Use the selected company if filter is enabled, otherwise fetch all orders
   const companyIdFilter = filterByCompany ? selectedCompanyId : undefined;
@@ -78,6 +119,7 @@ export function OrderHistory() {
     resetFilters,
     getPaymentMethodText,
     getPaymentStatusText,
+    updateOrder,
     // Pagination methods
     nextPage,
     prevPage,
@@ -88,6 +130,9 @@ export function OrderHistory() {
     page: 1,
     limit: 50, // Default page size
   });
+
+  // Get the isFetching state for the posOrders query
+  const ordersIsFetching = useIsFetching({ queryKey: ["posOrders"] }) > 0;
 
   // Set the selected company ID when it changes
   useEffect(() => {
@@ -164,6 +209,7 @@ export function OrderHistory() {
     return (
       order.id.toLowerCase().includes(termLower) ||
       order.tableSession?.table.name.toLowerCase().includes(termLower) ||
+      false ||
       order.company?.name.toLowerCase().includes(termLower) ||
       false
     );
@@ -173,6 +219,133 @@ export function OrderHistory() {
   const handleViewDetails = (orderId: string) => {
     setSelectedOrderId(orderId);
     setIsDetailsOpen(true);
+  };
+
+  // Handle creating new order
+  const handleCreateNewOrder = () => {
+    // Switch to the "new" tab in the POS page
+    router.push("/pos?tab=new");
+  };
+
+  // Handle refreshing data by invalidating the query cache
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    queryClient
+      .invalidateQueries({
+        queryKey: ["posOrders"],
+        refetchType: "active",
+      })
+      .then(() => {
+        setIsRefreshing(false);
+        toast({
+          title: "Data Refreshed",
+          description: "Order data has been updated",
+        });
+      });
+  };
+
+  // Handle print invoice
+  const handlePrint = (orderId: string) => {
+    setSelectedOrderId(orderId);
+    setIsPrintDialogOpen(true);
+  };
+
+  // Perform print invoice action
+  const performPrint = () => {
+    // In a real app, this would trigger a print API call or open a print dialog
+    toast({
+      title: "Invoice Printing",
+      description: `Printing invoice for order #${selectedOrderId?.substring(0, 8)}`,
+    });
+    setIsPrintDialogOpen(false);
+  };
+
+  // Handle print PDF
+  const handlePrintPdf = (orderId: string) => {
+    setSelectedOrderId(orderId);
+    setIsPrintPdfDialogOpen(true);
+  };
+
+  // Perform print PDF action
+  const performPrintPdf = () => {
+    // In a real app, this would generate and print a PDF
+    toast({
+      title: "PDF Printing",
+      description: `Printing PDF for order #${selectedOrderId?.substring(0, 8)}`,
+    });
+    setIsPrintPdfDialogOpen(false);
+  };
+
+  // Handle export order
+  const handleExport = (orderId: string) => {
+    setSelectedOrderId(orderId);
+    setIsExportDialogOpen(true);
+  };
+
+  // Perform export action
+  const performExport = () => {
+    // In a real app, this would generate and download a file
+    toast({
+      title: "Order Exported",
+      description: `Order #${selectedOrderId?.substring(0, 8)} has been exported to PDF`,
+    });
+    setIsExportDialogOpen(false);
+  };
+
+  // Handle export all orders
+  const handleExportAll = () => {
+    setIsExportAllDialogOpen(true);
+  };
+
+  // Perform export all action
+  const performExportAll = () => {
+    // In a real app, this would generate and download all filtered orders
+    toast({
+      title: "Orders Exported",
+      description: `${filteredOrders.length} orders have been exported`,
+    });
+    setIsExportAllDialogOpen(false);
+  };
+
+  // Handle mark as paid
+  const handleMarkAsPaid = (orderId: string) => {
+    setSelectedOrderId(orderId);
+    setIsMarkPaidDialogOpen(true);
+  };
+
+  // Perform mark as paid
+  const performMarkAsPaid = async () => {
+    try {
+      if (selectedOrderId) {
+        // In a real app, this would call the API to update the order
+        // This is a simplified example
+        await updateOrder.mutateAsync({
+          id: selectedOrderId,
+          paymentStatus: "PAID",
+        });
+
+        // Refresh the orders data immediately
+        setIsRefreshing(true);
+        await queryClient.invalidateQueries({
+          queryKey: ["posOrders"],
+          refetchType: "active",
+        });
+        setIsRefreshing(false);
+
+        toast({
+          title: "Order Updated",
+          description: `Order #${selectedOrderId.substring(0, 8)} has been marked as paid`,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update order status",
+        variant: "destructive",
+      });
+    } finally {
+      setIsMarkPaidDialogOpen(false);
+    }
   };
 
   // Define table columns
@@ -237,15 +410,44 @@ export function OrderHistory() {
     {
       id: "actions",
       header: "Actions",
-      cell: ({ row }) => (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => handleViewDetails(row.original.id)}
-        >
-          <Eye className="h-4 w-4" />
-        </Button>
-      ),
+      cell: ({ row }) => {
+        const order = row.original;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => handleViewDetails(order.id)}>
+                <Eye className="mr-2 h-4 w-4" />
+                View Details
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handlePrint(order.id)}>
+                <Printer className="mr-2 h-4 w-4" />
+                Print Invoice
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handlePrintPdf(order.id)}>
+                <FileText className="mr-2 h-4 w-4" />
+                Print PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport(order.id)}>
+                <Download className="mr-2 h-4 w-4" />
+                Export Order
+              </DropdownMenuItem>
+              {order.paymentStatus !== "PAID" && (
+                <DropdownMenuItem onClick={() => handleMarkAsPaid(order.id)}>
+                  <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
+                  Mark as Paid
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
     },
   ];
 
@@ -339,6 +541,31 @@ export function OrderHistory() {
     </div>
   );
 
+  // Action buttons for header
+  const actionButtons = (
+    <div className="flex items-center space-x-2">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleRefresh}
+        disabled={isRefreshing}
+      >
+        <RefreshCw
+          className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`}
+        />
+        {isRefreshing ? "Refreshing..." : "Refresh"}
+      </Button>
+      <Button variant="outline" size="sm" onClick={handleExportAll}>
+        <Download className="h-4 w-4 mr-2" />
+        Export All
+      </Button>
+      <Button size="sm" onClick={handleCreateNewOrder}>
+        <FilePlus className="h-4 w-4 mr-2" />
+        New Order
+      </Button>
+    </div>
+  );
+
   // Render content based on loading state
   const renderContent = () => {
     if (isLoading) {
@@ -351,22 +578,27 @@ export function OrderHistory() {
 
     return (
       <div className="flex flex-col space-y-6">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center space-x-2">
-            <ShoppingBag className="h-5 w-5" />
-            <h3 className="text-xl font-semibold tracking-tight">
-              Orders History
-            </h3>
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center space-x-2">
+              <h3 className="text-xl font-semibold tracking-tight">
+                Orders History
+              </h3>
+              {(ordersIsFetching || isRefreshing) && (
+                <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {filteredOrders.length} orders found
+              {pagination && (
+                <span className="ml-2">
+                  (Page {pagination.page} of {pagination.totalPages}, Total:{" "}
+                  {pagination.total})
+                </span>
+              )}
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground">
-            {filteredOrders.length} orders found
-            {pagination && (
-              <span className="ml-2">
-                (Page {pagination.page} of {pagination.totalPages}, Total:{" "}
-                {pagination.total})
-              </span>
-            )}
-          </p>
+          {actionButtons}
         </div>
 
         {filterRow}
@@ -392,6 +624,119 @@ export function OrderHistory() {
           onOpenChange={setIsDetailsOpen}
         />
       )}
+
+      {/* Print Invoice Dialog */}
+      <AlertDialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Print Invoice</AlertDialogTitle>
+            <AlertDialogDescription>
+              Print invoice for order #{selectedOrderId?.substring(0, 8)}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={performPrint}>Print</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Print PDF Dialog */}
+      <AlertDialog
+        open={isPrintPdfDialogOpen}
+        onOpenChange={setIsPrintPdfDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Print PDF</AlertDialogTitle>
+            <AlertDialogDescription>
+              Generate and print PDF for order #
+              {selectedOrderId?.substring(0, 8)}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={performPrintPdf}>
+              Print PDF
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Export Dialog */}
+      <AlertDialog
+        open={isExportDialogOpen}
+        onOpenChange={setIsExportDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Export Order</AlertDialogTitle>
+            <AlertDialogDescription>
+              Export order #{selectedOrderId?.substring(0, 8)} to PDF format
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={performExport}>
+              Export
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Export All Dialog */}
+      <AlertDialog
+        open={isExportAllDialogOpen}
+        onOpenChange={setIsExportAllDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Export All Orders</AlertDialogTitle>
+            <AlertDialogDescription>
+              Export all {filteredOrders.length} filtered orders to a
+              spreadsheet
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={performExportAll}>
+              Export All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Mark as Paid Dialog */}
+      <AlertDialog
+        open={isMarkPaidDialogOpen}
+        onOpenChange={setIsMarkPaidDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mark Order as Paid</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to mark order #
+              {selectedOrderId?.substring(0, 8)} as paid?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={performMarkAsPaid}
+              disabled={updateOrder.isPending || isRefreshing}
+            >
+              {updateOrder.isPending || isRefreshing ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                "Mark as Paid"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

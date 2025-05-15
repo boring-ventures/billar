@@ -1,15 +1,35 @@
+"use client";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Metadata } from "next";
 import { OrderHistory } from "@/components/pos/order-history";
 import { NewOrder } from "@/components/pos/new-order";
 import { ShoppingBag } from "lucide-react";
-
-export const metadata: Metadata = {
-  title: "Punto de Venta",
-  description: "Gestiona órdenes y ventas del punto de venta",
-};
+import { useSearchParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function PosPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const tabParam = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState(
+    tabParam === "new" ? "new" : "history"
+  );
+
+  // Update the tab when URL changes
+  useEffect(() => {
+    setActiveTab(tabParam === "new" ? "new" : "history");
+  }, [tabParam]);
+
+  // Update URL when tab changes
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    if (value === "history") {
+      router.push("/pos");
+    } else if (value === "new") {
+      router.push("/pos?tab=new");
+    }
+  };
+
   return (
     <div className="flex flex-col space-y-6 p-4 md:p-8">
       <div className="flex flex-col gap-2">
@@ -19,7 +39,11 @@ export default function PosPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="history" className="w-full">
+      <Tabs
+        value={activeTab}
+        onValueChange={handleTabChange}
+        className="w-full"
+      >
         <div className="flex justify-between items-center">
           <TabsList className="grid w-full max-w-md grid-cols-2">
             <TabsTrigger value="history">Historial de Órdenes</TabsTrigger>

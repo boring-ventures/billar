@@ -32,6 +32,8 @@ interface TrackedItem {
 
 interface SessionTrackedItemsListProps {
   sessionId: string;
+  showHeading?: boolean;
+  showCard?: boolean;
 }
 
 // Define an interface for the query cache event
@@ -44,6 +46,8 @@ interface QueryCacheEvent {
 
 export function SessionTrackedItemsList({
   sessionId,
+  showHeading = true,
+  showCard = true,
 }: SessionTrackedItemsListProps) {
   const queryClient = useQueryClient();
   const [trackedItems, setTrackedItems] = useState<TrackedItem[]>([]);
@@ -131,18 +135,20 @@ export function SessionTrackedItemsList({
     0
   );
 
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg flex items-center">
-          <ClipboardList className="h-5 w-5 mr-2" />
-          Tracked Items
-          {isLoading && (
-            <RefreshCw className="ml-2 h-4 w-4 animate-spin text-muted-foreground" />
-          )}
-        </CardTitle>
-        <CardDescription>Items consumed during this session</CardDescription>
-      </CardHeader>
+  const content = (
+    <>
+      {showHeading && (
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg flex items-center">
+            <ClipboardList className="h-5 w-5 mr-2" />
+            Tracked Items
+            {isLoading && (
+              <RefreshCw className="ml-2 h-4 w-4 animate-spin text-muted-foreground" />
+            )}
+          </CardTitle>
+          <CardDescription>Items consumed during this session</CardDescription>
+        </CardHeader>
+      )}
       <CardContent>
         {isLoading && trackedItems.length === 0 ? (
           <div className="flex justify-center items-center py-8">
@@ -200,6 +206,12 @@ export function SessionTrackedItemsList({
           </>
         )}
       </CardContent>
-    </Card>
+    </>
   );
+
+  if (showCard) {
+    return <Card>{content}</Card>;
+  }
+
+  return <div>{content}</div>;
 }

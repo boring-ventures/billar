@@ -38,7 +38,7 @@ import type { DateRange } from "react-day-picker";
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/tables/data-table";
 import { OrderHistorySkeleton } from "./order-history-skeleton";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -82,6 +82,7 @@ interface Order {
 export function OrderHistory() {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const { companies, selectedCompany } = useCompany();
   const [filterByCompany, setFilterByCompany] = useState(false);
@@ -101,6 +102,24 @@ export function OrderHistory() {
   const [isPrintPdfDialogOpen, setIsPrintPdfDialogOpen] = useState(false);
   const [isExportAllDialogOpen, setIsExportAllDialogOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Check if there's an order to view from URL parameters
+  useEffect(() => {
+    const viewOrderId = searchParams.get("viewOrder");
+    if (viewOrderId) {
+      // Open the order details dialog for this order
+      setSelectedOrderId(viewOrderId);
+      setIsDetailsOpen(true);
+
+      // Remove the query parameter to avoid reopening on refresh
+      // This creates a new URL without the viewOrder parameter
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete("viewOrder");
+
+      // Update browser history without reloading the page
+      window.history.replaceState({}, "", newUrl.toString());
+    }
+  }, [searchParams]);
 
   // Use the selected company if filter is enabled, otherwise fetch all orders
   const companyIdFilter = filterByCompany ? selectedCompanyId : undefined;

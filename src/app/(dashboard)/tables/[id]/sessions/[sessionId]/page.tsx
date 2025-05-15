@@ -16,7 +16,13 @@ import {
 } from "lucide-react";
 import { SessionStatus } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { formatCurrency, formatDuration } from "@/lib/utils";
 import { SessionOrdersList } from "@/components/tables/session-orders-list";
@@ -211,17 +217,46 @@ export default function TableSessionDetailsPage() {
 
       {/* Only show tracking component when session is active */}
       {session.status === "ACTIVE" && (
-        <SessionOrderCreator
-          tableSessionId={session.id}
-          tableId={session.tableId}
-          companyId={
-            session.table?.company?.id || session.table?.companyId || ""
-          }
-        />
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5" />
+              Session Items
+            </CardTitle>
+            <CardDescription>
+              Track and manage items consumed during this session
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div>
+              <h3 className="text-md font-medium mb-2">Add Items</h3>
+              <SessionOrderCreator
+                tableSessionId={session.id}
+                tableId={session.tableId}
+                companyId={
+                  session.table?.company?.id || session.table?.companyId || ""
+                }
+              />
+            </div>
+
+            <Separator className="my-4" />
+
+            <div>
+              <h3 className="text-md font-medium mb-2">Tracked Items</h3>
+              <SessionTrackedItemsList
+                sessionId={sessionId}
+                showHeading={false}
+                showCard={false}
+              />
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      {/* Show tracked items without duplicate heading */}
-      <SessionTrackedItemsList sessionId={sessionId} />
+      {/* Show tracked items for non-active sessions */}
+      {session.status !== "ACTIVE" && (
+        <SessionTrackedItemsList sessionId={sessionId} />
+      )}
 
       {/* Only show orders for completed or cancelled sessions */}
       {session.status !== "ACTIVE" && (

@@ -390,13 +390,71 @@ export function NewOrder() {
       return;
     }
 
-    if (cart.length === 0 && !sessionData?.totalCost) {
-      toast({
-        title: "Error",
-        description: "Cart is empty. Add items to create an order.",
-        variant: "destructive",
-      });
-      return;
+    // Check for valid items to order
+    if (cart.length === 0) {
+      // If this is a session payment but there are no items, add a dummy item for the session cost
+      if (sessionData?.totalCost && sessionData.totalCost > 0) {
+        // Create a special "session payment" item
+        const sessionPaymentItem = {
+          itemId: "session-payment", // This will be caught and handled specially
+          quantity: 1,
+          unitPrice: Number(sessionData.totalCost),
+        };
+
+        try {
+          setIsCreatingOrder(true);
+          setIsRefreshing(true);
+
+          // Ensure we're using the session ID from the URL if it exists
+          const sessionPaymentTableId = sessionId || undefined;
+
+          // Prepare order data with just the session payment
+          const sessionPaymentData = {
+            companyId,
+            tableSessionId: sessionPaymentTableId,
+            paymentMethod: paymentMethod as "CASH" | "QR" | "CREDIT_CARD",
+            items: [sessionPaymentItem],
+          };
+
+          console.log("Submitting session-only payment:", sessionPaymentData);
+
+          const result = await createOrder.mutateAsync(sessionPaymentData);
+          console.log("Order created successfully:", result);
+
+          // Show success message and redirect
+          toast({
+            title: "Success",
+            description: "Session payment completed successfully!",
+          });
+
+          // Navigate back to tables
+          setTimeout(() => {
+            router.push(`/tables/${sessionData.table?.id}`);
+          }, 1500);
+
+          return;
+        } catch (error) {
+          console.error("Failed to create session payment:", error);
+          toast({
+            title: "Error",
+            description:
+              error instanceof Error
+                ? error.message
+                : "Failed to create session payment",
+            variant: "destructive",
+          });
+          setIsRefreshing(false);
+          setIsCreatingOrder(false);
+          return;
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: "Cart is empty. Add items to create an order.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     try {

@@ -195,6 +195,30 @@ export const usePosOrders = (filters: PosOrderFilters) => {
   const createOrder = useMutation({
     mutationFn: async (data: CreatePosOrderPayload) => {
       try {
+        // Special case for session-payment: check if this is a session-only payment
+        const hasOnlySessionPayment =
+          data.items.length === 1 &&
+          data.items[0].itemId === "session-payment" &&
+          data.tableSessionId;
+
+        // If it's a session-only payment, we'll allow it through with special handling
+        if (hasOnlySessionPayment) {
+          console.log("Creating order with session-payment only");
+        } else {
+          // For regular orders, ensure all items have valid IDs
+          const invalidItems = data.items.filter(
+            (item) =>
+              item.itemId === "session-payment" ||
+              !item.itemId ||
+              item.quantity <= 0 ||
+              item.unitPrice <= 0
+          );
+
+          if (invalidItems.length > 0) {
+            throw new Error("Order contains invalid items");
+          }
+        }
+
         const response = await axios.post("/api/pos-orders", data);
         return response.data;
       } catch (error: unknown) {

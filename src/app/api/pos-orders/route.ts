@@ -177,13 +177,24 @@ export async function POST(request: NextRequest) {
 
     // Validate items and check inventory
     const itemIds = items.map((item: { itemId: string }) => item.itemId);
-    const inventoryItems = await prisma.inventoryItem.findMany({
-      where: {
-        id: {
-          in: itemIds,
-        },
-      },
-    });
+
+    // Special handling for session-payment items
+    const hasSessionPaymentItem = itemIds.includes("session-payment");
+
+    // Only query inventory for real items (not session-payment)
+    const realItemIds = itemIds.filter((id) => id !== "session-payment");
+
+    // If we have real items, validate them against inventory
+    const inventoryItems =
+      realItemIds.length > 0
+        ? await prisma.inventoryItem.findMany({
+            where: {
+              id: {
+                in: realItemIds,
+              },
+            },
+          })
+        : [];
 
     // Create a map for quick lookups
     const inventoryItemMap = new Map(
@@ -192,6 +203,11 @@ export async function POST(request: NextRequest) {
 
     // Validate each item
     for (const item of items) {
+      // Skip validation for session-payment items
+      if (item.itemId === "session-payment") {
+        continue;
+      }
+
       const inventoryItem = inventoryItemMap.get(item.itemId);
 
       if (!inventoryItem) {
@@ -234,6 +250,25 @@ export async function POST(request: NextRequest) {
       0
     );
 
+    // If this is only a session payment with no real items, we need to look up the session
+    // to get the table session cost
+    if (hasSessionPaymentItem && realItemIds.length === 0 && tableSessionId) {
+      const sessionItem = items.find(
+        (item: { itemId: string }) => item.itemId === "session-payment"
+      );
+      if (sessionItem && tableSession) {
+        // Update the total amount with the table session cost
+        if (tableSession.totalCost) {
+          // The session payment item's unitPrice should already be the session cost
+          // But we can verify and use the stored totalCost if needed
+          console.log(
+            "Session payment: Using session cost:",
+            tableSession.totalCost
+          );
+        }
+      }
+    }
+
     // Use a transaction to create the order, order items, and update inventory
     const result = await prisma.$transaction(async (tx) => {
       // Create the order
@@ -270,7 +305,32 @@ export async function POST(request: NextRequest) {
       const stockMovements = [];
 
       for (const item of items) {
-        // Create order item
+        // Skip creating real inventory items for session-payment
+        if (item.itemId === "session-payment") {
+          console.log("Processing session payment only:", item);
+
+          // For session payments, we don't create an order item
+          // The order amount already includes the session cost
+
+          // If it has a valid tableSessionId, mark the session as completed
+          if (tableSessionId) {
+            await tx.tableSession.update({
+              where: { id: tableSessionId },
+              data: {
+                status: "COMPLETED",
+              },
+            });
+
+            console.log(
+              `Updated session ${tableSessionId} status to COMPLETED`
+            );
+          }
+
+          // No need to update inventory or create stock movements
+          continue;
+        }
+
+        // Regular item processing
         const orderItem = await tx.posOrderItem.create({
           data: {
             orderId: order.id,

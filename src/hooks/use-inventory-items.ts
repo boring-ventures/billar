@@ -115,6 +115,11 @@ export const useInventoryItems = (filters: InventoryItemFilters) => {
       }
     },
     enabled: !!filters.companyId,
+    // Configure staleTime to be shorter to ensure fresher data
+    staleTime: 10 * 1000, // 10 seconds
+    // Always refetch when component mounts or window gets focus
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 
   // Fetch a single inventory item by ID

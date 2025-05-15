@@ -59,38 +59,79 @@ export function SessionTrackedItemsList({
   const [removingItems, setRemovingItems] = useState<Record<string, boolean>>(
     {}
   );
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
   // Fetch tracked items function that can be called when needed
-  const fetchTrackedItems = useCallback(async () => {
-    if (!sessionId) return;
+  const fetchTrackedItems = useCallback(
+    async (isManualRefresh = false) => {
+      if (!sessionId) return;
 
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(
-        `/api/table-sessions/${sessionId}/tracked-items`
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to fetch tracked items");
+      if (isManualRefresh) {
+        setIsManualRefreshing(true);
+      } else {
+        setIsLoading(true);
       }
+      setError(null);
 
-      const data = await response.json();
-      setTrackedItems(data || []);
+      try {
+        const response = await fetch(
+          `/api/table-sessions/${sessionId}/tracked-items`
+        );
 
-      // Update query cache
-      queryClient.setQueryData(["trackedItems", sessionId], data);
-    } catch (error) {
-      console.error("Error fetching tracked items:", error);
-      setError(
-        error instanceof Error ? error.message : "Failed to fetch tracked items"
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, [sessionId, queryClient]);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to fetch tracked items");
+        }
+
+        const data = await response.json();
+        setTrackedItems(data || []);
+
+        // Update query cache
+        queryClient.setQueryData(["trackedItems", sessionId], data);
+
+        // When refreshing tracked items, also invalidate inventory items to ensure counts are in sync
+        const tableSession = await fetch(
+          `/api/table-sessions/${sessionId}`
+        ).then((res) => res.json());
+        const companyId =
+          tableSession?.table?.company?.id || tableSession?.table?.companyId;
+
+        if (companyId) {
+          queryClient.invalidateQueries({
+            queryKey: ["inventoryItems", companyId],
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching tracked items:", error);
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Failed to fetch tracked items"
+        );
+      } finally {
+        setIsLoading(false);
+        if (isManualRefresh) {
+          setIsManualRefreshing(false);
+        }
+      }
+    },
+    [sessionId, queryClient]
+  );
+
+  // Handle manual refresh
+  const handleManualRefresh = () => {
+    fetchTrackedItems(true);
+  };
+
+  // Auto-refresh on an interval
+  useEffect(() => {
+    // Set up auto-refresh interval (every 30 seconds)
+    const intervalId = setInterval(() => {
+      fetchTrackedItems();
+    }, 30000);
+
+    return () => clearInterval(intervalId);
+  }, [fetchTrackedItems]);
 
   // Handle removing a tracked item
   const handleRemoveItem = async (itemId: string, itemName: string) => {
@@ -244,13 +285,25 @@ export function SessionTrackedItemsList({
     <>
       {showHeading && (
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg flex items-center">
-            <ClipboardList className="h-5 w-5 mr-2" />
-            Artículos Registrados
-            {isLoading && (
-              <RefreshCw className="ml-2 h-4 w-4 animate-spin text-muted-foreground" />
-            )}
-          </CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-lg flex items-center">
+              <ClipboardList className="h-5 w-5 mr-2" />
+              Artículos Registrados
+              {isLoading && (
+                <RefreshCw className="ml-2 h-4 w-4 animate-spin text-muted-foreground" />
+              )}
+            </CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleManualRefresh}
+              disabled={isLoading || isManualRefreshing}
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${isManualRefreshing ? "animate-spin" : ""}`}
+              />
+            </Button>
+          </div>
           <CardDescription>
             Artículos consumidos durante esta sesión
           </CardDescription>

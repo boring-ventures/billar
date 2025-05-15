@@ -103,6 +103,16 @@ export function SessionOrderCreator({
     }
   }, [tableSessionId, companyId]);
 
+  // When component mounts or company ID changes, ensure we have the latest inventory data
+  useEffect(() => {
+    if (effectiveCompanyId) {
+      // Invalidate inventory queries to ensure we have fresh data
+      queryClient.invalidateQueries({
+        queryKey: ["inventoryItems", effectiveCompanyId],
+      });
+    }
+  }, [effectiveCompanyId, queryClient]);
+
   // Only fetch items when we have a valid company ID
   const { items, isLoading: isLoadingItems } = useInventoryItems({
     companyId: effectiveCompanyId,
@@ -114,11 +124,13 @@ export function SessionOrderCreator({
   const [selectedItem, setSelectedItem] = useState<string>("");
   const [selectedQuantity, setSelectedQuantity] = useState<number>(1);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isTrackedItemsLoading, setIsTrackedItemsLoading] = useState(true);
 
   // Load existing tracked items when component mounts
   useEffect(() => {
     const fetchTrackedItems = async () => {
       if (tableSessionId) {
+        setIsTrackedItemsLoading(true);
         try {
           const response = await fetch(
             `/api/table-sessions/${tableSessionId}/tracked-items`
@@ -126,20 +138,14 @@ export function SessionOrderCreator({
 
           if (response.ok) {
             const trackedItems = await response.json();
-            // Convert tracked items to cart format
-            const cartItems = trackedItems.map((item: TrackedItem) => ({
-              itemId: item.itemId,
-              name: item.item?.name || "Unknown Item",
-              quantity: item.quantity,
-              unitPrice: Number(item.unitPrice),
-              availableQuantity:
-                items.find((i) => i.id === item.itemId)?.quantity || 0,
-            }));
-
-            setCart(cartItems);
+            // Don't populate cart with existing tracked items
+            // Just log them for reference
+            console.log(`Found ${trackedItems.length} existing tracked items`);
           }
         } catch (error) {
           console.error("Error fetching tracked items:", error);
+        } finally {
+          setIsTrackedItemsLoading(false);
         }
       }
     };
@@ -172,12 +178,45 @@ export function SessionOrderCreator({
     );
   });
 
+  // Calculate adjusted available quantity considering cart items
+  const getAdjustedAvailableQuantity = (
+    itemId: string,
+    stockQuantity: number
+  ): number => {
+    // Find if this item is already in the cart
+    const cartItem = cart.find((item) => item.itemId === itemId);
+    if (cartItem) {
+      // Subtract the quantity in cart from available stock
+      return stockQuantity - cartItem.quantity;
+    }
+    return stockQuantity;
+  };
+
+  // Get the total in-cart quantity for an item excluding a specific cart entry
+  const getOtherCartQuantity = (
+    itemId: string,
+    excludeIndex: number = -1
+  ): number => {
+    return cart.reduce((total, item, idx) => {
+      if (item.itemId === itemId && idx !== excludeIndex) {
+        return total + item.quantity;
+      }
+      return total;
+    }, 0);
+  };
+
   // Add item to cart
   const handleAddToCart = () => {
     if (!selectedItem || selectedQuantity <= 0) return;
 
     const item = items.find((i) => i.id === selectedItem);
     if (!item) return;
+
+    // Get quantity of this item already in cart
+    const otherCartQuantity = getOtherCartQuantity(selectedItem);
+
+    // Calculate real available stock
+    const realAvailableStock = item.quantity - otherCartQuantity;
 
     // Check if item already in cart
     const existingItemIndex = cart.findIndex(
@@ -190,11 +229,11 @@ export function SessionOrderCreator({
       const newQuantity =
         newCart[existingItemIndex].quantity + selectedQuantity;
 
-      // Check if we have enough inventory
-      if (newQuantity > item.quantity) {
+      // Check if we have enough inventory using adjusted quantity
+      if (selectedQuantity > realAvailableStock) {
         toast({
           title: "Inventario insuficiente",
-          description: `Solo hay ${item.quantity} unidades disponibles de ${item.name}.`,
+          description: `Solo hay ${realAvailableStock} unidades disponibles de ${item.name}.`,
           variant: "destructive",
         });
         return;
@@ -202,9 +241,14 @@ export function SessionOrderCreator({
 
       newCart[existingItemIndex].quantity = newQuantity;
 
-      // Update availableQuantity in cart item
-      const updatedAvailableQuantity = item.quantity - selectedQuantity;
-      newCart[existingItemIndex].availableQuantity = updatedAvailableQuantity;
+      // Update availableQuantity in cart item - calculate based on new total quantity
+      newCart[existingItemIndex].availableQuantity = Math.max(
+        0,
+        item.quantity -
+          newQuantity -
+          otherCartQuantity +
+          newCart[existingItemIndex].quantity
+      );
 
       // Optimistically update inventory items in the UI
       queryClient.setQueryData(
@@ -214,7 +258,10 @@ export function SessionOrderCreator({
             if (inventoryItem.id === selectedItem) {
               return {
                 ...inventoryItem,
-                quantity: updatedAvailableQuantity,
+                quantity: Math.max(
+                  0,
+                  inventoryItem.quantity - selectedQuantity
+                ),
               };
             }
             return inventoryItem;
@@ -225,17 +272,17 @@ export function SessionOrderCreator({
       setCart(newCart);
     } else {
       // Add new item to cart
-      if (selectedQuantity > item.quantity) {
+      if (selectedQuantity > realAvailableStock) {
         toast({
           title: "Inventario insuficiente",
-          description: `Solo hay ${item.quantity} unidades disponibles de ${item.name}.`,
+          description: `Solo hay ${realAvailableStock} unidades disponibles de ${item.name}.`,
           variant: "destructive",
         });
         return;
       }
 
-      // Calculate updated available quantity
-      const updatedAvailableQuantity = item.quantity - selectedQuantity;
+      // Calculate updated available quantity based on real available stock
+      const updatedAvailableQuantity = realAvailableStock - selectedQuantity;
 
       // Optimistically update inventory items in the UI
       queryClient.setQueryData(
@@ -286,16 +333,30 @@ export function SessionOrderCreator({
       return;
     }
 
-    if (newQuantity > item.availableQuantity + currentQuantity) {
-      toast({
-        title: "Inventario insuficiente",
-        description: `Solo hay ${item.availableQuantity + currentQuantity} unidades disponibles de ${item.name}.`,
-        variant: "destructive",
-      });
-      return;
-    }
+    // Find the actual inventory item
+    const inventoryItem = items.find((i) => i.id === item.itemId);
+    if (!inventoryItem) return;
 
+    // Calculate the difference we're trying to add
     const quantityDifference = newQuantity - currentQuantity;
+
+    // If we're increasing the quantity, check if we have enough stock
+    if (quantityDifference > 0) {
+      // Get quantity of this item in other cart entries
+      const otherCartQuantity = getOtherCartQuantity(item.itemId, index);
+
+      // Calculate real available stock (total - other cart items)
+      const realAvailableStock = inventoryItem.quantity - otherCartQuantity;
+
+      if (newQuantity > currentQuantity + realAvailableStock) {
+        toast({
+          title: "Inventario insuficiente",
+          description: `Solo hay ${currentQuantity + realAvailableStock} unidades disponibles de ${item.name}.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
 
     // Update inventory in UI
     queryClient.setQueryData(
@@ -368,6 +429,7 @@ export function SessionOrderCreator({
 
     try {
       setIsRefreshing(true);
+      setIsTrackedItemsLoading(true);
 
       // Prepare the items to track
       const itemsToTrack = cart.map((item) => ({
@@ -500,6 +562,16 @@ export function SessionOrderCreator({
           return finalResult;
         }
       );
+
+      // Force a refresh of the inventory data to ensure stock counts are up-to-date
+      queryClient.invalidateQueries({
+        queryKey: ["inventoryItems", effectiveCompanyId],
+      });
+
+      // Also invalidate any other inventory-related queries
+      queryClient.invalidateQueries({
+        queryKey: ["inventoryItems"],
+      });
     } catch (error) {
       console.error("Failed to track items:", error);
 
@@ -525,6 +597,7 @@ export function SessionOrderCreator({
       });
     } finally {
       setIsRefreshing(false);
+      setIsTrackedItemsLoading(false);
     }
   };
 
@@ -551,9 +624,21 @@ export function SessionOrderCreator({
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <Button onClick={() => setIsAddingItem(true)}>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Add Item
+              <Button
+                onClick={() => setIsAddingItem(true)}
+                disabled={isTrackedItemsLoading || isRefreshing}
+              >
+                {isTrackedItemsLoading ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Add Item
+                  </>
+                )}
               </Button>
             </div>
 
@@ -666,76 +751,89 @@ export function SessionOrderCreator({
               Agrega artículos a la sesión para realizar seguimiento.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="item-select">Seleccionar Artículo</Label>
-              <select
-                id="item-select"
-                className="w-full p-2 border rounded-md"
-                value={selectedItem}
-                onChange={(e) => setSelectedItem(e.target.value)}
-              >
-                <option value="">Selecciona un artículo...</option>
-                {filteredItems.map((item) => (
-                  <option
-                    key={item.id}
-                    value={item.id}
-                    disabled={item.quantity <= 0}
-                  >
-                    {item.name}{" "}
-                    {item.quantity <= 0
-                      ? "(Sin stock)"
-                      : `(Disponible: ${item.quantity})`}
-                  </option>
-                ))}
-              </select>
+          {isTrackedItemsLoading ? (
+            <div className="flex justify-center items-center py-8">
+              <RefreshCw className="h-6 w-6 animate-spin mr-2" />
+              <span>Cargando datos de inventario...</span>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="quantity-input">Cantidad</Label>
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() =>
-                    setSelectedQuantity(Math.max(1, selectedQuantity - 1))
-                  }
+          ) : (
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="item-select">Seleccionar Artículo</Label>
+                <select
+                  id="item-select"
+                  className="w-full p-2 border rounded-md"
+                  value={selectedItem}
+                  onChange={(e) => setSelectedItem(e.target.value)}
                 >
-                  <MinusCircle className="h-4 w-4" />
-                </Button>
-                <Input
-                  id="quantity-input"
-                  type="number"
-                  min={1}
-                  value={selectedQuantity}
-                  onChange={(e) => {
-                    const val = parseInt(e.target.value);
-                    if (!isNaN(val) && val > 0) {
-                      setSelectedQuantity(val);
-                    }
-                  }}
-                  className="w-20 text-center"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setSelectedQuantity(selectedQuantity + 1)}
-                >
-                  <PlusCircle className="h-4 w-4" />
-                </Button>
+                  <option value="">Selecciona un artículo...</option>
+                  {filteredItems.map((item) => (
+                    <option
+                      key={item.id}
+                      value={item.id}
+                      disabled={item.quantity <= 0}
+                    >
+                      {item.name}{" "}
+                      {item.quantity <= 0
+                        ? "(Sin stock)"
+                        : `(Disponible: ${getAdjustedAvailableQuantity(item.id, item.quantity)})`}
+                    </option>
+                  ))}
+                </select>
               </div>
-              {selectedItem && (
-                <p className="text-sm text-muted-foreground">
-                  Disponible:{" "}
-                  {items.find((i) => i.id === selectedItem)?.quantity || 0}{" "}
-                  unidades
-                </p>
-              )}
+              <div className="space-y-2">
+                <Label htmlFor="quantity-input">Cantidad</Label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() =>
+                      setSelectedQuantity(Math.max(1, selectedQuantity - 1))
+                    }
+                  >
+                    <MinusCircle className="h-4 w-4" />
+                  </Button>
+                  <Input
+                    id="quantity-input"
+                    type="number"
+                    min={1}
+                    value={selectedQuantity}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value);
+                      if (!isNaN(val) && val > 0) {
+                        setSelectedQuantity(val);
+                      }
+                    }}
+                    className="w-20 text-center"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => setSelectedQuantity(selectedQuantity + 1)}
+                  >
+                    <PlusCircle className="h-4 w-4" />
+                  </Button>
+                </div>
+                {selectedItem && (
+                  <p className="text-sm text-muted-foreground">
+                    Disponible:{" "}
+                    {selectedItem
+                      ? getAdjustedAvailableQuantity(
+                          selectedItem,
+                          items.find((i) => i.id === selectedItem)?.quantity ||
+                            0
+                        )
+                      : 0}{" "}
+                    unidades
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
+          )}
           <DialogFooter>
             <Button
               type="button"
@@ -747,7 +845,9 @@ export function SessionOrderCreator({
             <Button
               type="button"
               onClick={handleAddToCart}
-              disabled={!selectedItem || selectedQuantity <= 0}
+              disabled={
+                !selectedItem || selectedQuantity <= 0 || isTrackedItemsLoading
+              }
             >
               Agregar
             </Button>

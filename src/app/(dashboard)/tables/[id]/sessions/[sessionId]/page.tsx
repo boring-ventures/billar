@@ -42,27 +42,40 @@ export default function TableSessionDetailsPage() {
   const endSessionMutation = useEndTableSessionMutation();
 
   const [duration, setDuration] = useState<string>("");
+  const [currentCost, setCurrentCost] = useState<number | null>(null);
   const [isActive, setIsActive] = useState(false);
 
-  // Calculate and update the session duration
+  // Calculate and update the session duration and cost
   useEffect(() => {
     if (!session) return;
 
     setIsActive(session.status === "ACTIVE");
 
-    const updateDuration = () => {
+    const updateDurationAndCost = () => {
       const start = new Date(session.startedAt);
       const end = session.endedAt ? new Date(session.endedAt) : new Date();
       const durationMs = end.getTime() - start.getTime();
       setDuration(formatDuration(durationMs));
+
+      // Calculate current cost for active sessions
+      if (session.status === "ACTIVE" && session.table?.hourlyRate) {
+        const hourlyRate = session.table.hourlyRate;
+        const hoursElapsed = durationMs / (1000 * 60 * 60);
+        const calculatedCost = hourlyRate * hoursElapsed;
+        setCurrentCost(calculatedCost);
+      } else if (session.totalCost) {
+        setCurrentCost(session.totalCost);
+      } else {
+        setCurrentCost(null);
+      }
     };
 
-    updateDuration();
+    updateDurationAndCost();
 
     // Only set interval if the session is active
     let interval: NodeJS.Timeout | null = null;
     if (session.status === "ACTIVE") {
-      interval = setInterval(updateDuration, 1000);
+      interval = setInterval(updateDurationAndCost, 1000);
     }
 
     return () => {
@@ -185,7 +198,7 @@ export default function TableSessionDetailsPage() {
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">
-              {session.totalCost ? formatCurrency(session.totalCost) : "--"}
+              {currentCost !== null ? formatCurrency(currentCost) : "--"}
             </p>
             <p className="text-sm text-muted-foreground">
               Tarifa por Hora:{" "}
@@ -193,6 +206,11 @@ export default function TableSessionDetailsPage() {
                 ? formatCurrency(session.table.hourlyRate)
                 : "No establecida"}
             </p>
+            {isActive && session.table?.hourlyRate && (
+              <p className="text-xs text-amber-600 mt-1">
+                Costo actualizado en tiempo real
+              </p>
+            )}
           </CardContent>
         </Card>
 

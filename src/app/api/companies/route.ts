@@ -9,7 +9,7 @@ interface Company {
 }
 
 // GET /api/companies - Get all companies
-export async function GET(request: NextRequest) {
+export async function GET() {
   const supabase = createRouteHandlerClient({ cookies });
 
   // Get session to check if user is authenticated

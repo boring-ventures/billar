@@ -25,16 +25,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Loader2,
   TrendingUp,
   TrendingDown,
   DollarSign,
-  Banknote,
   CreditCard,
-  Calendar,
 } from "lucide-react";
 import { DateRangePicker, DateRange } from "@/components/ui/date-range-picker";
 import { useToast } from "@/components/ui/use-toast";
@@ -126,7 +123,14 @@ export function FinancialReportClient() {
   const summaryData =
     reports?.length > 0
       ? reports.reduce(
-          (acc, report) => {
+          (
+            acc: {
+              totalIncome: number;
+              totalExpense: number;
+              netProfit: number;
+            },
+            report: FinancialReport
+          ) => {
             acc.totalIncome += Number(report.totalIncome);
             acc.totalExpense += Number(report.totalExpense);
             acc.netProfit += Number(report.netProfit);
@@ -324,7 +328,8 @@ export function FinancialReportClient() {
                   <span className="text-sm">
                     {formatCurrency(
                       reports.reduce(
-                        (acc, report) => acc + Number(report.salesIncome),
+                        (acc: number, report: FinancialReport) =>
+                          acc + Number(report.salesIncome),
                         0
                       )
                     )}
@@ -335,7 +340,8 @@ export function FinancialReportClient() {
                   <span className="text-sm">
                     {formatCurrency(
                       reports.reduce(
-                        (acc, report) => acc + Number(report.tableRentIncome),
+                        (acc: number, report: FinancialReport) =>
+                          acc + Number(report.tableRentIncome),
                         0
                       )
                     )}
@@ -346,7 +352,8 @@ export function FinancialReportClient() {
                   <span className="text-sm">
                     {formatCurrency(
                       reports.reduce(
-                        (acc, report) => acc + Number(report.otherIncome),
+                        (acc: number, report: FinancialReport) =>
+                          acc + Number(report.otherIncome),
                         0
                       )
                     )}
@@ -382,7 +389,8 @@ export function FinancialReportClient() {
                   <span className="text-sm">
                     {formatCurrency(
                       reports.reduce(
-                        (acc, report) => acc + Number(report.inventoryCost),
+                        (acc: number, report: FinancialReport) =>
+                          acc + Number(report.inventoryCost),
                         0
                       )
                     )}
@@ -393,7 +401,8 @@ export function FinancialReportClient() {
                   <span className="text-sm">
                     {formatCurrency(
                       reports.reduce(
-                        (acc, report) => acc + Number(report.maintenanceCost),
+                        (acc: number, report: FinancialReport) =>
+                          acc + Number(report.maintenanceCost),
                         0
                       )
                     )}
@@ -404,7 +413,8 @@ export function FinancialReportClient() {
                   <span className="text-sm">
                     {formatCurrency(
                       reports.reduce(
-                        (acc, report) => acc + Number(report.staffCost),
+                        (acc: number, report: FinancialReport) =>
+                          acc + Number(report.staffCost),
                         0
                       )
                     )}
@@ -415,7 +425,8 @@ export function FinancialReportClient() {
                   <span className="text-sm">
                     {formatCurrency(
                       reports.reduce(
-                        (acc, report) => acc + Number(report.utilityCost),
+                        (acc: number, report: FinancialReport) =>
+                          acc + Number(report.utilityCost),
                         0
                       )
                     )}
@@ -426,7 +437,8 @@ export function FinancialReportClient() {
                   <span className="text-sm">
                     {formatCurrency(
                       reports.reduce(
-                        (acc, report) => acc + Number(report.otherExpenses),
+                        (acc: number, report: FinancialReport) =>
+                          acc + Number(report.otherExpenses),
                         0
                       )
                     )}

@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import prisma from "@/lib/prisma";
+import { ReportType } from "@prisma/client";
+
+interface ReportFilters {
+  companyId: string;
+  reportType?: ReportType;
+  startDate?: {
+    gte: Date;
+  };
+  endDate?: {
+    lte: Date;
+  };
+}
 
 export async function GET(request: NextRequest) {
   const supabase = createRouteHandlerClient({ cookies });
@@ -32,12 +44,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Build query filters
-    const filters: any = {
+    const filters: ReportFilters = {
       companyId: companyId,
     };
 
     if (reportType) {
-      filters.reportType = reportType;
+      filters.reportType = reportType as ReportType;
     }
 
     if (startDate) {
@@ -82,4 +94,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
- 

@@ -454,13 +454,18 @@ export function NewOrder() {
         return;
       }
 
+      // Determine if this item is already being tracked
+      const isAlreadyTracked = !!cart.find(
+        (ci) => ci.itemId === selectedItem && ci.isTrackedItem
+      );
+
       const newCartItem = {
         itemId: item.id,
         name: item.name,
         quantity: selectedQuantity,
         unitPrice: Number(item.price) || 0,
         availableQuantity: actualAvailableQuantity,
-        isTrackedItem: false, // This is a new item, not from tracked items
+        isTrackedItem: isAlreadyTracked, // Mark as tracked if it already exists as tracked
       };
 
       // Add the new item to cart

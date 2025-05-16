@@ -275,6 +275,14 @@ export async function POST(request: NextRequest) {
 
             // Add back the tracked quantity to get the effective inventory for validation
             effectiveInventoryQuantity += trackedQuantity;
+
+            // Important: Mark this item as a tracked item even if it wasn't explicitly marked
+            // This ensures proper inventory handling later in the transaction
+            typedItem.isTrackedItem = true;
+
+            console.log(
+              `Auto-marked item ${inventoryItem.name} as tracked item`
+            );
           }
         } catch (err) {
           console.error("Error checking tracked items:", err);
@@ -435,20 +443,70 @@ export async function POST(request: NextRequest) {
               `Current inventory for ${currentInventory?.name}: ${currentInventory?.quantity}`
             );
 
-            // For tracked items, create a stock movement to record the purchase
-            // But DON'T update inventory as it was already deducted when tracking
-            const stockMovement = await tx.stockMovement.create({
-              data: {
-                itemId: typedItem.itemId,
-                quantity: -typedItem.quantity, // Show as negative for sales analytics
-                type: "SALE",
-                reason: `POS Order (from tracked): ${order.id}`,
-                reference: order.id,
-                createdBy: session.user.id,
-              },
-            });
+            // Check if the order quantity is different from the tracked quantity
+            if (typedItem.quantity > trackedItem.quantity) {
+              // Only deduct the difference from inventory
+              const additionalQuantity =
+                typedItem.quantity - trackedItem.quantity;
+              console.log(
+                `Order quantity (${typedItem.quantity}) is greater than tracked quantity (${trackedItem.quantity}). Deducting additional ${additionalQuantity} from inventory.`
+              );
 
-            stockMovements.push(stockMovement);
+              // Create a stock movement for the tracked portion
+              const trackedStockMovement = await tx.stockMovement.create({
+                data: {
+                  itemId: typedItem.itemId,
+                  quantity: -trackedItem.quantity, // Show as negative for sales analytics
+                  type: "SALE",
+                  reason: `POS Order (from tracked): ${order.id}`,
+                  reference: order.id,
+                  createdBy: session.user.id,
+                },
+              });
+              stockMovements.push(trackedStockMovement);
+
+              // Create a separate stock movement for the additional quantity and update inventory
+              const additionalStockMovement = await tx.stockMovement.create({
+                data: {
+                  itemId: typedItem.itemId,
+                  quantity: -additionalQuantity, // Negative for sales
+                  type: "SALE",
+                  reason: `POS Order (additional quantity): ${order.id}`,
+                  reference: order.id,
+                  createdBy: session.user.id,
+                },
+              });
+              stockMovements.push(additionalStockMovement);
+
+              // Update inventory for the additional quantity only
+              await tx.inventoryItem.update({
+                where: { id: typedItem.itemId },
+                data: {
+                  quantity: {
+                    decrement: additionalQuantity,
+                  },
+                  lastStockUpdate: new Date(),
+                },
+              });
+
+              console.log(
+                `Updated inventory for additional quantity: -${additionalQuantity}`
+              );
+            } else {
+              // For tracked items with equal or less quantity, create a stock movement to record the purchase
+              // But DON'T update inventory as it was already deducted when tracking
+              const stockMovement = await tx.stockMovement.create({
+                data: {
+                  itemId: typedItem.itemId,
+                  quantity: -typedItem.quantity, // Show as negative for sales analytics
+                  type: "SALE",
+                  reason: `POS Order (from tracked): ${order.id}`,
+                  reference: order.id,
+                  createdBy: session.user.id,
+                },
+              });
+              stockMovements.push(stockMovement);
+            }
 
             // Delete the tracked item as it's now part of a proper order
             await tx.sessionTrackedItem.delete({

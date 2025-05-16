@@ -66,6 +66,8 @@ export function SessionOrderCreator({
   const [isCompanyReady, setIsCompanyReady] = useState(false);
   const [effectiveCompanyId, setEffectiveCompanyId] =
     useState<string>(companyId);
+  const [forceRefreshKey, setForceRefreshKey] = useState(0);
+  const [isStockUpdating, setIsStockUpdating] = useState(false);
 
   // Fetch session details to ensure we have the correct company ID
   useEffect(() => {
@@ -114,7 +116,7 @@ export function SessionOrderCreator({
   }, [effectiveCompanyId, queryClient]);
 
   // Only fetch items when we have a valid company ID
-  const { items } = useInventoryItems({
+  const { items, isLoading: isInventoryLoading } = useInventoryItems({
     companyId: effectiveCompanyId,
   });
 
@@ -125,6 +127,34 @@ export function SessionOrderCreator({
   const [selectedQuantity, setSelectedQuantity] = useState<number>(1);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isTrackedItemsLoading, setIsTrackedItemsLoading] = useState(true);
+
+  // Calculate if inventory is updating based on available loading state
+  const isInventoryUpdating = isInventoryLoading;
+
+  // Setup timer to periodically refresh inventory data
+  useEffect(() => {
+    if (!effectiveCompanyId) return;
+
+    // Refresh immediately on mount
+    queryClient.invalidateQueries({
+      queryKey: ["inventoryItems"],
+      refetchType: "all",
+    });
+
+    // Set up a timer to refresh inventory data every 2 seconds
+    const intervalId = setInterval(() => {
+      console.log("Periodic inventory refresh");
+      // Increment refresh key to force component update
+      setForceRefreshKey((prev) => prev + 1);
+      // Force refresh of inventory data
+      queryClient.invalidateQueries({
+        queryKey: ["inventoryItems"],
+        refetchType: "all",
+      });
+    }, 2000);
+
+    return () => clearInterval(intervalId);
+  }, [effectiveCompanyId, queryClient]);
 
   // Load existing tracked items when component mounts
   useEffect(() => {
@@ -601,6 +631,23 @@ export function SessionOrderCreator({
     }
   };
 
+  // Listen for the specific inventory updating state from the tracked items component
+  useEffect(() => {
+    const checkStockUpdateState = () => {
+      const isUpdating =
+        queryClient.getQueryData(["inventory-updating-state"]) === true;
+      setIsStockUpdating(isUpdating);
+    };
+
+    // Check initially
+    checkStockUpdateState();
+
+    // Set up interval to check periodically
+    const intervalId = setInterval(checkStockUpdateState, 200);
+
+    return () => clearInterval(intervalId);
+  }, [queryClient]);
+
   return (
     <div className="space-y-6">
       <div>
@@ -626,12 +673,23 @@ export function SessionOrderCreator({
               </div>
               <Button
                 onClick={() => setIsAddingItem(true)}
-                disabled={isTrackedItemsLoading || isRefreshing}
+                disabled={
+                  isTrackedItemsLoading ||
+                  isRefreshing ||
+                  isInventoryUpdating ||
+                  isStockUpdating
+                }
               >
-                {isTrackedItemsLoading ? (
+                {isTrackedItemsLoading ||
+                isInventoryUpdating ||
+                isStockUpdating ? (
                   <>
                     <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                    Loading...
+                    {isStockUpdating
+                      ? "Esperando actualización de stock..."
+                      : isInventoryUpdating
+                        ? "Actualizando inventario..."
+                        : "Loading..."}
                   </>
                 ) : (
                   <>
@@ -727,7 +785,9 @@ export function SessionOrderCreator({
             cart.length === 0 ||
             isRefreshing ||
             !isCompanyReady ||
-            !effectiveCompanyId
+            !effectiveCompanyId ||
+            isInventoryUpdating ||
+            isStockUpdating
           }
           className="w-full md:w-auto"
         >
@@ -735,6 +795,13 @@ export function SessionOrderCreator({
             <>
               <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
               Processing...
+            </>
+          ) : isInventoryUpdating || isStockUpdating ? (
+            <>
+              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+              {isStockUpdating
+                ? "Esperando actualización de stock..."
+                : "Actualizando inventario..."}
             </>
           ) : (
             <>Track Items</>

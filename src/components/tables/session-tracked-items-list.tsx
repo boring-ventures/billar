@@ -135,14 +135,7 @@ export function SessionTrackedItemsList({
 
   // Handle removing a tracked item
   const handleRemoveItem = async (itemId: string, itemName: string) => {
-    if (
-      !confirm(
-        `¿Seguro que quieres eliminar ${itemName || "este artículo"}? Se devolverá al inventario.`
-      )
-    ) {
-      return;
-    }
-
+    // Remove the confirmation dialog that might be causing issues
     setRemovingItems((prev) => ({ ...prev, [itemId]: true }));
 
     try {
@@ -155,6 +148,27 @@ export function SessionTrackedItemsList({
       // Store the item details for optimistic update
       const { itemId: inventoryItemId, quantity } = trackedItem;
 
+      // Get the companyId before deletion
+      const tableSession = await fetch(`/api/table-sessions/${sessionId}`).then(
+        (res) => res.json()
+      );
+      const companyId =
+        tableSession?.table?.company?.id || tableSession?.table?.companyId;
+
+      // Create a specific flag to indicate inventory is being updated due to item removal
+      // This flag will be used by other components to determine if the add item button should be disabled
+      queryClient.setQueryData(["inventory-updating-state"], true);
+
+      // First invalidate the inventory query to trigger refetch
+      if (companyId) {
+        // Force immediate invalidation of inventory items
+        queryClient.invalidateQueries({
+          queryKey: ["inventoryItems"],
+          refetchType: "all",
+        });
+      }
+
+      // Now perform the actual deletion
       const response = await fetch(
         `/api/table-sessions/${sessionId}/tracked-items/${itemId}`,
         {
@@ -167,7 +181,7 @@ export function SessionTrackedItemsList({
         throw new Error(errorData.error || "Failed to remove tracked item");
       }
 
-      // Optimistic update for tracked items
+      // Update local state
       setTrackedItems((prev) => prev.filter((item) => item.id !== itemId));
 
       // Update query cache for tracked items
@@ -176,37 +190,30 @@ export function SessionTrackedItemsList({
         (old: TrackedItem[] = []) => old.filter((item) => item.id !== itemId)
       );
 
-      // Optimistically update inventory quantities in the UI
-      // We need to find the companyId to update the correct cache
-      const tableSession = await fetch(`/api/table-sessions/${sessionId}`).then(
-        (res) => res.json()
-      );
-      const companyId =
-        tableSession?.table?.company?.id || tableSession?.table?.companyId;
-
-      if (companyId) {
-        queryClient.setQueryData(
-          ["inventoryItems", companyId],
-          (oldItems: { id: string; quantity: number }[] = []) => {
-            return oldItems.map((item) => {
-              // If this is the inventory item that was tracked
-              if (item.id === inventoryItemId) {
-                // Increase the stock count (return to inventory)
-                return {
-                  ...item,
-                  quantity: item.quantity + quantity,
-                };
-              }
-              return item;
-            });
-          }
-        );
-      }
+      // Force inventory invalidation after deletion completes
+      queryClient.invalidateQueries({
+        queryKey: ["inventoryItems"],
+        refetchType: "all",
+      });
 
       toast({
         title: "Artículo eliminado",
         description: `${itemName || "Artículo"} ha sido eliminado y devuelto al inventario.`,
       });
+
+      // Add a timeout to trigger another refresh after a short delay
+      setTimeout(() => {
+        // Refresh inventory data
+        queryClient.invalidateQueries({
+          queryKey: ["inventoryItems"],
+          refetchType: "all",
+        });
+
+        // After delay, clear the updating flag so the add item button becomes enabled again
+        setTimeout(() => {
+          queryClient.setQueryData(["inventory-updating-state"], false);
+        }, 500);
+      }, 500);
     } catch (error) {
       console.error("Error removing tracked item:", error);
 
@@ -220,12 +227,16 @@ export function SessionTrackedItemsList({
         variant: "destructive",
       });
 
+      // Reset the inventory updating state
+      queryClient.setQueryData(["inventory-updating-state"], false);
+
       // Refresh data in case of error
       fetchTrackedItems();
 
       // Also invalidate inventory items to get fresh data
       queryClient.invalidateQueries({
         queryKey: ["inventoryItems"],
+        refetchType: "all",
       });
     } finally {
       setRemovingItems((prev) => ({ ...prev, [itemId]: false }));

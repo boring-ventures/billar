@@ -5,6 +5,7 @@ import {
   TableProperties,
   PackageOpen,
   ShoppingCart,
+  BarChart,
 } from "lucide-react";
 import type { SidebarData } from "../types";
 
@@ -49,6 +50,11 @@ export const sidebarData: SidebarData = {
           title: "Punto de Venta",
           url: "/pos",
           icon: ShoppingCart,
+        },
+        {
+          title: "Reportes Financieros",
+          url: "/reports",
+          icon: BarChart,
         },
       ],
     },

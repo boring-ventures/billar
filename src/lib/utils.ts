@@ -25,18 +25,23 @@ export function formatDuration(ms: number): string {
 }
 
 /**
- * Format a number as currency
- * @param amount The amount to format
+ * Format a number or string as currency
+ * @param value The amount to format (number or string)
  * @param currency The currency code (default: BOB)
  * @returns Formatted currency string
  */
-export function formatCurrency(amount: number, currency = "BOB"): string {
+export function formatCurrency(
+  value: number | string,
+  currency = "BOB"
+): string {
+  const numValue = typeof value === "string" ? parseFloat(value) : value;
+
   return new Intl.NumberFormat("es-BO", {
     style: "currency",
     currency,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(amount);
+  }).format(numValue);
 }
 
 export function formatDate(date: Date | string) {

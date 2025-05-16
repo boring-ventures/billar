@@ -145,9 +145,6 @@ export function SessionTrackedItemsList({
         throw new Error("Item not found");
       }
 
-      // Store the item details for optimistic update
-      const { itemId: inventoryItemId, quantity } = trackedItem;
-
       // Get the companyId before deletion
       const tableSession = await fetch(`/api/table-sessions/${sessionId}`).then(
         (res) => res.json()

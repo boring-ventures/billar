@@ -66,7 +66,6 @@ export function SessionOrderCreator({
   const [isCompanyReady, setIsCompanyReady] = useState(false);
   const [effectiveCompanyId, setEffectiveCompanyId] =
     useState<string>(companyId);
-  const [forceRefreshKey, setForceRefreshKey] = useState(0);
   const [isStockUpdating, setIsStockUpdating] = useState(false);
 
   // Fetch session details to ensure we have the correct company ID
@@ -144,8 +143,6 @@ export function SessionOrderCreator({
     // Set up a timer to refresh inventory data every 2 seconds
     const intervalId = setInterval(() => {
       console.log("Periodic inventory refresh");
-      // Increment refresh key to force component update
-      setForceRefreshKey((prev) => prev + 1);
       // Force refresh of inventory data
       queryClient.invalidateQueries({
         queryKey: ["inventoryItems"],

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useCompany } from "@/hooks/use-company";
 import { usePosOrders } from "@/hooks/use-pos-orders";
 import { useInventoryItems } from "@/hooks/use-inventory-items";
@@ -373,6 +373,24 @@ export function NewOrder() {
       (item.sku && item.sku.toLowerCase().includes(searchLower))
     );
   });
+
+  // Calculate effective available quantities for each inventory item
+  const effectiveAvailableQuantities = useMemo(() => {
+    if (!items || items.length === 0) return new Map();
+
+    // Start with a map of all inventory items and their quantities
+    const availableMap = new Map(items.map((item) => [item.id, item.quantity]));
+
+    // Subtract quantities for items in cart that aren't tracked items
+    cart.forEach((cartItem) => {
+      if (!cartItem.isTrackedItem && availableMap.has(cartItem.itemId)) {
+        const currentAvailable = availableMap.get(cartItem.itemId) || 0;
+        availableMap.set(cartItem.itemId, currentAvailable - cartItem.quantity);
+      }
+    });
+
+    return availableMap;
+  }, [items, cart]);
 
   // Add item to cart
   const handleAddToCart = () => {
@@ -945,39 +963,44 @@ export function NewOrder() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredItems.map((item) => (
-                  <Card key={item.id} className="overflow-hidden">
-                    <CardHeader className="p-4">
-                      <CardTitle className="text-md">{item.name}</CardTitle>
-                      <CardDescription>
-                        {item.sku ? `SKU: ${item.sku}` : "Sin SKU"}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-4 pt-0">
-                      <div className="text-sm text-muted-foreground">
-                        Disponible: {item.quantity}
-                      </div>
-                      <div className="mt-1 font-bold text-xl">
-                        Bs. {Number(item.price).toFixed(2)}
-                      </div>
-                    </CardContent>
-                    <CardFooter className="p-4 pt-0 flex justify-end">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedItem(item.id);
-                          setSelectedQuantity(1);
-                          setIsAddingItem(true);
-                        }}
-                        disabled={item.quantity <= 0}
-                      >
-                        <PlusCircle className="h-4 w-4 mr-2" />
-                        Añadir al Pedido
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))}
+                {filteredItems.map((item) => {
+                  // Get the effective available quantity
+                  const effectiveAvailable =
+                    effectiveAvailableQuantities.get(item.id) ?? item.quantity;
+                  return (
+                    <Card key={item.id} className="overflow-hidden">
+                      <CardHeader className="p-4">
+                        <CardTitle className="text-md">{item.name}</CardTitle>
+                        <CardDescription>
+                          {item.sku ? `SKU: ${item.sku}` : "Sin SKU"}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="p-4 pt-0">
+                        <div className="text-sm text-muted-foreground">
+                          Disponible: {effectiveAvailable}
+                        </div>
+                        <div className="mt-1 font-bold text-xl">
+                          Bs. {Number(item.price).toFixed(2)}
+                        </div>
+                      </CardContent>
+                      <CardFooter className="p-4 pt-0 flex justify-end">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedItem(item.id);
+                            setSelectedQuantity(1);
+                            setIsAddingItem(true);
+                          }}
+                          disabled={effectiveAvailable <= 0}
+                        >
+                          <PlusCircle className="h-4 w-4 mr-2" />
+                          Añadir al Pedido
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </CardContent>
@@ -1229,7 +1252,10 @@ export function NewOrder() {
 
             <div className="text-sm text-muted-foreground">
               Disponible:{" "}
-              {items.find((i) => i.id === selectedItem)?.quantity || 0}
+              {selectedItem
+                ? (effectiveAvailableQuantities.get(selectedItem) ??
+                  (items.find((i) => i.id === selectedItem)?.quantity || 0))
+                : 0}
             </div>
           </div>
 

@@ -43,20 +43,14 @@ export default function InventoryPage() {
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [isLoadingCompanies, setIsLoadingCompanies] = useState(false);
-  const [companies, setCompanies] = useState<{ id: string; name: string }[]>(
-    []
-  );
 
-  // Load companies for the company selector
+  // Load company data for the current user
   useEffect(() => {
-    const fetchCompanies = async () => {
+    const fetchCompanyData = async () => {
       setIsLoadingCompanies(true);
       try {
-        const response = await fetch("/api/companies");
-        if (response.ok) {
-          const data = await response.json();
-          setCompanies(data);
-        }
+        // Just fetch to check if the API is working, but don't store the result
+        await fetch("/api/companies");
       } catch (error) {
         console.error("Error fetching companies:", error);
       } finally {
@@ -64,7 +58,7 @@ export default function InventoryPage() {
       }
     };
 
-    fetchCompanies();
+    fetchCompanyData();
   }, []);
 
   // Update the tab when URL changes

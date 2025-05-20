@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -32,6 +33,8 @@ import {
   TrendingDown,
   DollarSign,
   CreditCard,
+  Save,
+  ExternalLink,
 } from "lucide-react";
 import { DateRangePicker, DateRange } from "@/components/ui/date-range-picker";
 import { useToast } from "@/components/ui/use-toast";
@@ -59,6 +62,7 @@ interface FinancialReport {
 }
 
 export function FinancialReportClient() {
+  const router = useRouter();
   const { toast } = useToast();
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>(
     []
@@ -70,6 +74,8 @@ export function FinancialReportClient() {
     to: new Date(),
   });
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoadingLiveData, setIsLoadingLiveData] = useState(false);
+  const [liveReportData, setLiveReportData] = useState<any>(null);
 
   // Fetch companies the user has access to
   const { data: companiesData, isLoading: isLoadingCompanies } = useQuery({
@@ -91,13 +97,13 @@ export function FinancialReportClient() {
     }
   }, [companiesData]);
 
-  // Fetch financial reports based on filters
+  // Fetch saved financial reports based on filters
   const {
-    data: reports,
-    isLoading: isLoadingReports,
-    refetch,
+    data: savedReports,
+    isLoading: isLoadingSavedReports,
+    refetch: refetchSavedReports,
   } = useQuery({
-    queryKey: ["financialReports", selectedCompany, reportType, dateRange],
+    queryKey: ["savedFinancialReports", selectedCompany, reportType, dateRange],
     queryFn: async () => {
       if (!selectedCompany || !dateRange?.from || !dateRange?.to) {
         return [];
@@ -118,6 +124,53 @@ export function FinancialReportClient() {
     },
     enabled: !!selectedCompany && !!dateRange?.from && !!dateRange?.to,
   });
+
+  // Fetch live data whenever filters change
+  useEffect(() => {
+    const fetchLiveData = async () => {
+      if (!selectedCompany || !dateRange?.from || !dateRange?.to) {
+        return;
+      }
+
+      try {
+        setIsLoadingLiveData(true);
+
+        const params = new URLSearchParams({
+          companyId: selectedCompany,
+          reportType,
+          startDate: dateRange.from.toISOString(),
+          endDate: dateRange.to.toISOString(),
+          live: "true", // Add a parameter to indicate this is a live data request
+        });
+
+        const response = await fetch(`/api/financial-reports/data?${params}`);
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch live report data");
+        }
+
+        const data = await response.json();
+        setLiveReportData(data);
+      } catch (error) {
+        console.error("Error fetching live data:", error);
+        toast({
+          title: "Error",
+          description: "No se pudo cargar datos en tiempo real",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingLiveData(false);
+      }
+    };
+
+    if (selectedCompany && dateRange?.from && dateRange?.to) {
+      fetchLiveData();
+    }
+  }, [selectedCompany, reportType, dateRange, toast]);
+
+  // Get report data - prioritize live data if available, fall back to saved reports
+  const reports = liveReportData || savedReports || [];
+  const isLoadingReports = isLoadingLiveData || isLoadingSavedReports;
 
   // Calculate summary data
   const summaryData =
@@ -140,12 +193,12 @@ export function FinancialReportClient() {
         )
       : { totalIncome: 0, totalExpense: 0, netProfit: 0 };
 
-  // Generate a report
+  // Generate and save a report
   const handleGenerateReport = async () => {
     if (!selectedCompany || !dateRange?.from || !dateRange?.to) {
       toast({
         title: "Error",
-        description: "Please select a company and date range",
+        description: "Por favor selecciona una empresa y rango de fechas",
         variant: "destructive",
       });
       return;
@@ -173,22 +226,29 @@ export function FinancialReportClient() {
       }
 
       toast({
-        title: "Success",
-        description: "Financial report generated successfully",
+        title: "Éxito",
+        description: "Reporte financiero guardado exitosamente",
       });
 
       // Refetch reports after generation
-      refetch();
+      refetchSavedReports();
     } catch (error) {
       toast({
         title: "Error",
         description:
-          error instanceof Error ? error.message : "An error occurred",
+          error instanceof Error ? error.message : "Ocurrió un error",
         variant: "destructive",
       });
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const hasReports = reports && reports.length > 0;
+
+  // Navigate to report detail page
+  const handleViewReportDetail = (reportId: string) => {
+    router.push(`/reports/${reportId}`);
   };
 
   return (
@@ -247,277 +307,344 @@ export function FinancialReportClient() {
         <Button onClick={handleGenerateReport} disabled={isGenerating}>
           {isGenerating ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generando...
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Guardando
+              reporte...
             </>
           ) : (
-            "Generar Reporte"
+            <>
+              <Save className="mr-2 h-4 w-4" /> Guardar Reporte
+            </>
           )}
         </Button>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Ingresos Totales
-            </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(summaryData.totalIncome)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Todos los ingresos del periodo seleccionado
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Gastos Totales
-            </CardTitle>
-            <CreditCard className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(summaryData.totalExpense)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Todos los gastos del periodo seleccionado
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ganancia Neta</CardTitle>
-            {summaryData.netProfit >= 0 ? (
-              <TrendingUp className="h-4 w-4 text-green-500" />
-            ) : (
-              <TrendingDown className="h-4 w-4 text-red-500" />
-            )}
-          </CardHeader>
-          <CardContent>
-            <div
-              className={`text-2xl font-bold ${summaryData.netProfit >= 0 ? "text-green-500" : "text-red-500"}`}
-            >
-              {formatCurrency(summaryData.netProfit)}
-            </div>
-            <p className="text-xs text-muted-foreground">Ingresos - Gastos</p>
-          </CardContent>
-        </Card>
-      </div>
+      {isLoadingReports && (
+        <div className="flex justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <span className="ml-2 text-muted-foreground">
+            Cargando datos del reporte...
+          </span>
+        </div>
+      )}
 
-      {/* Income & Expense Breakdown Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Desglose de Ingresos</CardTitle>
-            <CardDescription>Detalle de fuentes de ingresos</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoadingReports ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
-            ) : reports?.length > 0 ? (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Ventas (POS)</span>
-                  <span className="text-sm">
-                    {formatCurrency(
-                      reports.reduce(
-                        (acc: number, report: FinancialReport) =>
-                          acc + Number(report.salesIncome),
-                        0
-                      )
-                    )}
-                  </span>
+      {/* Show report cards only if there are reports available or loading */}
+      {(hasReports || isLoadingReports) && (
+        <>
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Ingresos Totales
+                </CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {isLoadingReports ? (
+                    <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
+                  ) : (
+                    formatCurrency(summaryData.totalIncome)
+                  )}
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Renta de Mesas</span>
-                  <span className="text-sm">
-                    {formatCurrency(
-                      reports.reduce(
-                        (acc: number, report: FinancialReport) =>
-                          acc + Number(report.tableRentIncome),
-                        0
-                      )
-                    )}
-                  </span>
+                <p className="text-xs text-muted-foreground">
+                  Todos los ingresos del periodo seleccionado
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Gastos Totales
+                </CardTitle>
+                <CreditCard className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {isLoadingReports ? (
+                    <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
+                  ) : (
+                    formatCurrency(summaryData.totalExpense)
+                  )}
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Otros Ingresos</span>
-                  <span className="text-sm">
-                    {formatCurrency(
-                      reports.reduce(
-                        (acc: number, report: FinancialReport) =>
-                          acc + Number(report.otherIncome),
-                        0
-                      )
-                    )}
-                  </span>
+                <p className="text-xs text-muted-foreground">
+                  Todos los gastos del periodo seleccionado
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Ganancia Neta
+                </CardTitle>
+                {!isLoadingReports &&
+                  (summaryData.netProfit >= 0 ? (
+                    <TrendingUp className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <TrendingDown className="h-4 w-4 text-red-500" />
+                  ))}
+              </CardHeader>
+              <CardContent>
+                <div
+                  className={`text-2xl font-bold ${!isLoadingReports && (summaryData.netProfit >= 0 ? "text-green-500" : "text-red-500")}`}
+                >
+                  {isLoadingReports ? (
+                    <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
+                  ) : (
+                    formatCurrency(summaryData.netProfit)
+                  )}
                 </div>
-                <div className="pt-2 border-t flex justify-between items-center font-bold">
-                  <span>Total</span>
-                  <span>{formatCurrency(summaryData.totalIncome)}</span>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                No hay datos disponibles para el período seleccionado
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                <p className="text-xs text-muted-foreground">
+                  Ingresos - Gastos
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Desglose de Gastos</CardTitle>
-            <CardDescription>Detalle de gastos operativos</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoadingReports ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
-            ) : reports?.length > 0 ? (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Inventario</span>
-                  <span className="text-sm">
-                    {formatCurrency(
-                      reports.reduce(
-                        (acc: number, report: FinancialReport) =>
-                          acc + Number(report.inventoryCost),
-                        0
-                      )
-                    )}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Mantenimiento</span>
-                  <span className="text-sm">
-                    {formatCurrency(
-                      reports.reduce(
-                        (acc: number, report: FinancialReport) =>
-                          acc + Number(report.maintenanceCost),
-                        0
-                      )
-                    )}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Personal</span>
-                  <span className="text-sm">
-                    {formatCurrency(
-                      reports.reduce(
-                        (acc: number, report: FinancialReport) =>
-                          acc + Number(report.staffCost),
-                        0
-                      )
-                    )}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Servicios</span>
-                  <span className="text-sm">
-                    {formatCurrency(
-                      reports.reduce(
-                        (acc: number, report: FinancialReport) =>
-                          acc + Number(report.utilityCost),
-                        0
-                      )
-                    )}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Otros Gastos</span>
-                  <span className="text-sm">
-                    {formatCurrency(
-                      reports.reduce(
-                        (acc: number, report: FinancialReport) =>
-                          acc + Number(report.otherExpenses),
-                        0
-                      )
-                    )}
-                  </span>
-                </div>
-                <div className="pt-2 border-t flex justify-between items-center font-bold">
-                  <span>Total</span>
-                  <span>{formatCurrency(summaryData.totalExpense)}</span>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                No hay datos disponibles para el período seleccionado
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+          {/* Income & Expense Breakdown Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Desglose de Ingresos</CardTitle>
+                <CardDescription>
+                  Detalle de fuentes de ingresos
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoadingReports ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Ventas (POS)</span>
+                      <span className="text-sm">
+                        {formatCurrency(
+                          reports.reduce(
+                            (acc: number, report: FinancialReport) =>
+                              acc + Number(report.salesIncome),
+                            0
+                          )
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">
+                        Renta de Mesas
+                      </span>
+                      <span className="text-sm">
+                        {formatCurrency(
+                          reports.reduce(
+                            (acc: number, report: FinancialReport) =>
+                              acc + Number(report.tableRentIncome),
+                            0
+                          )
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">
+                        Otros Ingresos
+                      </span>
+                      <span className="text-sm">
+                        {formatCurrency(
+                          reports.reduce(
+                            (acc: number, report: FinancialReport) =>
+                              acc + Number(report.otherIncome),
+                            0
+                          )
+                        )}
+                      </span>
+                    </div>
+                    <div className="pt-2 border-t flex justify-between items-center font-bold">
+                      <span>Total</span>
+                      <span>{formatCurrency(summaryData.totalIncome)}</span>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-      {/* Reports Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Reportes Generados</CardTitle>
-          <CardDescription>
-            Historial de reportes financieros generados para el período
-            seleccionado
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoadingReports ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : reports?.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Período</TableHead>
-                  <TableHead>Ingresos</TableHead>
-                  <TableHead>Gastos</TableHead>
-                  <TableHead className="text-right">Ganancia</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {reports.map((report: FinancialReport) => (
-                  <TableRow key={report.id}>
-                    <TableCell className="font-medium">{report.name}</TableCell>
-                    <TableCell>
-                      {report.reportType === "DAILY" && "Diario"}
-                      {report.reportType === "WEEKLY" && "Semanal"}
-                      {report.reportType === "MONTHLY" && "Mensual"}
-                      {report.reportType === "QUARTERLY" && "Trimestral"}
-                      {report.reportType === "ANNUAL" && "Anual"}
-                      {report.reportType === "CUSTOM" && "Personalizado"}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(report.startDate).toLocaleDateString()} -{" "}
-                      {new Date(report.endDate).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>{formatCurrency(report.totalIncome)}</TableCell>
-                    <TableCell>{formatCurrency(report.totalExpense)}</TableCell>
-                    <TableCell
-                      className={`text-right ${Number(report.netProfit) >= 0 ? "text-green-500" : "text-red-500"}`}
-                    >
-                      {formatCurrency(report.netProfit)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              No hay reportes disponibles para el período seleccionado
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Desglose de Gastos</CardTitle>
+                <CardDescription>Detalle de gastos operativos</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoadingReports ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Inventario</span>
+                      <span className="text-sm">
+                        {formatCurrency(
+                          reports.reduce(
+                            (acc: number, report: FinancialReport) =>
+                              acc + Number(report.inventoryCost),
+                            0
+                          )
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Mantenimiento</span>
+                      <span className="text-sm">
+                        {formatCurrency(
+                          reports.reduce(
+                            (acc: number, report: FinancialReport) =>
+                              acc + Number(report.maintenanceCost),
+                            0
+                          )
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Personal</span>
+                      <span className="text-sm">
+                        {formatCurrency(
+                          reports.reduce(
+                            (acc: number, report: FinancialReport) =>
+                              acc + Number(report.staffCost),
+                            0
+                          )
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Servicios</span>
+                      <span className="text-sm">
+                        {formatCurrency(
+                          reports.reduce(
+                            (acc: number, report: FinancialReport) =>
+                              acc + Number(report.utilityCost),
+                            0
+                          )
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Otros Gastos</span>
+                      <span className="text-sm">
+                        {formatCurrency(
+                          reports.reduce(
+                            (acc: number, report: FinancialReport) =>
+                              acc + Number(report.otherExpenses),
+                            0
+                          )
+                        )}
+                      </span>
+                    </div>
+                    <div className="pt-2 border-t flex justify-between items-center font-bold">
+                      <span>Total</span>
+                      <span>{formatCurrency(summaryData.totalExpense)}</span>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Saved Reports Table - Only show if there are saved reports */}
+          {savedReports && savedReports.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Reportes Guardados</CardTitle>
+                <CardDescription>
+                  Historial de reportes financieros guardados para el período
+                  seleccionado
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoadingSavedReports ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nombre</TableHead>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead>Período</TableHead>
+                        <TableHead>Ingresos</TableHead>
+                        <TableHead>Gastos</TableHead>
+                        <TableHead>Ganancia</TableHead>
+                        <TableHead className="text-right">Acciones</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {savedReports.map((report: FinancialReport) => (
+                        <TableRow
+                          key={report.id}
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => handleViewReportDetail(report.id)}
+                        >
+                          <TableCell className="font-medium">
+                            {report.name}
+                          </TableCell>
+                          <TableCell>
+                            {report.reportType === "DAILY" && "Diario"}
+                            {report.reportType === "WEEKLY" && "Semanal"}
+                            {report.reportType === "MONTHLY" && "Mensual"}
+                            {report.reportType === "QUARTERLY" && "Trimestral"}
+                            {report.reportType === "ANNUAL" && "Anual"}
+                            {report.reportType === "CUSTOM" && "Personalizado"}
+                          </TableCell>
+                          <TableCell>
+                            {new Date(report.startDate).toLocaleDateString()} -{" "}
+                            {new Date(report.endDate).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            {formatCurrency(report.totalIncome)}
+                          </TableCell>
+                          <TableCell>
+                            {formatCurrency(report.totalExpense)}
+                          </TableCell>
+                          <TableCell
+                            className={`${Number(report.netProfit) >= 0 ? "text-green-500" : "text-red-500"}`}
+                          >
+                            {formatCurrency(report.netProfit)}
+                          </TableCell>
+                          <TableCell
+                            className="text-right"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewReportDetail(report.id);
+                              }}
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                              <span className="sr-only">Ver detalle</span>
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
           )}
-        </CardContent>
-      </Card>
+        </>
+      )}
+
+      {!hasReports && !isLoadingReports && (
+        <div className="text-center p-6 bg-muted rounded-md">
+          <p className="text-muted-foreground">
+            No hay datos disponibles para el período seleccionado. Modifica los
+            filtros para ver diferentes periodos o presiona &quot;Guardar
+            Reporte&quot; para guardar permanentemente este reporte.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

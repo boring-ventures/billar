@@ -224,6 +224,23 @@ export function TablesTable() {
                 <>
                   <DropdownMenuItem
                     onClick={() => {
+                      // Find active session for this table
+                      const session = activeSessions.find(
+                        (s: { tableId: string; id: string }) =>
+                          s.tableId === table.id
+                      );
+                      if (session) {
+                        router.push(
+                          `/tables/${table.id}/sessions/${session.id}`
+                        );
+                      }
+                    }}
+                  >
+                    <Eye className="mr-2 h-4 w-4" />
+                    Ver Sesión Activa
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
                       setSelectedTable(table);
                       setIsEndSessionAlertOpen(true);
                     }}

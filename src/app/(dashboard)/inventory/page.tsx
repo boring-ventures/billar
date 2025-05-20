@@ -3,7 +3,12 @@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { LayoutGrid, Table as TableIcon, AlertTriangle } from "lucide-react";
+import {
+  LayoutGrid,
+  Table as TableIcon,
+  AlertTriangle,
+  Loader2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { InventoryItemsTable } from "@/components/inventory/inventory-items-table";
@@ -17,7 +22,7 @@ import { useCurrentUser } from "@/hooks/use-current-user";
 export default function InventoryPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { profile } = useCurrentUser();
+  const { profile, isLoading: isLoadingProfile } = useCurrentUser();
 
   const tabParam = searchParams.get("tab");
   const viewParam = searchParams.get("view");
@@ -37,6 +42,30 @@ export default function InventoryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [isLoadingCompanies, setIsLoadingCompanies] = useState(false);
+  const [companies, setCompanies] = useState<{ id: string; name: string }[]>(
+    []
+  );
+
+  // Load companies for the company selector
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      setIsLoadingCompanies(true);
+      try {
+        const response = await fetch("/api/companies");
+        if (response.ok) {
+          const data = await response.json();
+          setCompanies(data);
+        }
+      } catch (error) {
+        console.error("Error fetching companies:", error);
+      } finally {
+        setIsLoadingCompanies(false);
+      }
+    };
+
+    fetchCompanies();
+  }, []);
 
   // Update the tab when URL changes
   useEffect(() => {
@@ -70,6 +99,11 @@ export default function InventoryPage() {
     }
   };
 
+  // Function to handle opening the item dialog
+  const handleOpenItemDialog = () => {
+    setItemDialogOpen(true);
+  };
+
   // Function to render the appropriate content based on active tab
   const renderTabContent = () => {
     const companyId = profile?.companyId as string | undefined;
@@ -90,7 +124,13 @@ export default function InventoryPage() {
                 />
               </div>
               <div className="flex space-x-2">
-                <Button onClick={() => setItemDialogOpen(true)}>
+                <Button
+                  onClick={handleOpenItemDialog}
+                  disabled={isLoadingCompanies || isLoadingProfile}
+                >
+                  {isLoadingCompanies && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
                   Añadir Nuevo Artículo
                 </Button>
                 <Button

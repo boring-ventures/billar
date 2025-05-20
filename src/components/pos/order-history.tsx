@@ -103,24 +103,6 @@ export function OrderHistory() {
   const [isExportAllDialogOpen, setIsExportAllDialogOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Check if there's an order to view from URL parameters
-  useEffect(() => {
-    const viewOrderId = searchParams.get("viewOrder");
-    if (viewOrderId) {
-      // Open the order details dialog for this order
-      setSelectedOrderId(viewOrderId);
-      setIsDetailsOpen(true);
-
-      // Remove the query parameter to avoid reopening on refresh
-      // This creates a new URL without the viewOrder parameter
-      const newUrl = new URL(window.location.href);
-      newUrl.searchParams.delete("viewOrder");
-
-      // Update browser history without reloading the page
-      window.history.replaceState({}, "", newUrl.toString());
-    }
-  }, [searchParams]);
-
   // Use the selected company if filter is enabled, otherwise fetch all orders
   const companyIdFilter = filterByCompany ? selectedCompanyId : undefined;
 
@@ -145,6 +127,37 @@ export function OrderHistory() {
 
   // Get the isFetching state for the posOrders query
   const ordersIsFetching = useIsFetching({ queryKey: ["posOrders"] }) > 0;
+
+  // Check if there's an order to view from URL parameters
+  useEffect(() => {
+    const viewOrderId = searchParams.get("viewOrder");
+    if (viewOrderId) {
+      // Wait until orders are loaded before opening the dialog
+      if (!isLoading && orders.length > 0) {
+        // Make sure this order exists in our loaded orders
+        const orderExists = orders.some((order) => order.id === viewOrderId);
+
+        if (orderExists) {
+          // Open the order details dialog for this order
+          setSelectedOrderId(viewOrderId);
+          setIsDetailsOpen(true);
+
+          // Remove the query parameter to avoid reopening on refresh
+          // This creates a new URL without the viewOrder parameter
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.delete("viewOrder");
+
+          // Update browser history without reloading the page
+          window.history.replaceState({}, "", newUrl.toString());
+        } else {
+          // If the order isn't in our loaded orders, force a refetch
+          // This can happen when a new order was just created
+          queryClient.invalidateQueries({ queryKey: ["posOrders"] });
+        }
+      }
+      // If still loading, we'll wait for the next render cycle when orders are loaded
+    }
+  }, [searchParams, isLoading, orders, queryClient]);
 
   // Set the selected company ID when it changes
   useEffect(() => {

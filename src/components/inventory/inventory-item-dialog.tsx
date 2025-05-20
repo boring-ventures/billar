@@ -43,6 +43,7 @@ const formSchema = z.object({
   price: z.string().optional().default(""),
   criticalThreshold: z.coerce.number().min(0).default(5),
   stockAlerts: z.boolean().default(true),
+  initialStock: z.coerce.number().min(0).default(0),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -75,6 +76,7 @@ export function InventoryItemDialog({
   onSuccess,
 }: InventoryItemDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingCompanies, setIsLoadingCompanies] = useState(false);
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>(
     []
   );
@@ -95,6 +97,9 @@ export function InventoryItemDialog({
   // Fetch companies for the dropdown
   useEffect(() => {
     const fetchCompanies = async () => {
+      if (!open || isEditMode) return;
+
+      setIsLoadingCompanies(true);
       try {
         const response = await fetch("/api/companies");
         if (response.ok) {
@@ -103,11 +108,13 @@ export function InventoryItemDialog({
         }
       } catch (error) {
         console.error("Error fetching companies:", error);
+      } finally {
+        setIsLoadingCompanies(false);
       }
     };
 
     fetchCompanies();
-  }, []);
+  }, [open, isEditMode]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -119,6 +126,7 @@ export function InventoryItemDialog({
       price: "",
       criticalThreshold: 5,
       stockAlerts: true,
+      initialStock: 0,
     },
   });
 
@@ -143,6 +151,7 @@ export function InventoryItemDialog({
           price: item.price ? String(item.price) : "",
           criticalThreshold: item.criticalThreshold,
           stockAlerts: item.stockAlerts,
+          initialStock: 0,
         });
         setSelectedCompanyId(item.companyId);
       } else {
@@ -155,6 +164,7 @@ export function InventoryItemDialog({
           price: "",
           criticalThreshold: 5,
           stockAlerts: true,
+          initialStock: 0,
         });
         setSelectedCompanyId(companyId || "");
       }
@@ -190,6 +200,8 @@ export function InventoryItemDialog({
           price: price !== null ? price : undefined,
           criticalThreshold: data.criticalThreshold,
           stockAlerts: data.stockAlerts,
+          quantity: data.initialStock,
+          createInitialMovement: data.initialStock > 0,
         });
       }
 
@@ -205,8 +217,11 @@ export function InventoryItemDialog({
     }
   };
 
+  // Only show dialog when not loading companies in create mode
+  const shouldShowDialog = open && (isEditMode || !isLoadingCompanies);
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={shouldShowDialog} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>{isEditMode ? "Edit Item" : "Add New Item"}</DialogTitle>
@@ -395,6 +410,35 @@ export function InventoryItemDialog({
                 )}
               />
             </div>
+
+            {!isEditMode && (
+              <div className="grid grid-cols-1 gap-4">
+                <FormField
+                  control={form.control}
+                  name="initialStock"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Initial Stock</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="1"
+                          placeholder="0"
+                          {...field}
+                          value={field.value || 0}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Set the initial stock quantity (will be recorded as a
+                        movement)
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
 
             <DialogFooter>
               <Button

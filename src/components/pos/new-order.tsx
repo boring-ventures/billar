@@ -129,6 +129,7 @@ export function NewOrder() {
   const [tableSessionId, setTableSessionId] = useState<string>("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<string>("CASH");
+  const [paymentStatus, setPaymentStatus] = useState<string>("PAID");
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [selectedItem, setSelectedItem] = useState<string>("");
@@ -592,6 +593,7 @@ export function NewOrder() {
             companyId,
             tableSessionId: sessionPaymentTableId,
             paymentMethod: paymentMethod as "CASH" | "QR" | "CREDIT_CARD",
+            paymentStatus: paymentStatus as "PAID" | "UNPAID",
             items: [sessionPaymentItem],
           };
 
@@ -600,16 +602,22 @@ export function NewOrder() {
           const result = await createOrder.mutateAsync(sessionPaymentData);
           console.log("Order created successfully:", result);
 
-          // Show success message and redirect
+          // Show success message and redirect to order history with popup
           toast({
             title: "Success",
             description: "Session payment completed successfully!",
           });
 
-          // Navigate back to tables
+          // Navigate to order history and open the order details popup
           setTimeout(() => {
-            router.push(`/tables/${sessionData.table?.id}`);
-          }, 1500);
+            // The result contains the created order ID
+            const orderId = result?.id;
+            if (orderId) {
+              router.push(`/pos?tab=history&viewOrder=${orderId}`);
+            } else {
+              router.push(`/pos?tab=history`);
+            }
+          }, 1000);
 
           return;
         } catch (error) {
@@ -666,6 +674,7 @@ export function NewOrder() {
         companyId,
         tableSessionId: finalTableSessionId,
         paymentMethod: paymentMethod as "CASH" | "QR" | "CREDIT_CARD",
+        paymentStatus: paymentStatus as "PAID" | "UNPAID",
         items: orderItems,
       };
 
@@ -703,34 +712,22 @@ export function NewOrder() {
           refetchType: "active",
         });
 
-        // If this is a session closing payment, redirect to tables
-        if (sessionData) {
-          toast({
-            title: "Success",
-            description: "Session payment completed successfully!",
-          });
+        // Always redirect to order history with popup, regardless of origin
+        toast({
+          title: "Success",
+          description: "Order created successfully!",
+        });
 
-          // Navigate back to tables
-          setTimeout(() => {
-            router.push(`/tables/${sessionData.table?.id}`);
-          }, 1500);
-        } else {
-          toast({
-            title: "Success",
-            description: "Order created successfully!",
-          });
-
-          // Navigate to order history and open the order details popup
-          setTimeout(() => {
-            // The result contains the created order ID
-            const orderId = result?.id;
-            if (orderId) {
-              router.push(`/pos?tab=history&viewOrder=${orderId}`);
-            } else {
-              router.push(`/pos?tab=history`);
-            }
-          }, 1000);
-        }
+        // Navigate to order history and open the order details popup
+        setTimeout(() => {
+          // The result contains the created order ID
+          const orderId = result?.id;
+          if (orderId) {
+            router.push(`/pos?tab=history&viewOrder=${orderId}`);
+          } else {
+            router.push(`/pos?tab=history`);
+          }
+        }, 1000);
       } catch (error) {
         console.error("Failed to create order:", error);
         toast({
@@ -841,6 +838,7 @@ export function NewOrder() {
                 <Skeleton className="h-5 w-12" />
                 <Skeleton className="h-5 w-16" />
               </div>
+              <Skeleton className="h-10 w-full" />
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-10 w-full" />
             </div>
@@ -1203,6 +1201,22 @@ export function NewOrder() {
                     <SelectItem value="CREDIT_CARD">
                       Tarjeta de Crédito
                     </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Estado de Pago</label>
+                <Select
+                  value={paymentStatus}
+                  onValueChange={(value) => setPaymentStatus(value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar estado de pago" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PAID">Pagado</SelectItem>
+                    <SelectItem value="UNPAID">Por Pagar</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

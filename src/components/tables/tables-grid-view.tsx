@@ -104,6 +104,19 @@ export function TablesGridView({ companyId, query }: TablesGridViewProps) {
   };
 
   const handleStartSession = (table: Table) => {
+    // If table is occupied, find the active session and navigate directly to it
+    if (table.status === "OCCUPIED") {
+      const activeSession = activeSessions.find(
+        (session: TableSession) => session.tableId === table.id
+      );
+
+      if (activeSession) {
+        router.push(`/tables/${table.id}/sessions/${activeSession.id}`);
+        return;
+      }
+    }
+
+    // If table is available, proceed with the quick start dialog
     if (table.status === "AVAILABLE") {
       setSelectedTable(table);
       setQuickStartDialogOpen(true);

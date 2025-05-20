@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
       price,
       criticalThreshold,
       stockAlerts,
+      createInitialMovement,
     } = body;
 
     // Validate required fields
@@ -145,8 +146,8 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Create initial stock movement if quantity > 0
-    if (quantity > 0) {
+    // Create initial stock movement if quantity > 0 and createInitialMovement is not false
+    if (quantity > 0 && createInitialMovement !== false) {
       await prisma.stockMovement.create({
         data: {
           itemId: item.id,

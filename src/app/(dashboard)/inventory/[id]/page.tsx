@@ -14,7 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { StockMovementTable } from "@/components/inventory/stock-movement-table";
 import { StockMovementDialog } from "@/components/inventory/stock-movement-dialog";
 import { InventoryItemDialog } from "@/components/inventory/inventory-item-dialog";
@@ -34,6 +34,15 @@ export default function InventoryItemDetailsPage() {
 
   const { data: item, isLoading } = useInventoryItemQuery(itemId);
   const { movements } = useStockMovements(itemId);
+
+  useEffect(() => {
+    setEditDialogOpen(false);
+    console.log("Edit dialog state reset to false on mount");
+
+    return () => {
+      setEditDialogOpen(false);
+    };
+  }, []);
 
   const handleBack = () => {
     router.back();

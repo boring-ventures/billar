@@ -75,7 +75,9 @@ export function FinancialReportClient() {
   });
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoadingLiveData, setIsLoadingLiveData] = useState(false);
-  const [liveReportData, setLiveReportData] = useState<any>(null);
+  const [liveReportData, setLiveReportData] = useState<
+    FinancialReport[] | null
+  >(null);
 
   // Fetch companies the user has access to
   const { data: companiesData, isLoading: isLoadingCompanies } = useQuery({

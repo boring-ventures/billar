@@ -49,9 +49,6 @@ export async function GET(request: NextRequest) {
       ...(status && { paymentStatus: status }),
     };
 
-    // Get total count
-    const total = await prisma.posOrder.count({ where });
-
     // Get orders
     const orders = await prisma.posOrder.findMany({
       where,

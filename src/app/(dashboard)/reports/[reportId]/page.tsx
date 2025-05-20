@@ -6,10 +6,43 @@ import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { ReportDetailClient } from "@/components/reports/report-detail-client";
 import { ReportDetailSkeleton } from "@/components/reports/report-detail-skeleton";
-import { Decimal } from "decimal.js";
+import type { Decimal } from "decimal.js";
+
+// Define interface for the financial report
+interface FinancialReport {
+  id: string;
+  salesIncome: Decimal;
+  tableRentIncome: Decimal;
+  otherIncome: Decimal;
+  totalIncome: Decimal;
+  inventoryCost: Decimal;
+  maintenanceCost: Decimal;
+  staffCost: Decimal;
+  utilityCost: Decimal;
+  otherExpenses: Decimal;
+  totalExpense: Decimal;
+  netProfit: Decimal;
+  startDate: Date;
+  endDate: Date;
+  generatedAt: Date;
+  company: {
+    id: string;
+    name: string;
+    [key: string]: unknown;
+  };
+  generatedBy?: {
+    id: string;
+    userId: string;
+    companyId: string | null;
+    firstName: string | null;
+    lastName: string | null;
+    [key: string]: unknown;
+  } | null;
+  [key: string]: unknown;
+}
 
 // Helper function to convert Decimal objects to strings
-const serializeReport = (report: any) => {
+const serializeReport = (report: FinancialReport) => {
   if (!report) return null;
 
   // Create a new object with all properties serialized
@@ -37,7 +70,7 @@ const serializeReport = (report: any) => {
 export default async function ReportDetailPage({
   params,
 }: {
-  params: { reportId: string };
+  params: Promise<{ reportId: string }>;
 }) {
   const supabase = createServerComponentClient({ cookies });
   const {
@@ -52,7 +85,7 @@ export default async function ReportDetailPage({
   try {
     const report = await prisma.financialReport.findUnique({
       where: {
-        id: params.reportId,
+        id: (await params).reportId,
       },
       include: {
         company: true,

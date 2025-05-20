@@ -18,6 +18,24 @@ interface RecentOrdersProps {
   companyId: string;
 }
 
+interface OrderItem {
+  id: string;
+  itemId: string;
+  quantity: number;
+  item: {
+    name: string;
+    price: number;
+  };
+}
+
+interface Order {
+  id: string;
+  createdAt: string;
+  amount: number;
+  paymentStatus: "PAID" | "PENDING";
+  orderItems: OrderItem[];
+}
+
 export function RecentOrders({ companyId }: RecentOrdersProps) {
   const { data: orders, isLoading } = useQuery({
     queryKey: ["recentOrders", companyId],
@@ -54,7 +72,7 @@ export function RecentOrders({ companyId }: RecentOrdersProps) {
         </TableHeader>
         <TableBody>
           {orders && orders.length > 0 ? (
-            orders.map((order: any) => (
+            orders.map((order: Order) => (
               <TableRow key={order.id}>
                 <TableCell className="font-medium">
                   #{order.id.substring(0, 8)}

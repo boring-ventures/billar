@@ -17,6 +17,20 @@ interface LowStockItemsProps {
   companyId: string;
 }
 
+interface Category {
+  id: string;
+  name: string;
+}
+
+interface InventoryItem {
+  id: string;
+  name: string;
+  quantity: number;
+  criticalThreshold: number;
+  price: number;
+  category?: Category;
+}
+
 export function LowStockItems({ companyId }: LowStockItemsProps) {
   const { data: lowStockItems, isLoading } = useQuery({
     queryKey: ["lowStockItems", companyId],
@@ -52,7 +66,7 @@ export function LowStockItems({ companyId }: LowStockItemsProps) {
         </TableHeader>
         <TableBody>
           {lowStockItems && lowStockItems.length > 0 ? (
-            lowStockItems.slice(0, 5).map((item: any) => {
+            lowStockItems.slice(0, 5).map((item: InventoryItem) => {
               const stockPercentage =
                 (item.quantity / item.criticalThreshold) * 100;
               const isVeryLow = item.quantity === 0;

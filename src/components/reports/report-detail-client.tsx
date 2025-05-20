@@ -6,18 +6,9 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
 import {
@@ -33,8 +24,41 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 
+interface Company {
+  id: string;
+  name: string;
+}
+
+interface Profile {
+  id: string;
+  firstName: string;
+  lastName: string;
+}
+
+interface Report {
+  id: string;
+  name: string;
+  reportType: string;
+  startDate: string;
+  endDate: string;
+  salesIncome: string;
+  tableRentIncome: string;
+  otherIncome: string;
+  totalIncome: string;
+  inventoryCost: string;
+  maintenanceCost: string;
+  staffCost: string;
+  utilityCost: string;
+  otherExpenses: string;
+  totalExpense: string;
+  netProfit: string;
+  generatedAt: string;
+  company?: Company;
+  generatedBy?: Profile;
+}
+
 interface ReportDetailProps {
-  report: any; // We'll use any for now since we're getting the full report from the server
+  report: Report;
 }
 
 export function ReportDetailClient({ report }: ReportDetailProps) {

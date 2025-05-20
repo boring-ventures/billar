@@ -18,6 +18,12 @@ interface SalesSummaryChartProps {
   companyId: string;
 }
 
+interface SalesData {
+  date: string;
+  posAmount: number;
+  tableAmount: number;
+}
+
 export function SalesSummaryChart({ companyId }: SalesSummaryChartProps) {
   const { data: salesData, isLoading } = useQuery({
     queryKey: ["salesSummary", companyId],
@@ -105,7 +111,7 @@ export function SalesSummaryChart({ companyId }: SalesSummaryChartProps) {
   }
 
   // Format the data for the chart
-  const formattedData = salesData.map((day: any) => ({
+  const formattedData = salesData.map((day: SalesData) => ({
     name: day.date,
     ventas: day.posAmount || 0,
     mesas: day.tableAmount || 0,

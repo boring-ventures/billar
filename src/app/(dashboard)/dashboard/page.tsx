@@ -5,16 +5,12 @@ import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/utils";
 import Link from "next/link";
 import {
-  Activity,
   AlertTriangle,
   BarChart3,
   Building2,
   CreditCard,
   DollarSign,
-  LayoutDashboard,
-  Loader2,
   Package,
-  Receipt,
   ShieldCheck,
   Table,
   Users,

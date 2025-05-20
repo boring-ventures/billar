@@ -20,6 +20,21 @@ interface RecentTableSessionsProps {
   activeOnly?: boolean;
 }
 
+interface TableData {
+  id: string;
+  name: string;
+  hourlyRate: number;
+}
+
+interface TableSession {
+  id: string;
+  startedAt: string;
+  endedAt: string | null;
+  totalCost: number;
+  status: "ACTIVE" | "COMPLETED" | "CANCELLED";
+  table: TableData;
+}
+
 export function RecentTableSessions({
   companyId,
   activeOnly = false,
@@ -58,7 +73,7 @@ export function RecentTableSessions({
         </TableHeader>
         <TableBody>
           {sessions && sessions.length > 0 ? (
-            sessions.slice(0, 5).map((session: any) => (
+            sessions.slice(0, 5).map((session: TableSession) => (
               <TableRow key={session.id}>
                 <TableCell className="font-medium">
                   {session.table.name}

@@ -3,6 +3,16 @@ import prisma from "@/lib/prisma";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 
+// Define interface for date range items
+interface DateRangeItem {
+  date: string;
+  year: number;
+  month: number;
+  day: number;
+  posAmount: number;
+  tableAmount: number;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = createServerComponentClient({ cookies });
@@ -49,7 +59,7 @@ export async function GET(request: NextRequest) {
     endDate.setHours(23, 59, 59, 999);
 
     // Get all days between start and end date
-    const dateRange = [];
+    const dateRange: DateRangeItem[] = [];
     for (let i = 0; i < days; i++) {
       const date = new Date(startDate);
       date.setDate(startDate.getDate() + i);

@@ -528,6 +528,13 @@ export function NewOrder() {
         // This prevents double counting the deduction
         effectiveAvailableQuantity = inventoryItem.quantity + item.quantity;
       }
+    } else {
+      // For non-tracked items, use the latest effective available quantity from our memo
+      const latestAvailable = effectiveAvailableQuantities.get(item.itemId);
+      if (latestAvailable !== undefined) {
+        // Add back the current item quantity since it's already in the cart
+        effectiveAvailableQuantity = latestAvailable + item.quantity;
+      }
     }
 
     if (newQuantity > effectiveAvailableQuantity) {
@@ -542,6 +549,9 @@ export function NewOrder() {
     const newCart = [...cart];
     newCart[index].quantity = newQuantity;
     setCart(newCart);
+
+    // Force immediate UI refresh by logging
+    console.log("Cart updated, new quantity for item:", item.name, newQuantity);
   };
 
   // Remove item from cart
@@ -967,6 +977,13 @@ export function NewOrder() {
                   // Get the effective available quantity
                   const effectiveAvailable =
                     effectiveAvailableQuantities.get(item.id) ?? item.quantity;
+
+                  // Find if this item is in cart
+                  const cartItem = cart.find((ci) => ci.itemId === item.id);
+                  // Display the quantity in cart if it exists (for non-tracked items)
+                  const qtyInCart =
+                    cartItem && !cartItem.isTrackedItem ? cartItem.quantity : 0;
+
                   return (
                     <Card key={item.id} className="overflow-hidden">
                       <CardHeader className="p-4">
@@ -978,6 +995,11 @@ export function NewOrder() {
                       <CardContent className="p-4 pt-0">
                         <div className="text-sm text-muted-foreground">
                           Disponible: {effectiveAvailable}
+                          {qtyInCart > 0 && (
+                            <span className="ml-2 text-blue-600">
+                              (En carrito: {qtyInCart})
+                            </span>
+                          )}
                         </div>
                         <div className="mt-1 font-bold text-xl">
                           Bs. {Number(item.price).toFixed(2)}
@@ -1256,6 +1278,18 @@ export function NewOrder() {
                 ? (effectiveAvailableQuantities.get(selectedItem) ??
                   (items.find((i) => i.id === selectedItem)?.quantity || 0))
                 : 0}
+              {selectedItem &&
+                cart.some(
+                  (ci) => ci.itemId === selectedItem && !ci.isTrackedItem
+                ) && (
+                  <span className="ml-2 text-blue-600">
+                    (En carrito:{" "}
+                    {cart.find(
+                      (ci) => ci.itemId === selectedItem && !ci.isTrackedItem
+                    )?.quantity || 0}
+                    )
+                  </span>
+                )}
             </div>
           </div>
 

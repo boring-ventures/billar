@@ -26,7 +26,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { PasswordInput } from "@/components/utils/password-input";
 import { PasswordStrengthIndicator } from "@/components/utils/password-strength-indicator";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
-import { hashPassword } from "@/lib/auth/password-crypto";
+import { saltAndHashPassword } from "@/lib/auth/password-crypto";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
 // Password validation schema
 const passwordFormSchema = z
@@ -60,6 +61,7 @@ export function PasswordDialog({ open, onOpenChange }: PasswordDialogProps) {
   const [password, setPassword] = useState("");
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const supabase = createClientComponentClient();
 
   const form = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordFormSchema),
@@ -79,9 +81,24 @@ export function PasswordDialog({ open, onOpenChange }: PasswordDialogProps) {
     try {
       setIsSubmitting(true);
 
-      // Get current user's password hash to send to API
-      const hashedCurrentPassword = await hashPassword(data.currentPassword);
-      const hashedNewPassword = await hashPassword(data.newPassword);
+      // Get the current user's email
+      const { data: userData, error: userError } =
+        await supabase.auth.getUser();
+
+      if (userError || !userData.user || !userData.user.email) {
+        throw new Error("No se pudo recuperar la información del usuario");
+      }
+
+      // Salt and hash both passwords with the user's email
+      const hashedCurrentPassword = await saltAndHashPassword(
+        data.currentPassword,
+        userData.user.email
+      );
+
+      const hashedNewPassword = await saltAndHashPassword(
+        data.newPassword,
+        userData.user.email
+      );
 
       // Call API to update password
       const response = await fetch("/api/user/password", {

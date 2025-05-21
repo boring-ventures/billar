@@ -3,20 +3,33 @@
 import { useState, useCallback } from "react";
 import { User, UserFormValues } from "@/types/user";
 import { useToast } from "@/components/ui/use-toast";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 export function useUsers() {
   const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { profile: currentUserProfile } = useCurrentUser();
 
   const fetchUsers = useCallback(
     async (searchQuery?: string) => {
       try {
         setIsLoading(true);
         const queryParams = new URLSearchParams();
+
         if (searchQuery) {
           queryParams.append("query", searchQuery);
+        }
+
+        // If user is not a superadmin and has a company, pass their company ID
+        // This won't have any effect server-side since the API will enforce company restrictions
+        // but it makes the intention clear in the frontend code
+        if (
+          currentUserProfile?.companyId &&
+          currentUserProfile?.role !== "SUPERADMIN"
+        ) {
+          queryParams.append("companyId", currentUserProfile.companyId);
         }
 
         const response = await fetch(`/api/users?${queryParams.toString()}`);
@@ -41,19 +54,30 @@ export function useUsers() {
         setIsLoading(false);
       }
     },
-    [toast]
+    [toast, currentUserProfile]
   );
 
   const createUser = useCallback(
     async (userData: UserFormValues) => {
       try {
         setIsSubmitting(true);
+
+        // If user is not a superadmin, ensure we use their company ID
+        // The server will enforce this anyway, but we set it here too
+        let userDataToSubmit = { ...userData };
+        if (
+          currentUserProfile?.companyId &&
+          currentUserProfile?.role !== "SUPERADMIN"
+        ) {
+          userDataToSubmit.companyId = currentUserProfile.companyId;
+        }
+
         const response = await fetch("/api/users", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(userData),
+          body: JSON.stringify(userDataToSubmit),
         });
 
         if (response.ok) {
@@ -85,7 +109,7 @@ export function useUsers() {
         setIsSubmitting(false);
       }
     },
-    [fetchUsers, toast]
+    [fetchUsers, toast, currentUserProfile]
   );
 
   const updateUser = useCallback(

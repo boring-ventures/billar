@@ -37,6 +37,7 @@ import { useUsers } from "@/hooks/use-users";
 import { Loader2, RefreshCw, Download, Eye, EyeOff } from "lucide-react";
 import html2canvas from "html2canvas";
 import { Badge } from "@/components/ui/badge";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 interface UserDialogProps {
   open: boolean;
@@ -102,8 +103,10 @@ export function UserDialog({
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const userCardRef = useRef<HTMLDivElement>(null);
+  const { profile: currentUserProfile } = useCurrentUser();
 
   const isEditing = !!user;
+  const isSuperAdmin = currentUserProfile?.role === "SUPERADMIN";
 
   // Get the user's role as a valid UserRoleType
   const getUserRole = (role: string | undefined): UserRoleType => {
@@ -174,7 +177,7 @@ export function UserDialog({
     }
   };
 
-  // Fetch companies for the dropdown
+  // Fetch companies for the dropdown - only if superadmin
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
@@ -188,8 +191,11 @@ export function UserDialog({
       }
     };
 
-    fetchCompanies();
-  }, []);
+    // Only fetch companies if the form is open and user is superadmin
+    if (open && isSuperAdmin) {
+      fetchCompanies();
+    }
+  }, [open, isSuperAdmin]);
 
   // Reset form when user changes
   useEffect(() => {
@@ -204,13 +210,21 @@ export function UserDialog({
           active: user?.active !== undefined ? user.active : true,
         });
       } else {
+        // For creating new users
+        const defaultCompanyId =
+          // If not superadmin, use current user's company
+          !isSuperAdmin && currentUserProfile?.companyId
+            ? currentUserProfile.companyId
+            : NO_COMPANY;
+
         form.reset({
           firstName: "",
           lastName: "",
           email: "",
           password: "",
+          // Non-superadmins cannot create superadmins
           role: "SELLER",
-          companyId: NO_COMPANY,
+          companyId: defaultCompanyId,
           active: true,
         });
       }
@@ -218,7 +232,7 @@ export function UserDialog({
       // Reset password visibility
       setShowPassword(false);
     }
-  }, [open, user, form, isEditing]);
+  }, [open, user, form, isEditing, isSuperAdmin, currentUserProfile]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
@@ -417,9 +431,11 @@ export function UserDialog({
                     <SelectContent>
                       <SelectItem value="SELLER">Vendedor</SelectItem>
                       <SelectItem value="ADMIN">Administrador</SelectItem>
-                      <SelectItem value="SUPERADMIN">
-                        Super Administrador
-                      </SelectItem>
+                      {isSuperAdmin && (
+                        <SelectItem value="SUPERADMIN">
+                          Super Administrador
+                        </SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -427,7 +443,7 @@ export function UserDialog({
               )}
             />
 
-            {!isEditing && (
+            {!isEditing && isSuperAdmin && (
               <FormField
                 control={form.control}
                 name="companyId"
@@ -457,6 +473,19 @@ export function UserDialog({
                   </FormItem>
                 )}
               />
+            )}
+
+            {!isEditing && !isSuperAdmin && currentUserProfile?.companyId && (
+              <div className="space-y-2">
+                <FormLabel>Empresa</FormLabel>
+                <div className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground">
+                  {companies.find((c) => c.id === currentUserProfile.companyId)
+                    ?.name || "Tu Empresa"}
+                </div>
+                <p className="text-[0.8rem] text-muted-foreground">
+                  Los usuarios creados estarán asociados a tu empresa.
+                </p>
+              </div>
             )}
 
             {isEditing && user?.companyId && (

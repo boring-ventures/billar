@@ -4,7 +4,7 @@ import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 
 // GET /api/auth/me - Get current user profile
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Get the authenticated user from Supabase
     const supabase = createServerComponentClient({ cookies });

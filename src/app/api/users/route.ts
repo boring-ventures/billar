@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
-import { saltAndHashPassword } from "@/lib/auth/password-crypto-server";
+import crypto from "crypto";
 
 // GET /api/users - Get all users
 export async function GET(request: NextRequest) {
@@ -143,7 +143,6 @@ export async function POST(request: NextRequest) {
     // We need to replicate this exactly
     const normalizedEmail = email.toLowerCase();
     const saltedPassword = `${password}:${normalizedEmail}`;
-    const crypto = require("crypto");
     const hashedPassword = crypto
       .createHash("sha256")
       .update(saltedPassword)

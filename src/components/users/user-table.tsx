@@ -28,6 +28,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { TableSkeleton } from "@/components/tables/table-skeleton";
 import { useUsers } from "@/hooks/use-users";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { cn } from "@/lib/utils";
 
 export function UserTable() {
   const { users, isLoading, isSubmitting, fetchUsers, deleteUser } = useUsers();
@@ -35,6 +37,7 @@ export function UserTable() {
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const { profile: currentUserProfile } = useCurrentUser();
 
   useEffect(() => {
     fetchUsers(searchQuery);
@@ -118,6 +121,7 @@ export function UserTable() {
       id: "actions",
       cell: ({ row }: { row: { original: User } }) => {
         const user = row.original;
+        const isCurrentUser = currentUserProfile?.id === user.id;
 
         return (
           <DropdownMenu>
@@ -139,10 +143,14 @@ export function UserTable() {
                   setSelectedUser(user);
                   setIsDeleteAlertOpen(true);
                 }}
-                className="text-destructive"
+                className={cn(
+                  "text-destructive",
+                  isCurrentUser && "cursor-not-allowed opacity-50"
+                )}
+                disabled={isCurrentUser}
               >
                 <Trash className="mr-2 h-4 w-4" />
-                Eliminar
+                {isCurrentUser ? "No puedes eliminar tu cuenta" : "Eliminar"}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -188,7 +196,12 @@ export function UserTable() {
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground"
-              disabled={isSubmitting}
+              disabled={
+                isSubmitting ||
+                (!!selectedUser &&
+                  !!currentUserProfile &&
+                  currentUserProfile.id === selectedUser.id)
+              }
             >
               {isSubmitting ? "Eliminando..." : "Eliminar"}
             </AlertDialogAction>

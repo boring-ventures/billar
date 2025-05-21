@@ -34,6 +34,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Loader2 } from "lucide-react";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -80,9 +81,16 @@ export function InventoryItemDialog({
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>(
     []
   );
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string>(
-    companyId || ""
-  );
+  const { profile, isLoading: isLoadingProfile } = useCurrentUser();
+  const isSuperAdmin = profile?.role === "SUPERADMIN";
+
+  // Use profile's company ID as default if not superadmin
+  const defaultCompanyId = isSuperAdmin
+    ? companyId || ""
+    : profile?.companyId || companyId || "";
+
+  const [selectedCompanyId, setSelectedCompanyId] =
+    useState<string>(defaultCompanyId);
 
   const { createItem, updateItem } = useInventoryItems({
     companyId: selectedCompanyId || "",
@@ -94,10 +102,10 @@ export function InventoryItemDialog({
 
   const isEditMode = !!item;
 
-  // Fetch companies for the dropdown
+  // Fetch companies for the dropdown (only needed for SUPERADMIN)
   useEffect(() => {
     const fetchCompanies = async () => {
-      if (!open || isEditMode) return;
+      if (!open || isEditMode || !isSuperAdmin) return;
 
       setIsLoadingCompanies(true);
       try {
@@ -114,13 +122,13 @@ export function InventoryItemDialog({
     };
 
     fetchCompanies();
-  }, [open, isEditMode]);
+  }, [open, isEditMode, isSuperAdmin]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      companyId: companyId || "",
+      companyId: defaultCompanyId,
       categoryId: "none",
       sku: "",
       price: "",
@@ -145,7 +153,9 @@ export function InventoryItemDialog({
         // Edit mode - populate form with item data
         form.reset({
           name: item.name,
-          companyId: item.companyId,
+          companyId: isSuperAdmin
+            ? item.companyId
+            : profile?.companyId || item.companyId,
           categoryId: item.categoryId || "none",
           sku: item.sku || "",
           price: item.price ? String(item.price) : "",
@@ -153,12 +163,14 @@ export function InventoryItemDialog({
           stockAlerts: item.stockAlerts,
           initialStock: 0,
         });
-        setSelectedCompanyId(item.companyId);
+        setSelectedCompanyId(
+          isSuperAdmin ? item.companyId : profile?.companyId || item.companyId
+        );
       } else {
         // Create mode - reset to defaults but keep companyId if provided
         form.reset({
           name: "",
-          companyId: companyId || "",
+          companyId: defaultCompanyId,
           categoryId: "none",
           sku: "",
           price: "",
@@ -166,10 +178,10 @@ export function InventoryItemDialog({
           stockAlerts: true,
           initialStock: 0,
         });
-        setSelectedCompanyId(companyId || "");
+        setSelectedCompanyId(defaultCompanyId);
       }
     }
-  }, [open, item, companyId, form]);
+  }, [open, item, companyId, form, profile, isSuperAdmin, defaultCompanyId]);
 
   const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true);
@@ -179,29 +191,55 @@ export function InventoryItemDialog({
       const price =
         data.price && data.price.trim() !== "" ? parseFloat(data.price) : null;
 
+      // If not superadmin, always use the profile's company ID
+      const submitCompanyId = isSuperAdmin
+        ? data.companyId
+        : profile?.companyId || data.companyId;
+
+      // Validate companyId
+      if (!submitCompanyId) {
+        throw new Error(
+          "Company ID is required. Please select a company or check your profile settings."
+        );
+      }
+
+      // Handle categoryId properly - send null or empty string instead of "none"
+      const categoryId = data.categoryId === "none" ? "" : data.categoryId;
+
       if (isEditMode) {
         // Update existing item
         await updateItem.mutateAsync({
           id: item.id,
           name: data.name,
-          categoryId: data.categoryId === "none" ? "" : data.categoryId,
-          sku: data.sku,
+          categoryId,
+          sku: data.sku || "",
           price: price !== null ? price : undefined,
           criticalThreshold: data.criticalThreshold,
           stockAlerts: data.stockAlerts,
         });
       } else {
         // Create new item
-        await createItem.mutateAsync({
+        console.log("Submitting new item:", {
           name: data.name,
-          companyId: data.companyId,
-          categoryId: data.categoryId === "none" ? "" : data.categoryId,
-          sku: data.sku,
+          companyId: submitCompanyId,
+          categoryId,
+          sku: data.sku || "",
           price: price !== null ? price : undefined,
           criticalThreshold: data.criticalThreshold,
           stockAlerts: data.stockAlerts,
           quantity: data.initialStock,
-          createInitialMovement: data.initialStock > 0,
+        });
+
+        await createItem.mutateAsync({
+          name: data.name,
+          companyId: submitCompanyId,
+          categoryId,
+          sku: data.sku || "",
+          price: price !== null ? price : undefined,
+          criticalThreshold: data.criticalThreshold,
+          stockAlerts: data.stockAlerts,
+          quantity: data.initialStock,
+          createInitialMovement: true,
         });
       }
 
@@ -234,7 +272,22 @@ export function InventoryItemDialog({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {!isEditMode && (
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter item name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Only show company selection for superadmins */}
+            {isSuperAdmin && (
               <FormField
                 control={form.control}
                 name="companyId"
@@ -242,9 +295,9 @@ export function InventoryItemDialog({
                   <FormItem>
                     <FormLabel>Company</FormLabel>
                     <Select
-                      onValueChange={(value) => handleCompanyChange(value)}
-                      defaultValue={field.value}
-                      value={field.value || ""}
+                      value={field.value}
+                      onValueChange={handleCompanyChange}
+                      disabled={isEditMode || isLoadingCompanies}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -259,32 +312,11 @@ export function InventoryItemDialog({
                         ))}
                       </SelectContent>
                     </Select>
-                    <FormDescription>
-                      The company this item belongs to
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             )}
-
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Enter item name"
-                      {...field}
-                      value={field.value || ""}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             <FormField
               control={form.control}

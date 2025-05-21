@@ -34,6 +34,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -69,14 +70,24 @@ export function InventoryCategoryDialog({
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>(
     []
   );
+  const { profile, isLoading: isLoadingProfile } = useCurrentUser();
+  const isSuperAdmin = profile?.role === "SUPERADMIN";
+
+  // Use profile's company ID as default if not superadmin
+  const defaultCompanyId = isSuperAdmin
+    ? companyId || ""
+    : profile?.companyId || companyId || "";
+
   const { createCategory, updateCategory } = useInventoryCategories();
   const { toast } = useToast();
 
   const isEditMode = !!category;
 
-  // Fetch companies for the dropdown
+  // Fetch companies for the dropdown (only needed for SUPERADMIN)
   useEffect(() => {
     const fetchCompanies = async () => {
+      if (!isSuperAdmin) return;
+
       try {
         const response = await fetch("/api/companies");
         if (response.ok) {
@@ -89,14 +100,14 @@ export function InventoryCategoryDialog({
     };
 
     fetchCompanies();
-  }, []);
+  }, [isSuperAdmin]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       description: "",
-      companyId: companyId || "",
+      companyId: defaultCompanyId,
     },
   });
 
@@ -108,23 +119,38 @@ export function InventoryCategoryDialog({
         form.reset({
           name: category.name,
           description: category.description || "",
-          companyId: category.companyId,
+          companyId: isSuperAdmin
+            ? category.companyId
+            : profile?.companyId || category.companyId,
         });
       } else {
         // Create mode - reset to defaults but keep companyId if provided
         form.reset({
           name: "",
           description: "",
-          companyId: companyId || "",
+          companyId: defaultCompanyId,
         });
       }
     }
-  }, [open, category, companyId, form]);
+  }, [
+    open,
+    category,
+    companyId,
+    form,
+    profile,
+    isSuperAdmin,
+    defaultCompanyId,
+  ]);
 
   const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true);
 
     try {
+      // If not superadmin, always use the profile's company ID
+      const submitCompanyId = isSuperAdmin
+        ? data.companyId
+        : profile?.companyId || data.companyId;
+
       if (isEditMode) {
         // Update existing category
         await updateCategory.mutateAsync({
@@ -137,7 +163,7 @@ export function InventoryCategoryDialog({
         await createCategory.mutateAsync({
           name: data.name,
           description: data.description,
-          companyId: data.companyId,
+          companyId: submitCompanyId,
         });
       }
 
@@ -209,7 +235,8 @@ export function InventoryCategoryDialog({
               )}
             />
 
-            {!isEditMode && (
+            {/* Only show company selection for superadmins and in create mode */}
+            {!isEditMode && isSuperAdmin && (
               <FormField
                 control={form.control}
                 name="companyId"

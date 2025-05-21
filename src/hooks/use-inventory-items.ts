@@ -147,9 +147,20 @@ export const useInventoryItems = (filters: InventoryItemFilters) => {
   const createItem = useMutation({
     mutationFn: async (data: CreateInventoryItemPayload) => {
       try {
+        console.log("Creating inventory item with data:", data);
         const response = await axios.post("/api/inventory-items", data);
         return response.data as InventoryItem;
       } catch (error: unknown) {
+        console.error("Error creating item:", error);
+
+        // Enhanced error handling to extract the error message
+        if (axios.isAxiosError(error) && error.response) {
+          // Extract error message from response if available
+          const serverError =
+            error.response.data?.error || "Failed to create item.";
+          throw new Error(serverError);
+        }
+
         const errorMessage =
           error instanceof Error
             ? error.message
@@ -157,6 +168,7 @@ export const useInventoryItems = (filters: InventoryItemFilters) => {
               ? (error as ErrorResponse)?.response?.data?.error ||
                 "Failed to create item."
               : "Failed to create item.";
+
         throw new Error(errorMessage);
       }
     },

@@ -6,11 +6,53 @@ import { cookies } from "next/headers";
 // GET /api/inventory-categories - Get all inventory categories
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const companyId = searchParams.get("companyId");
+    const cookieStore = cookies();
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
 
-    // Configure where clause based on whether companyId is provided
-    const whereClause = companyId ? { companyId } : {};
+    // Get current user
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get the current user's profile to check permissions
+    const currentUserProfile = await prisma.profile.findUnique({
+      where: { userId: session.user.id },
+    });
+
+    if (!currentUserProfile) {
+      return NextResponse.json(
+        { error: "User profile not found" },
+        { status: 404 }
+      );
+    }
+
+    const searchParams = request.nextUrl.searchParams;
+    const requestedCompanyId = searchParams.get("companyId");
+
+    // Configure where clause based on user role and company
+    let whereClause: any = {};
+
+    // If the user is a SUPERADMIN, they can access all categories
+    // If the user is an ADMIN or SELLER, they can only access categories from their company
+    if (currentUserProfile.role !== "SUPERADMIN") {
+      // Non-superadmins can only access categories from their own company
+      if (!currentUserProfile.companyId) {
+        return NextResponse.json(
+          { error: "Unauthorized: No company association" },
+          { status: 403 }
+        );
+      }
+
+      // Force company filter to be the user's company
+      whereClause.companyId = currentUserProfile.companyId;
+    } else if (requestedCompanyId) {
+      // Superadmin can filter by company if requested
+      whereClause.companyId = requestedCompanyId;
+    }
 
     const categories = await prisma.inventoryCategory.findMany({
       where: whereClause,
@@ -53,19 +95,47 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { name, description, companyId } = body;
+    // Get the current user's profile to check permissions
+    const currentUserProfile = await prisma.profile.findUnique({
+      where: { userId: session.user.id },
+    });
 
-    // Validate required fields
-    if (!name) {
-      return NextResponse.json({ error: "Name is required" }, { status: 400 });
+    if (!currentUserProfile) {
+      return NextResponse.json(
+        { error: "User profile not found" },
+        { status: 404 }
+      );
     }
 
-    if (!companyId) {
+    const body = await request.json();
+    let { name, description, companyId } = body;
+
+    // Determine the company ID to use
+    // If not a superadmin, force the company ID to be the current user's company
+    if (currentUserProfile.role !== "SUPERADMIN") {
+      if (!currentUserProfile.companyId) {
+        return NextResponse.json(
+          {
+            error:
+              "Cannot create category: You are not associated with a company",
+          },
+          { status: 403 }
+        );
+      }
+
+      // Override any provided company ID with the user's company ID
+      companyId = currentUserProfile.companyId;
+    } else if (!companyId) {
+      // For superadmins, companyId is still required
       return NextResponse.json(
         { error: "Company ID is required" },
         { status: 400 }
       );
+    }
+
+    // Validate required fields
+    if (!name) {
+      return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
 
     // Check if company exists

@@ -122,15 +122,37 @@ export async function PATCH(
       );
     }
 
+    // Prevent users from changing their own role
+    const isEditingSelf = currentUserProfile!.id === profileId;
+    if (isEditingSelf && role && role !== currentUserProfile!.role) {
+      return NextResponse.json(
+        { error: "No puedes cambiar tu propio rol" },
+        { status: 403 }
+      );
+    }
+
+    // Prevent users from changing their own active status
+    if (
+      isEditingSelf &&
+      active !== undefined &&
+      active !== currentUserProfile!.active
+    ) {
+      return NextResponse.json(
+        { error: "No puedes cambiar el estado de tu propia cuenta" },
+        { status: 403 }
+      );
+    }
+
     // Only update the fields we allow - never allow company ID to change
     const user = await prisma.profile.update({
       where: { id: profileId },
       data: {
         firstName,
         lastName,
-        // Only allow changing role if current user is allowed
-        ...(role && { role }),
-        active,
+        // Only allow changing role if not editing self and user is allowed
+        ...(role && !isEditingSelf ? { role } : {}),
+        // Only allow changing active status if not editing self
+        ...(active !== undefined && !isEditingSelf ? { active } : {}),
       },
     });
 
@@ -152,6 +174,45 @@ export async function DELETE(
   try {
     const profileId = (await params).id;
 
+    // Get current session
+    const supabase = createServerComponentClient({ cookies });
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get the current user's profile
+    const currentUserProfile = await prisma.profile.findUnique({
+      where: { userId: session.user.id },
+    });
+
+    if (!currentUserProfile) {
+      return NextResponse.json(
+        { error: "User profile not found" },
+        { status: 404 }
+      );
+    }
+
+    // Get the target profile
+    const targetProfile = await prisma.profile.findUnique({
+      where: { id: profileId },
+    });
+
+    if (!targetProfile) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Prevent users from deleting their own account
+    if (currentUserProfile.id === profileId) {
+      return NextResponse.json(
+        { error: "No puedes eliminar tu propia cuenta de usuario" },
+        { status: 403 }
+      );
+    }
+
     // Check permissions
     const { allowed, error, status } = await checkUserPermissions(
       "",
@@ -162,23 +223,13 @@ export async function DELETE(
       return NextResponse.json({ error }, { status });
     }
 
-    // First get the profile to get the Supabase user ID
-    const profile = await prisma.profile.findUnique({
-      where: { id: profileId },
-    });
-
-    if (!profile) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
     // Delete the profile from our database
     await prisma.profile.delete({
       where: { id: profileId },
     });
 
     // Delete the user from Supabase Auth
-    const supabase = createServerComponentClient({ cookies });
-    await supabase.auth.admin.deleteUser(profile.userId);
+    await supabase.auth.admin.deleteUser(targetProfile.userId);
 
     return NextResponse.json({ success: true });
   } catch (error) {

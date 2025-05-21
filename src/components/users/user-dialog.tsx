@@ -107,6 +107,7 @@ export function UserDialog({
 
   const isEditing = !!user;
   const isSuperAdmin = currentUserProfile?.role === "SUPERADMIN";
+  const isEditingSelf = isEditing && user?.id === currentUserProfile?.id;
 
   // Get the user's role as a valid UserRoleType
   const getUserRole = (role: string | undefined): UserRoleType => {
@@ -422,6 +423,7 @@ export function UserDialog({
                     onValueChange={field.onChange}
                     value={field.value}
                     defaultValue={field.value}
+                    disabled={isEditingSelf}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -438,6 +440,11 @@ export function UserDialog({
                       )}
                     </SelectContent>
                   </Select>
+                  {isEditingSelf && (
+                    <p className="text-[0.8rem] text-muted-foreground">
+                      No puedes cambiar tu propio rol.
+                    </p>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
@@ -510,6 +517,7 @@ export function UserDialog({
                     <Checkbox
                       checked={field.value}
                       onCheckedChange={field.onChange}
+                      disabled={isEditingSelf}
                     />
                   </FormControl>
                   <div className="leading-none">
@@ -517,6 +525,11 @@ export function UserDialog({
                     <FormDescription>
                       Los usuarios inactivos no pueden iniciar sesión en el
                       sistema.
+                      {isEditingSelf && (
+                        <p className="mt-1 text-muted-foreground">
+                          No puedes cambiar el estado de tu propia cuenta.
+                        </p>
+                      )}
                     </FormDescription>
                   </div>
                 </FormItem>

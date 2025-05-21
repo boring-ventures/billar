@@ -1,24 +1,72 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { TableStatus } from "@prisma/client";
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
+
 // GET /api/tables - Get all tables
 export async function GET(request: NextRequest) {
   try {
+    // Authenticate user
+    const supabase = createServerComponentClient({ cookies });
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get the current user's profile to check permissions
+    const currentUserProfile = await prisma.profile.findUnique({
+      where: { userId: session.user.id },
+    });
+
+    if (!currentUserProfile) {
+      return NextResponse.json(
+        { error: "User profile not found" },
+        { status: 404 }
+      );
+    }
+
     const searchParams = request.nextUrl.searchParams;
-    const query = searchParams.get("query") || "";
-    const companyId = searchParams.get("companyId");
+    const requestedCompanyId = searchParams.get("companyId");
     const status = searchParams.get("status");
+    const query = searchParams.get("query") || "";
+
+    // Build query based on user role and company
+    let whereClause: any = {};
+
+    // If the user is a SUPERADMIN, they can access all tables
+    // If the user is an ADMIN or SELLER, they can only access tables from their company
+    if (currentUserProfile.role !== "SUPERADMIN") {
+      // Non-superadmins can only access tables from their own company
+      if (!currentUserProfile.companyId) {
+        return NextResponse.json(
+          { error: "Unauthorized: No company association" },
+          { status: 403 }
+        );
+      }
+
+      // Force company filter to be the user's company
+      whereClause.companyId = currentUserProfile.companyId;
+    } else if (requestedCompanyId) {
+      // Superadmin can filter by company if requested
+      whereClause.companyId = requestedCompanyId;
+    }
+
+    // Add status filter if provided
+    if (status) {
+      whereClause.status = status as TableStatus;
+    }
+
+    // Add search query filter if provided
+    if (query) {
+      whereClause.name = { contains: query, mode: "insensitive" };
+    }
 
     const tables = await prisma.table.findMany({
-      where: {
-        ...(companyId ? { companyId } : {}),
-        ...(status ? { status: status as TableStatus } : {}),
-        ...(query
-          ? {
-              name: { contains: query, mode: "insensitive" },
-            }
-          : {}),
-      },
+      where: whereClause,
       include: {
         company: {
           select: {
@@ -51,11 +99,47 @@ export async function GET(request: NextRequest) {
 // POST /api/tables - Create a new table
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { companyId, name, status, hourlyRate } = body;
+    // Authenticate user
+    const supabase = createServerComponentClient({ cookies });
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-    // Validate required fields
-    if (!companyId) {
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get the current user's profile to check permissions
+    const currentUserProfile = await prisma.profile.findUnique({
+      where: { userId: session.user.id },
+    });
+
+    if (!currentUserProfile) {
+      return NextResponse.json(
+        { error: "User profile not found" },
+        { status: 404 }
+      );
+    }
+
+    const body = await request.json();
+    let { companyId, name, status, hourlyRate } = body;
+
+    // Determine the company ID to use
+    // If not a superadmin, force the company ID to be the current user's company
+    if (currentUserProfile.role !== "SUPERADMIN") {
+      if (!currentUserProfile.companyId) {
+        return NextResponse.json(
+          {
+            error: "Cannot create table: You are not associated with a company",
+          },
+          { status: 403 }
+        );
+      }
+
+      // Override any provided company ID with the user's company ID
+      companyId = currentUserProfile.companyId;
+    } else if (!companyId) {
+      // For superadmins, companyId is still required
       return NextResponse.json(
         { error: "Company ID is required" },
         { status: 400 }

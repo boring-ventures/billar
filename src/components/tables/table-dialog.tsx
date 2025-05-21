@@ -64,6 +64,39 @@ const formSchema = z.object({
 
 type TableFormValues = z.infer<typeof formSchema>;
 
+// Add a hook to fetch current user profile
+const useCurrentUserProfile = () => {
+  const [profile, setProfile] = useState<{
+    id: string;
+    role: string;
+    companyId: string | null;
+    firstName: string | null;
+    lastName: string | null;
+  } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch("/api/auth/me");
+        if (response.ok) {
+          const data = await response.json();
+          setProfile(data);
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  return { profile, isLoading };
+};
+
 export function TableDialog({
   open,
   onOpenChange,
@@ -73,16 +106,18 @@ export function TableDialog({
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>(
     []
   );
+  const { profile, isLoading: isLoadingProfile } = useCurrentUserProfile();
 
   const createTableMutation = useCreateTableMutation();
   const updateTableMutation = useUpdateTableMutation();
 
   const isEditing = !!table;
+  const isSuperAdmin = profile?.role === "SUPERADMIN";
 
-  // Define default values
+  // Define default values based on user role
   const defaultValues = {
     name: table?.name || "",
-    companyId: table?.companyId || "",
+    companyId: table?.companyId || profile?.companyId || "",
     status: table?.status || "AVAILABLE",
     hourlyRate: table?.hourlyRate ? String(table.hourlyRate) : "",
   };
@@ -92,55 +127,65 @@ export function TableDialog({
     defaultValues,
   });
 
-  // Fetch companies for the dropdown
+  // Fetch companies for the dropdown (only needed for SUPERADMIN)
   useEffect(() => {
-    const fetchCompanies = async () => {
-      try {
-        const response = await fetch("/api/companies");
-        if (response.ok) {
-          const data = await response.json();
-          setCompanies(data);
+    if (isSuperAdmin) {
+      const fetchCompanies = async () => {
+        try {
+          const response = await fetch("/api/companies");
+          if (response.ok) {
+            const data = await response.json();
+            setCompanies(data);
+          }
+        } catch (error) {
+          console.error("Error fetching companies:", error);
         }
-      } catch (error) {
-        console.error("Error fetching companies:", error);
-      }
-    };
+      };
 
-    fetchCompanies();
-  }, []);
+      fetchCompanies();
+    }
+  }, [isSuperAdmin]);
 
-  // Reset form when table changes
+  // Reset form when table or profile changes
   useEffect(() => {
-    if (open) {
+    if (open && profile) {
       if (isEditing && table) {
         form.reset({
           name: table.name,
-          companyId: table.companyId,
+          companyId: isSuperAdmin ? table.companyId : profile.companyId || "",
           status: table.status,
           hourlyRate: table.hourlyRate ? String(table.hourlyRate) : "",
         });
       } else {
         form.reset({
           name: "",
-          companyId: "",
+          companyId: isSuperAdmin ? "" : profile.companyId || "",
           status: "AVAILABLE",
           hourlyRate: "",
         });
       }
     }
-  }, [open, table, form, isEditing]);
+  }, [open, table, form, isEditing, profile, isSuperAdmin]);
 
   const onSubmit = async (values: TableFormValues) => {
     try {
+      // If not superadmin, ensure we use the user's company ID
+      const submitValues = {
+        ...values,
+        companyId: isSuperAdmin
+          ? values.companyId
+          : profile?.companyId || values.companyId,
+      };
+
       if (isEditing && table) {
         // Update existing table
         await updateTableMutation.mutateAsync({
           tableId: table.id,
-          tableData: values,
+          tableData: submitValues,
         });
       } else {
         // Create new table
-        await createTableMutation.mutateAsync(values);
+        await createTableMutation.mutateAsync(submitValues);
       }
 
       onSuccess();
@@ -151,7 +196,9 @@ export function TableDialog({
   };
 
   const isPending =
-    createTableMutation.isPending || updateTableMutation.isPending;
+    createTableMutation.isPending ||
+    updateTableMutation.isPending ||
+    isLoadingProfile;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -186,36 +233,39 @@ export function TableDialog({
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="companyId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Empresa</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecciona una empresa" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {companies.map((company) => (
-                        <SelectItem key={company.id} value={company.id}>
-                          {company.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    La empresa a la que pertenece esta mesa.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Only show company selection for superadmins */}
+            {isSuperAdmin && (
+              <FormField
+                control={form.control}
+                name="companyId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Empresa</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona una empresa" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {companies.map((company) => (
+                          <SelectItem key={company.id} value={company.id}>
+                            {company.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      La empresa a la que pertenece esta mesa.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <FormField
               control={form.control}

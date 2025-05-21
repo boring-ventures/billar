@@ -58,6 +58,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { generateOrderPDF, generateMultipleOrdersPDF } from "@/lib/pdf-utils";
 
 // Define the structure of an order for column typing
 interface Order {
@@ -342,11 +343,35 @@ export function OrderHistory() {
 
   // Perform export action
   const performExport = () => {
-    // In a real app, this would generate and download a file
-    toast({
-      title: "Orden Exportada",
-      description: `Orden #${selectedOrderId?.substring(0, 8)} ha sido exportada a PDF`,
-    });
+    if (!selectedOrderId) return;
+
+    try {
+      // Find the order details in the loaded orders
+      const order = orders.find((order) => order.id === selectedOrderId);
+
+      if (!order) {
+        throw new Error("Order not found");
+      }
+
+      // Generate PDF document
+      const doc = generateOrderPDF(order);
+
+      // Save the PDF file with the order ID in the filename
+      doc.save(`orden-${order.id.substring(0, 8)}.pdf`);
+
+      toast({
+        title: "Orden Exportada",
+        description: `Orden #${selectedOrderId?.substring(0, 8)} ha sido exportada a PDF`,
+      });
+    } catch (error) {
+      console.error("Error exporting order:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo exportar la orden a PDF",
+        variant: "destructive",
+      });
+    }
+
     setIsExportDialogOpen(false);
   };
 
@@ -357,11 +382,34 @@ export function OrderHistory() {
 
   // Perform export all action
   const performExportAll = () => {
-    // In a real app, this would generate and download all filtered orders
-    toast({
-      title: "Órdenes Exportadas",
-      description: `${filteredOrders.length} órdenes han sido exportadas`,
-    });
+    try {
+      // Check if there are orders to export
+      if (!filteredOrders || filteredOrders.length === 0) {
+        throw new Error("No hay órdenes para exportar");
+      }
+
+      // Generate a single PDF with all orders
+      const doc = generateMultipleOrdersPDF(filteredOrders);
+
+      // Save the combined PDF
+      doc.save(`ordenes-billar-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+
+      toast({
+        title: "Órdenes Exportadas",
+        description: `${filteredOrders.length} órdenes han sido exportadas en un único PDF`,
+      });
+    } catch (error) {
+      console.error("Error exporting all orders:", error);
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error
+            ? error.message
+            : "No se pudieron exportar las órdenes",
+        variant: "destructive",
+      });
+    }
+
     setIsExportAllDialogOpen(false);
   };
 

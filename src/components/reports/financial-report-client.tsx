@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { format } from "date-fns";
 import {
   Card,
   CardContent,
@@ -35,10 +36,12 @@ import {
   CreditCard,
   Save,
   ExternalLink,
+  FileDown,
 } from "lucide-react";
 import { DateRangePicker, DateRange } from "@/components/ui/date-range-picker";
 import { useToast } from "@/components/ui/use-toast";
 import { formatCurrency } from "@/lib/utils";
+import { generateReportPDF } from "@/lib/pdf-utils";
 
 // Define types
 interface FinancialReport {
@@ -251,6 +254,31 @@ export function FinancialReportClient() {
   // Navigate to report detail page
   const handleViewReportDetail = (reportId: string) => {
     router.push(`/reports/${reportId}`);
+  };
+
+  // Export a report to PDF
+  const handleExportToPDF = (report: FinancialReport) => {
+    try {
+      // Generate the PDF
+      const doc = generateReportPDF(report);
+
+      // Save the PDF with a filename based on the report
+      doc.save(
+        `reporte-${report.name.replace(/\s+/g, "-")}-${format(new Date(), "yyyy-MM-dd")}.pdf`
+      );
+
+      toast({
+        title: "Éxito",
+        description: "Reporte exportado a PDF exitosamente",
+      });
+    } catch (error) {
+      console.error("Error exporting report to PDF:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo exportar el reporte a PDF",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -550,91 +578,102 @@ export function FinancialReportClient() {
             </Card>
           </div>
 
-          {/* Saved Reports Table - Only show if there are saved reports */}
-          {savedReports && savedReports.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Reportes Guardados</CardTitle>
-                <CardDescription>
-                  Historial de reportes financieros guardados para el período
-                  seleccionado
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isLoadingSavedReports ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nombre</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Período</TableHead>
-                        <TableHead>Ingresos</TableHead>
-                        <TableHead>Gastos</TableHead>
-                        <TableHead>Ganancia</TableHead>
-                        <TableHead className="text-right">Acciones</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {savedReports.map((report: FinancialReport) => (
-                        <TableRow
-                          key={report.id}
-                          className="cursor-pointer hover:bg-muted/50"
-                          onClick={() => handleViewReportDetail(report.id)}
+          {/* Reports Table */}
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle>Reportes Guardados</CardTitle>
+              <CardDescription>
+                Reportes financieros generados previamente
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Período</TableHead>
+                    <TableHead className="text-right">Ingresos</TableHead>
+                    <TableHead className="text-right">Gastos</TableHead>
+                    <TableHead className="text-right">Ganancia</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {savedReports?.length > 0 ? (
+                    savedReports.map((report: FinancialReport) => (
+                      <TableRow key={report.id}>
+                        <TableCell className="font-medium">
+                          {report.name}
+                        </TableCell>
+                        <TableCell>
+                          {report.reportType === "DAILY"
+                            ? "Diario"
+                            : report.reportType === "WEEKLY"
+                              ? "Semanal"
+                              : report.reportType === "MONTHLY"
+                                ? "Mensual"
+                                : report.reportType === "QUARTERLY"
+                                  ? "Trimestral"
+                                  : report.reportType === "ANNUAL"
+                                    ? "Anual"
+                                    : "Personalizado"}
+                        </TableCell>
+                        <TableCell>
+                          {format(new Date(report.startDate), "dd/MM/yyyy")} -{" "}
+                          {format(new Date(report.endDate), "dd/MM/yyyy")}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(report.totalIncome)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(report.totalExpense)}
+                        </TableCell>
+                        <TableCell
+                          className={`text-right ${
+                            Number(report.netProfit) >= 0
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }`}
                         >
-                          <TableCell className="font-medium">
-                            {report.name}
-                          </TableCell>
-                          <TableCell>
-                            {report.reportType === "DAILY" && "Diario"}
-                            {report.reportType === "WEEKLY" && "Semanal"}
-                            {report.reportType === "MONTHLY" && "Mensual"}
-                            {report.reportType === "QUARTERLY" && "Trimestral"}
-                            {report.reportType === "ANNUAL" && "Anual"}
-                            {report.reportType === "CUSTOM" && "Personalizado"}
-                          </TableCell>
-                          <TableCell>
-                            {new Date(report.startDate).toLocaleDateString()} -{" "}
-                            {new Date(report.endDate).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            {formatCurrency(report.totalIncome)}
-                          </TableCell>
-                          <TableCell>
-                            {formatCurrency(report.totalExpense)}
-                          </TableCell>
-                          <TableCell
-                            className={`${Number(report.netProfit) >= 0 ? "text-green-500" : "text-red-500"}`}
-                          >
-                            {formatCurrency(report.netProfit)}
-                          </TableCell>
-                          <TableCell
-                            className="text-right"
-                            onClick={(e) => e.stopPropagation()}
-                          >
+                          {formatCurrency(report.netProfit)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end space-x-2">
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleViewReportDetail(report.id);
-                              }}
+                              onClick={() => handleViewReportDetail(report.id)}
                             >
                               <ExternalLink className="h-4 w-4" />
-                              <span className="sr-only">Ver detalle</span>
+                              <span className="sr-only">View Report</span>
                             </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
-          )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleExportToPDF(report)}
+                            >
+                              <FileDown className="h-4 w-4" />
+                              <span className="sr-only">Export to PDF</span>
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="h-24 text-center text-muted-foreground"
+                      >
+                        No hay reportes guardados para los filtros seleccionados
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </>
       )}
 

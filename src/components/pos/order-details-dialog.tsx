@@ -36,7 +36,8 @@ import {
 } from "@/components/ui/select";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { User } from "lucide-react";
+import { User, FileDown } from "lucide-react";
+import { generateOrderPDF } from "@/lib/pdf-utils";
 
 interface OrderDetailsDialogProps {
   orderId: string;
@@ -80,6 +81,31 @@ export function OrderDetailsDialog({
       console.error("Failed to update payment:", error);
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  // Function to export order to PDF
+  const handleExportToPDF = () => {
+    if (!order) return;
+
+    try {
+      // Generate PDF document
+      const doc = generateOrderPDF(order);
+
+      // Save the PDF file with a name based on the order ID
+      doc.save(`orden-${order.id.substring(0, 8)}.pdf`);
+
+      toast({
+        title: "Éxito",
+        description: "Orden exportada a PDF exitosamente",
+      });
+    } catch (error) {
+      console.error("Error exporting order to PDF:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo exportar la orden a PDF",
+        variant: "destructive",
+      });
     }
   };
 
@@ -296,6 +322,15 @@ export function OrderDetailsDialog({
                 disabled={isUpdating || (!paymentMethod && !paymentStatus)}
               >
                 {isUpdating ? "Actualizando..." : "Actualizar Pago"}
+              </Button>
+
+              <Button
+                variant="outline"
+                className="ml-2"
+                onClick={handleExportToPDF}
+              >
+                <FileDown className="mr-2 h-4 w-4" />
+                Exportar a PDF
               </Button>
             </CardFooter>
           </Card>

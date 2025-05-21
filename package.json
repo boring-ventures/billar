@@ -45,6 +45,8 @@
     "dotenv": "^16.4.7",
     "framer-motion": "^12.4.7",
     "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.1",
+    "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.475.0",
     "motion": "^12.4.7",
     "next": "15.1.7",

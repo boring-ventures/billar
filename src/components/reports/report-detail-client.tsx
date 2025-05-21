@@ -23,6 +23,9 @@ import {
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/components/ui/use-toast";
+import { generateReportPDF } from "@/lib/pdf-utils";
+import { format } from "date-fns";
 
 interface Company {
   id: string;
@@ -64,6 +67,8 @@ interface ReportDetailProps {
 export function ReportDetailClient({ report }: ReportDetailProps) {
   const router = useRouter();
   const [isPrinting, setIsPrinting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const { toast } = useToast();
 
   const handlePrint = () => {
     setIsPrinting(true);
@@ -71,6 +76,34 @@ export function ReportDetailClient({ report }: ReportDetailProps) {
       window.print();
       setIsPrinting(false);
     }, 100);
+  };
+
+  const handleExportToPDF = () => {
+    setIsExporting(true);
+
+    try {
+      // Generate PDF
+      const doc = generateReportPDF(report);
+
+      // Save the PDF file with date in the filename
+      doc.save(
+        `reporte-${report.name.replace(/\s+/g, "-")}-${format(new Date(), "yyyy-MM-dd")}.pdf`
+      );
+
+      toast({
+        title: "Éxito",
+        description: "Reporte exportado a PDF exitosamente",
+      });
+    } catch (error) {
+      console.error("Error exporting report to PDF:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo exportar el reporte a PDF",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   // Format report type for display
@@ -115,11 +148,16 @@ export function ReportDetailClient({ report }: ReportDetailProps) {
             disabled={isPrinting}
           >
             <Printer className="w-4 h-4 mr-2" />
-            Imprimir
+            {isPrinting ? "Imprimiendo..." : "Imprimir"}
           </Button>
-          <Button variant="outline" size="sm">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportToPDF}
+            disabled={isExporting}
+          >
             <FileDown className="w-4 h-4 mr-2" />
-            Exportar
+            {isExporting ? "Exportando..." : "Exportar a PDF"}
           </Button>
           <Button variant="outline" size="sm">
             <Share2 className="w-4 h-4 mr-2" />

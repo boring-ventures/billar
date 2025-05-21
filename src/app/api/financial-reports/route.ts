@@ -28,6 +28,31 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Get the user's profile to check company access
+    const userProfile = await prisma.profile.findFirst({
+      where: {
+        userId: session.user.id,
+      },
+      include: {
+        company: true,
+      },
+    });
+
+    if (!userProfile) {
+      return NextResponse.json(
+        { error: "User profile not found" },
+        { status: 404 }
+      );
+    }
+
+    // Block sellers from accessing reports
+    if (userProfile.role === "SELLER") {
+      return NextResponse.json(
+        { error: "Insufficient permissions" },
+        { status: 403 }
+      );
+    }
+
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
     const companyId = searchParams.get("companyId");
@@ -41,6 +66,19 @@ export async function GET(request: NextRequest) {
         { error: "Company ID is required" },
         { status: 400 }
       );
+    }
+
+    // For non-superadmin users, enforce their company ID
+    if (userProfile.role !== "SUPERADMIN") {
+      // If the requested company is not the user's company, return an error
+      if (userProfile.companyId !== companyId) {
+        return NextResponse.json(
+          {
+            error: "Access denied: You can only view reports for your company",
+          },
+          { status: 403 }
+        );
+      }
     }
 
     // Build query filters

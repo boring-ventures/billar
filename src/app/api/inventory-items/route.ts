@@ -140,6 +140,7 @@ export async function POST(request: NextRequest) {
       criticalThreshold,
       stockAlerts,
       createInitialMovement,
+      initialCostPrice,
     } = body;
     let companyId = requestedCompanyId;
 
@@ -271,15 +272,25 @@ export async function POST(request: NextRequest) {
 
     // Create initial stock movement if quantity > 0 and createInitialMovement is not false
     if (quantity > 0 && createInitialMovement !== false) {
+      // Get the staff profile ID from the user ID
+      const staffProfile = await prisma.profile.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true },
+      });
+
       await prisma.stockMovement.create({
         data: {
           itemId: item.id,
           quantity,
           type: "PURCHASE",
           reason: "Initial stock",
+          costPrice: initialCostPrice !== undefined ? initialCostPrice : null,
+          createdBy: staffProfile?.id || null,
         },
       });
-      console.log(`Created initial stock movement for ${quantity} units`);
+      console.log(
+        `Created initial stock movement for ${quantity} units with cost price: ${initialCostPrice || "N/A"}`
+      );
     }
 
     return NextResponse.json(item, { status: 201 });

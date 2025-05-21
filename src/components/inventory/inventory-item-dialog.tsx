@@ -45,6 +45,7 @@ const formSchema = z.object({
   criticalThreshold: z.coerce.number().min(0).default(5),
   stockAlerts: z.boolean().default(true),
   initialStock: z.coerce.number().min(0).default(0),
+  initialCostPrice: z.string().optional().default(""),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -135,6 +136,7 @@ export function InventoryItemDialog({
       criticalThreshold: 5,
       stockAlerts: true,
       initialStock: 0,
+      initialCostPrice: "",
     },
   });
 
@@ -162,6 +164,7 @@ export function InventoryItemDialog({
           criticalThreshold: item.criticalThreshold,
           stockAlerts: item.stockAlerts,
           initialStock: 0,
+          initialCostPrice: "",
         });
         setSelectedCompanyId(
           isSuperAdmin ? item.companyId : profile?.companyId || item.companyId
@@ -177,6 +180,7 @@ export function InventoryItemDialog({
           criticalThreshold: 5,
           stockAlerts: true,
           initialStock: 0,
+          initialCostPrice: "",
         });
         setSelectedCompanyId(defaultCompanyId);
       }
@@ -218,6 +222,12 @@ export function InventoryItemDialog({
           stockAlerts: data.stockAlerts,
         });
       } else {
+        // Convert initial cost price from string to number or undefined
+        const initialCostPrice =
+          data.initialCostPrice && data.initialCostPrice.trim() !== ""
+            ? parseFloat(data.initialCostPrice)
+            : undefined;
+
         // Create new item
         console.log("Submitting new item:", {
           name: data.name,
@@ -228,6 +238,7 @@ export function InventoryItemDialog({
           criticalThreshold: data.criticalThreshold,
           stockAlerts: data.stockAlerts,
           quantity: data.initialStock,
+          initialCostPrice,
         });
 
         await createItem.mutateAsync({
@@ -239,6 +250,7 @@ export function InventoryItemDialog({
           criticalThreshold: data.criticalThreshold,
           stockAlerts: data.stockAlerts,
           quantity: data.initialStock,
+          initialCostPrice,
           createInitialMovement: true,
         });
       }
@@ -444,7 +456,7 @@ export function InventoryItemDialog({
             </div>
 
             {!isEditMode && (
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="initialStock"
@@ -464,6 +476,30 @@ export function InventoryItemDialog({
                       <FormDescription>
                         Set the initial stock quantity (will be recorded as a
                         movement)
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="initialCostPrice"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Initial Cost Price</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={field.value || ""}
+                          onChange={(e) => field.onChange(e.target.value)}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Cost price per unit for initial stock
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

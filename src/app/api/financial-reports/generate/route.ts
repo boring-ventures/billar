@@ -36,6 +36,9 @@ export async function POST(request: NextRequest) {
       where: {
         userId: session.user.id,
       },
+      include: {
+        company: true,
+      },
     });
 
     if (!userProfile) {
@@ -43,6 +46,28 @@ export async function POST(request: NextRequest) {
         { error: "User profile not found" },
         { status: 404 }
       );
+    }
+
+    // Block sellers from generating reports
+    if (userProfile.role === "SELLER") {
+      return NextResponse.json(
+        { error: "Insufficient permissions" },
+        { status: 403 }
+      );
+    }
+
+    // For non-superadmin users, enforce their company ID
+    if (userProfile.role !== "SUPERADMIN") {
+      // If the requested company is not the user's company, return an error
+      if (userProfile.companyId !== companyId) {
+        return NextResponse.json(
+          {
+            error:
+              "Access denied: You can only generate reports for your company",
+          },
+          { status: 403 }
+        );
+      }
     }
 
     // Parse dates
@@ -204,4 +229,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
- 

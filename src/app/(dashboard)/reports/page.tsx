@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { FinancialReportClient } from "@/components/reports/financial-report-client";
 import { FinancialReportSkeleton } from "@/components/reports/financial-report-skeleton";
+import prisma from "@/lib/prisma";
 
 export default async function FinancialReportPage() {
   const supabase = createServerComponentClient({ cookies });
@@ -13,6 +14,17 @@ export default async function FinancialReportPage() {
 
   if (!session) {
     redirect("/sign-in");
+  }
+
+  // Fetch user profile to check role
+  const profile = await prisma.profile.findUnique({
+    where: { userId: session.user.id },
+    select: { role: true },
+  });
+
+  // Redirect sellers to dashboard
+  if (profile?.role === "SELLER") {
+    redirect("/dashboard");
   }
 
   return (

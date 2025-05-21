@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ColumnDef } from "@tanstack/react-table";
 import { TableStatus } from "@prisma/client";
@@ -55,9 +55,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { TableDialog } from "./table-dialog";
 import { QuickStartSessionDialog } from "./quick-start-session-dialog";
+import { useAuth } from "@/providers/auth-provider";
 
 export function TablesTable() {
   const router = useRouter();
+  const { profile } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
@@ -67,6 +69,9 @@ export function TablesTable() {
   const [selectedTable, setSelectedTable] = useState<TableType | null>(null);
   const [tableDialogOpen, setTableDialogOpen] = useState(false);
   const [quickStartDialogOpen, setQuickStartDialogOpen] = useState(false);
+
+  // Check if user has admin privileges (ADMIN or SUPERADMIN)
+  const isAdmin = profile?.role === "ADMIN" || profile?.role === "SUPERADMIN";
 
   const { data: tables = [], isLoading } = useTablesQuery({
     status:
@@ -117,11 +122,13 @@ export function TablesTable() {
   };
 
   const handleCreateNewTable = () => {
+    if (!isAdmin) return;
     setSelectedTable(null);
     setTableDialogOpen(true);
   };
 
   const handleEditTable = (table: TableType) => {
+    if (!isAdmin) return;
     setSelectedTable(table);
     setTableDialogOpen(true);
   };
@@ -210,10 +217,12 @@ export function TablesTable() {
                 <Eye className="mr-2 h-4 w-4" />
                 Ver
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleEditTable(table)}>
-                <Edit className="mr-2 h-4 w-4" />
-                Editar
-              </DropdownMenuItem>
+              {isAdmin && (
+                <DropdownMenuItem onClick={() => handleEditTable(table)}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Editar
+                </DropdownMenuItem>
+              )}
               {table.status === "AVAILABLE" && (
                 <DropdownMenuItem onClick={() => handleStartSession(table)}>
                   <PlayCircle className="mr-2 h-4 w-4" />
@@ -260,17 +269,21 @@ export function TablesTable() {
                   </DropdownMenuItem>
                 </>
               )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => {
-                  setSelectedTable(table);
-                  setIsDeleteAlertOpen(true);
-                }}
-                className="text-destructive"
-              >
-                <Trash className="mr-2 h-4 w-4" />
-                Eliminar
-              </DropdownMenuItem>
+              {isAdmin && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setSelectedTable(table);
+                      setIsDeleteAlertOpen(true);
+                    }}
+                    className="text-destructive"
+                  >
+                    <Trash className="mr-2 h-4 w-4" />
+                    Eliminar
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         );
@@ -304,7 +317,7 @@ export function TablesTable() {
         data={tables}
         onSearch={setSearchQuery}
         searchPlaceholder="Buscar mesas..."
-        onAddNew={handleCreateNewTable}
+        onAddNew={isAdmin ? handleCreateNewTable : undefined}
         addNewLabel="Añadir Nueva Mesa"
         statusFilter={statusFilterElement}
       />

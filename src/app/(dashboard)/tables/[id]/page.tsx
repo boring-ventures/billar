@@ -29,14 +29,19 @@ import { formatDuration, formatCurrency } from "@/lib/utils";
 import { QuickStartSessionDialog } from "@/components/tables/quick-start-session-dialog";
 import { TableDetailsSkeleton } from "@/components/tables/table-details-skeleton";
 import { ActiveSessionSkeleton } from "@/components/tables/active-session-skeleton";
+import { useAuth } from "@/providers/auth-provider";
 
 export default function TableDetailsPage() {
   const params = useParams();
   const router = useRouter();
+  const { profile } = useAuth();
   const tableId = params?.id as string;
   const [activeTab, setActiveTab] = useState("sessions");
   const [activeDuration, setActiveDuration] = useState("");
   const [quickStartDialogOpen, setQuickStartDialogOpen] = useState(false);
+
+  // Check if user has admin privileges (ADMIN or SUPERADMIN)
+  const isAdmin = profile?.role === "ADMIN" || profile?.role === "SUPERADMIN";
 
   const { data: table, isLoading: tableLoading } = useTableByIdQuery(tableId);
   const endSessionMutation = useEndTableSessionMutation();
@@ -179,10 +184,12 @@ export default function TableDetailsPage() {
               Iniciar Sesión
             </Button>
           )}
-          <Button onClick={handleEditTable} size="sm" variant="outline">
-            <Edit className="mr-2 h-4 w-4" />
-            Editar
-          </Button>
+          {isAdmin && (
+            <Button onClick={handleEditTable} size="sm" variant="outline">
+              <Edit className="mr-2 h-4 w-4" />
+              Editar
+            </Button>
+          )}
         </div>
       </div>
 

@@ -98,6 +98,17 @@ export default async function ReportDetailPage({
     redirect("/sign-in");
   }
 
+  // Fetch the user's profile to check role and company access
+  const userProfile = await prisma.profile.findUnique({
+    where: { userId: session.user.id },
+    include: { company: true },
+  });
+
+  // Redirect sellers to dashboard
+  if (userProfile?.role === "SELLER") {
+    redirect("/dashboard");
+  }
+
   // Fetch the report data
   try {
     const report = await prisma.financialReport.findUnique({
@@ -112,6 +123,15 @@ export default async function ReportDetailPage({
 
     if (!report) {
       notFound();
+    }
+
+    // For non-superadmin users, check if report belongs to their company
+    if (
+      userProfile?.role !== "SUPERADMIN" &&
+      userProfile?.companyId !== report.company.id
+    ) {
+      // If report doesn't belong to user's company, redirect to reports list
+      redirect("/reports");
     }
 
     // Serialize the report to handle Decimal objects

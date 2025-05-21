@@ -50,16 +50,11 @@ const formSchema = z.object({
   companyId: z.string().min(1, "La empresa es obligatoria"),
   status: z.nativeEnum(TableStatus),
   hourlyRate: z
-    .union([
-      z
-        .string()
-        .min(0)
-        .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) >= 0, {
-          message: "La tarifa por hora debe ser un número positivo",
-        }),
-      z.literal(""),
-    ])
-    .transform((val) => (val === "" ? null : val)),
+    .string()
+    .min(1, "La tarifa por hora es obligatoria")
+    .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) >= 0, {
+      message: "La tarifa por hora debe ser un número positivo",
+    }),
 });
 
 type TableFormValues = z.infer<typeof formSchema>;
@@ -305,10 +300,11 @@ export function TableDialog({
                   <FormLabel>Tarifa por Hora</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Ingresa tarifa por hora (opcional)"
+                      placeholder="Ingresa tarifa por hora"
                       type="number"
                       step="0.01"
                       min="0"
+                      required
                       value={field.value ?? ""}
                       onChange={field.onChange}
                       onBlur={field.onBlur}
@@ -317,8 +313,7 @@ export function TableDialog({
                     />
                   </FormControl>
                   <FormDescription>
-                    La tarifa por hora para esta mesa (dejar vacío si no
-                    aplica).
+                    La tarifa por hora para esta mesa.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

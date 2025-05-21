@@ -86,3 +86,11 @@
 - [ ] Implement environment variable management
 - [ ] Create deployment documentation
 - [ ] Perform security audit
+
+
+https://simple-mvp-steel.vercel.app/dashboard
+https://simple-mvp-steel.vercel.app/auth/callback?next=/dashboard
+https://simple-mvp-steel.vercel.app/auth/callback
+https://simple-mvp-steel.vercel.app/auth/callback?next=/settings?reset_password=true
+https://simple-mvp-steel.vercel.app/**
+https://simple-mvp-steel.vercel.app/reset-password

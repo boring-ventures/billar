@@ -29,6 +29,14 @@ export async function GET(request: NextRequest) {
             sku: true,
           },
         },
+        creator: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            role: true,
+          },
+        },
       },
       orderBy: {
         createdAt: "desc",

@@ -35,6 +35,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useAuth } from "@/providers/auth-provider";
 
 interface TablesGridViewProps {
   companyId?: string;
@@ -43,6 +44,7 @@ interface TablesGridViewProps {
 
 export function TablesGridView({ companyId, query }: TablesGridViewProps) {
   const router = useRouter();
+  const { profile } = useAuth();
   const { data: tables = [], isLoading } = useTablesQuery({
     companyId,
     query,
@@ -50,6 +52,9 @@ export function TablesGridView({ companyId, query }: TablesGridViewProps) {
   const { data: activeSessions = [] } = useTableSessionsQuery({
     status: "ACTIVE",
   });
+
+  // Check if user has admin privileges (ADMIN or SUPERADMIN)
+  const isAdmin = profile?.role === "ADMIN" || profile?.role === "SUPERADMIN";
 
   const [sessionDialogOpen, setSessionDialogOpen] = useState(false);
   const [quickStartDialogOpen, setQuickStartDialogOpen] = useState(false);
@@ -131,6 +136,7 @@ export function TablesGridView({ companyId, query }: TablesGridViewProps) {
   };
 
   const handleEdit = (table: Table) => {
+    if (!isAdmin) return;
     setSelectedTable(table);
     setEditDialogOpen(true);
   };
@@ -183,15 +189,17 @@ export function TablesGridView({ companyId, query }: TablesGridViewProps) {
                   <Edit className="mr-2 h-4 w-4" />
                   View Details
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEdit(table);
-                  }}
-                >
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit Table
-                </DropdownMenuItem>
+                {isAdmin && (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEdit(table);
+                    }}
+                  >
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit Table
+                  </DropdownMenuItem>
+                )}
                 {table.status === "AVAILABLE" && (
                   <>
                     <DropdownMenuSeparator />

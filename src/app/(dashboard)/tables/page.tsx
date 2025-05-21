@@ -11,10 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TableDialog } from "@/components/tables/table-dialog";
 import { SessionDialog } from "@/components/tables/session-dialog";
+import { useAuth } from "@/providers/auth-provider";
 
 export default function TablesPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { profile } = useAuth();
   const tabParam = searchParams.get("tab");
   const viewParam = searchParams.get("view");
   const [activeTab, setActiveTab] = useState(
@@ -30,6 +32,9 @@ export default function TablesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [tableDialogOpen, setTableDialogOpen] = useState(false);
   const [sessionDialogOpen, setSessionDialogOpen] = useState(false);
+
+  // Check if user has admin privileges (ADMIN or SUPERADMIN)
+  const isAdmin = profile?.role === "ADMIN" || profile?.role === "SUPERADMIN";
 
   // Update the tab when URL changes
   useEffect(() => {
@@ -81,9 +86,11 @@ export default function TablesPage() {
                 />
               </div>
               <div className="flex space-x-2">
-                <Button onClick={() => setTableDialogOpen(true)}>
-                  Añadir Nueva Mesa
-                </Button>
+                {isAdmin && (
+                  <Button onClick={() => setTableDialogOpen(true)}>
+                    Añadir Nueva Mesa
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   onClick={() => setSessionDialogOpen(true)}

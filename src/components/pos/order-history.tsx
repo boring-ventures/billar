@@ -474,10 +474,13 @@ export function OrderHistory() {
       accessorKey: "financialDetails",
       header: "Detalles Financieros",
       cell: ({ row }) => {
-        // Calculate product subtotal (total amount - table session cost)
-        const totalAmount = Number(row.original.amount || 0);
+        // The order amount appears to only store the product costs, not including session costs
+        // In the API, only product costs are summed in totalAmount
+        const productAmount = Number(row.original.amount || 0);
         const sessionCost = Number(row.original.tableSession?.totalCost || 0);
-        const productSubtotal = totalAmount - sessionCost;
+
+        // Calculate the proper total by adding session cost and product amount
+        const actualTotal = productAmount + sessionCost;
 
         return (
           <div className="space-y-1">
@@ -490,12 +493,12 @@ export function OrderHistory() {
 
             <div className="flex justify-between">
               <span className="text-muted-foreground">Subtotal productos:</span>
-              <span>Bs. {productSubtotal.toFixed(2)}</span>
+              <span>Bs. {productAmount.toFixed(2)}</span>
             </div>
 
             <div className="flex justify-between font-medium border-t pt-1 mt-1">
               <span>Total:</span>
-              <span>Bs. {totalAmount.toFixed(2)}</span>
+              <span>Bs. {actualTotal.toFixed(2)}</span>
             </div>
           </div>
         );

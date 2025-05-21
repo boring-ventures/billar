@@ -26,6 +26,7 @@ model Profile {
   tableActivityLogs     TableActivityLog[]
   financialReports      FinancialReport[]
   posOrders             PosOrder[]
+  stockMovements        StockMovement[]
 
   @@index([companyId, userId])
   @@map("profiles")
@@ -196,6 +197,7 @@ model StockMovement {
   createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
   createdBy     String?         @map("created_by") @db.Uuid
   item          InventoryItem   @relation(fields: [itemId], references: [id])
+  creator       Profile?        @relation(fields: [createdBy], references: [id])
 
   @@map("stock_movements")
   @@schema("public")

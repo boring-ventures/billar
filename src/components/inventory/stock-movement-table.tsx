@@ -37,6 +37,12 @@ interface StockMovement {
   reference: string | null;
   createdAt: string;
   createdBy: string | null;
+  creator?: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    role: string;
+  } | null;
 }
 
 interface StockMovementTableProps {
@@ -111,6 +117,7 @@ export function StockMovementTable({
             <TableHead>Reason</TableHead>
             <TableHead className="text-right">Cost Price</TableHead>
             {showAll && <TableHead>Reference</TableHead>}
+            <TableHead>Created By</TableHead>
             <TableHead className="text-right"></TableHead>
           </TableRow>
         </TableHeader>
@@ -147,6 +154,12 @@ export function StockMovementTable({
                 {movement.costPrice ? formatCurrency(movement.costPrice) : "-"}
               </TableCell>
               {showAll && <TableCell>{movement.reference || "-"}</TableCell>}
+              <TableCell>
+                {movement.creator
+                  ? `${movement.creator.firstName || ""} ${movement.creator.lastName || ""}`.trim() ||
+                    "Unknown"
+                  : "-"}
+              </TableCell>
               <TableCell className="text-right">
                 {movement.type === "ADJUSTMENT" && (
                   <DropdownMenu>

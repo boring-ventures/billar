@@ -46,6 +46,7 @@ interface CreateInventoryItemPayload {
   criticalThreshold?: number;
   stockAlerts?: boolean;
   createInitialMovement?: boolean;
+  initialCostPrice?: number;
 }
 
 interface UpdateInventoryItemPayload {

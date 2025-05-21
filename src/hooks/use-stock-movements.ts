@@ -22,6 +22,12 @@ interface StockMovement {
     sku: string | null;
     quantity: number;
   };
+  creator?: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    role: string;
+  } | null;
 }
 
 interface CreateStockMovementPayload {

@@ -15,21 +15,6 @@ import type { NavGroupProps } from "./types";
 import Image from "next/image";
 import Link from "next/link";
 
-// Create a hook to access the sidebar context and check if it's collapsed
-const useSidebarState = () => {
-  // Use a try-catch block to avoid errors if SidebarContext is not available
-  try {
-    // Access the SidebarContext from @/components/ui/sidebar
-    const sidebarContext = (window as any).__sidebarContext;
-    return {
-      isCollapsed: sidebarContext?.state === "collapsed",
-    };
-  } catch (e) {
-    // Return default value if context is not available
-    return { isCollapsed: false };
-  }
-};
-
 // Extend Profile type with company information
 interface CompanyInfo {
   id: string;

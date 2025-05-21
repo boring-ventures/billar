@@ -15,8 +15,45 @@ import type { NavGroupProps } from "./types";
 import Image from "next/image";
 import Link from "next/link";
 
+// Create a hook to access the sidebar context and check if it's collapsed
+const useSidebarState = () => {
+  // Use a try-catch block to avoid errors if SidebarContext is not available
+  try {
+    // Access the SidebarContext from @/components/ui/sidebar
+    const sidebarContext = (window as any).__sidebarContext;
+    return {
+      isCollapsed: sidebarContext?.state === "collapsed",
+    };
+  } catch (e) {
+    // Return default value if context is not available
+    return { isCollapsed: false };
+  }
+};
+
+// Extend Profile type with company information
+interface CompanyInfo {
+  id: string;
+  name: string;
+}
+
+// Create an extended profile type that includes the company field
+interface ExtendedProfile {
+  id: string;
+  userId: string;
+  role: string;
+  active: boolean;
+  firstName?: string;
+  lastName?: string;
+  avatarUrl?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  company?: CompanyInfo;
+}
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { profile } = useAuth();
+  const { profile: baseProfile } = useAuth();
+  // Cast the profile to the extended type that includes company
+  const profile = baseProfile as ExtendedProfile;
 
   // Filter navigation items based on user role
   const getFilteredNavGroups = () => {
@@ -53,15 +90,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" variant="floating" {...props}>
       <SidebarHeader>
-        <Link href="/dashboard" className="flex items-center gap-2 px-2 py-4">
-          <Image
-            src="/brand-assets/logo.svg"
-            alt="BILLAR Logo"
-            width={32}
-            height={32}
-            className="h-8 w-8"
-          />
-          <span className="text-xl font-bold">BILLAR</span>
+        <Link href="/dashboard" className="flex flex-col px-2 py-4">
+          <div className="flex items-center gap-2">
+            <Image
+              src="/brand-assets/logo.svg"
+              alt="BILLAR Logo"
+              width={32}
+              height={32}
+              className="h-8 w-8 transition-all duration-200 group-data-[state=collapsed]:h-10 group-data-[state=collapsed]:w-10"
+            />
+            <span className="text-xl font-bold transition-opacity duration-200 group-data-[state=collapsed]:opacity-0">
+              BILLAR
+            </span>
+          </div>
+          {profile?.company && (
+            <span className="text-xs text-muted-foreground ml-10 -mt-1 transition-opacity duration-200 group-data-[state=collapsed]:opacity-0">
+              {profile.company.name}
+            </span>
+          )}
         </Link>
       </SidebarHeader>
       <SidebarContent>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -34,7 +34,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useUsers } from "@/hooks/use-users";
-import { Loader2 } from "lucide-react";
+import { Loader2, RefreshCw, Download, Eye, EyeOff } from "lucide-react";
+import html2canvas from "html2canvas";
+import { Badge } from "@/components/ui/badge";
 
 interface UserDialogProps {
   open: boolean;
@@ -60,6 +62,31 @@ const formSchema = z.object({
 // Special value to represent no company selected
 const NO_COMPANY = "none";
 
+// Function to generate a random password
+const generateRandomPassword = () => {
+  const length = 12;
+  const charset =
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+  let password = "";
+
+  // Ensure at least one of each character type
+  password += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[Math.floor(Math.random() * 26)];
+  password += "abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 26)];
+  password += "0123456789"[Math.floor(Math.random() * 10)];
+  password += "!@#$%^&*"[Math.floor(Math.random() * 8)];
+
+  // Fill the rest with random characters
+  for (let i = password.length; i < length; i++) {
+    password += charset[Math.floor(Math.random() * charset.length)];
+  }
+
+  // Shuffle the password
+  return password
+    .split("")
+    .sort(() => 0.5 - Math.random())
+    .join("");
+};
+
 export function UserDialog({
   open,
   onOpenChange,
@@ -73,6 +100,8 @@ export function UserDialog({
   );
   const { createUser, updateUser } = useUsers();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const userCardRef = useRef<HTMLDivElement>(null);
 
   const isEditing = !!user;
 
@@ -108,6 +137,42 @@ export function UserDialog({
     resolver: zodResolver(formSchema),
     defaultValues,
   });
+
+  // Generate random password
+  const handleGeneratePassword = () => {
+    const password = generateRandomPassword();
+    form.setValue("password", password);
+  };
+
+  // Save user card as image
+  const handleSaveAsImage = async () => {
+    if (!userCardRef.current) return;
+
+    try {
+      const canvas = await html2canvas(userCardRef.current);
+      const image = canvas.toDataURL("image/png");
+
+      // Create a download link
+      const downloadLink = document.createElement("a");
+      const userName =
+        `${form.getValues("firstName")}_${form.getValues("lastName")}`.toLowerCase();
+      downloadLink.href = image;
+      downloadLink.download = `user_${userName}.png`;
+      downloadLink.click();
+
+      toast({
+        title: "Éxito",
+        description: "Detalles del usuario guardados como imagen",
+      });
+    } catch (error) {
+      console.error("Error saving image:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo guardar la imagen",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Fetch companies for the dropdown
   useEffect(() => {
@@ -149,6 +214,9 @@ export function UserDialog({
           active: true,
         });
       }
+
+      // Reset password visibility
+      setShowPassword(false);
     }
   }, [open, user, form, isEditing]);
 
@@ -290,13 +358,39 @@ export function UserDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Contraseña</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="********"
-                          {...field}
-                        />
-                      </FormControl>
+                      <div className="flex space-x-2">
+                        <div className="relative flex-grow">
+                          <FormControl>
+                            <Input
+                              type={showPassword ? "text" : "password"}
+                              placeholder="********"
+                              {...field}
+                            />
+                          </FormControl>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2"
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
+                            {showPassword ? (
+                              <EyeOff size={16} />
+                            ) : (
+                              <Eye size={16} />
+                            )}
+                          </Button>
+                        </div>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="outline"
+                          onClick={handleGeneratePassword}
+                          title="Generar contraseña"
+                        >
+                          <RefreshCw size={16} />
+                        </Button>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -399,6 +493,77 @@ export function UserDialog({
                 </FormItem>
               )}
             />
+
+            {!isEditing &&
+              !loading &&
+              form.getValues("firstName") &&
+              form.getValues("lastName") && (
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-sm font-medium">
+                      Vista previa del usuario
+                    </h3>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={handleSaveAsImage}
+                      className="h-8"
+                    >
+                      <Download size={16} className="mr-1" />
+                      Guardar
+                    </Button>
+                  </div>
+                  <div
+                    ref={userCardRef}
+                    className="border rounded-md p-4 bg-card text-card-foreground"
+                  >
+                    <div className="space-y-2">
+                      <h3 className="font-bold text-lg flex justify-between">
+                        {form.getValues("firstName")}{" "}
+                        {form.getValues("lastName")}
+                        <Badge
+                          variant={
+                            form.getValues("role") === "SUPERADMIN"
+                              ? "destructive"
+                              : form.getValues("role") === "ADMIN"
+                                ? "default"
+                                : "outline"
+                          }
+                        >
+                          {form.getValues("role") === "SUPERADMIN"
+                            ? "Super Admin"
+                            : form.getValues("role") === "ADMIN"
+                              ? "Admin"
+                              : "Vendedor"}
+                        </Badge>
+                      </h3>
+                      <div className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-sm">
+                        <span className="font-medium">Email:</span>
+                        <span>{form.getValues("email")}</span>
+                        <span className="font-medium">Contraseña:</span>
+                        <span>{form.getValues("password")}</span>
+                        <span className="font-medium">Empresa:</span>
+                        <span>
+                          {form.getValues("companyId") === NO_COMPANY
+                            ? "Ninguna"
+                            : companies.find(
+                                (c) => c.id === form.getValues("companyId")
+                              )?.name || "N/A"}
+                        </span>
+                        <span className="font-medium">Estado:</span>
+                        <span>
+                          {form.getValues("active") ? "Activo" : "Inactivo"}
+                        </span>
+                      </div>
+                      <div className="mt-3 text-xs text-muted-foreground bg-muted p-2 rounded-sm">
+                        El usuario podrá iniciar sesión inmediatamente con estas
+                        credenciales.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
             <DialogFooter>
               <Button type="submit" disabled={loading || isSubmitting}>

@@ -47,12 +47,20 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { email, password, firstName, lastName, role, companyId } = body;
 
-    // First create the user in Supabase
+    // Create user in Supabase with email already confirmed
     const { data: authData, error: authError } =
       await supabase.auth.admin.createUser({
         email,
         password,
-        email_confirm: false,
+        email_confirm: true, // Directly mark the email as confirmed
+        user_metadata: {
+          firstName,
+          lastName,
+          role,
+        },
+        app_metadata: {
+          provider: "email",
+        },
       });
 
     if (authError) {
@@ -71,7 +79,13 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(profile, { status: 201 });
+    return NextResponse.json(
+      {
+        ...profile,
+        emailConfirmed: true,
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Error creating user:", error);
     return NextResponse.json(

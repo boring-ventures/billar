@@ -57,9 +57,10 @@ export function useUsers() {
         });
 
         if (response.ok) {
+          const data = await response.json();
           toast({
-            title: "Success",
-            description: "User created successfully",
+            title: "Usuario creado con éxito",
+            description: "El usuario puede iniciar sesión inmediatamente.",
           });
           await fetchUsers();
           return true;

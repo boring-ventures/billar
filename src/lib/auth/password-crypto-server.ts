@@ -24,7 +24,7 @@ export async function hashPassword(password: string): Promise<string> {
 
 /**
  * Salt and hash a password with SHA-256 algorithm
- * This should match the client-side hashing implementation
+ * This replicates the client-side implementation in password-crypto.ts
  *
  * @param password The plaintext password
  * @param email The user's email used as part of the salt
@@ -37,14 +37,9 @@ export async function saltAndHashPassword(
   // Normalize email to lowercase
   const normalizedEmail = email.toLowerCase();
 
-  // Create a salt based on email (same approach used client-side)
-  const salt = crypto
-    .createHash("sha256")
-    .update(normalizedEmail)
-    .digest("hex");
-
-  // Combine password with salt
-  const saltedPassword = password + salt;
+  // Combine password with email using the SAME format as client-side
+  // Using ${password}:${email} format - MUST match client implementation
+  const saltedPassword = `${password}:${normalizedEmail}`;
 
   // Hash the combined string with SHA-256
   const hashedPassword = crypto

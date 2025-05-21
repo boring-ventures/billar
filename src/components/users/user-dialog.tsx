@@ -177,7 +177,7 @@ export function UserDialog({
     }
   };
 
-  // Fetch companies for the dropdown - only if superadmin
+  // Fetch companies - for superadmin fetch all, for others fetch just their company
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
@@ -191,11 +191,11 @@ export function UserDialog({
       }
     };
 
-    // Only fetch companies if the form is open and user is superadmin
-    if (open && isSuperAdmin) {
+    // Fetch companies if the form is open (needed for both superadmin and regular admin)
+    if (open) {
       fetchCompanies();
     }
-  }, [open, isSuperAdmin]);
+  }, [open]);
 
   // Reset form when user changes
   useEffect(() => {
@@ -480,7 +480,7 @@ export function UserDialog({
                 <FormLabel>Empresa</FormLabel>
                 <div className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground">
                   {companies.find((c) => c.id === currentUserProfile.companyId)
-                    ?.name || "Tu Empresa"}
+                    ?.name || "Cargando empresa..."}
                 </div>
                 <p className="text-[0.8rem] text-muted-foreground">
                   Los usuarios creados estarán asociados a tu empresa.
@@ -578,7 +578,10 @@ export function UserDialog({
                             ? "Ninguna"
                             : companies.find(
                                 (c) => c.id === form.getValues("companyId")
-                              )?.name || "N/A"}
+                              )?.name ||
+                              (!isSuperAdmin && currentUserProfile?.companyId
+                                ? "Tu Empresa"
+                                : "N/A")}
                         </span>
                         <span className="font-medium">Estado:</span>
                         <span>

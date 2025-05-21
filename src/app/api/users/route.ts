@@ -138,8 +138,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Hash the password with the same method used in sign-in
-    const hashedPassword = await saltAndHashPassword(password, email);
+    // IMPORTANT: Hash the password exactly the same way as the client-side does
+    // Client uses the format: password:email with SHA-256
+    // We need to replicate this exactly
+    const normalizedEmail = email.toLowerCase();
+    const saltedPassword = `${password}:${normalizedEmail}`;
+    const crypto = require("crypto");
+    const hashedPassword = crypto
+      .createHash("sha256")
+      .update(saltedPassword)
+      .digest("hex");
 
     // IMPORTANT: For compatibility with the login process which uses client-side hashing
     // We need to add a special header to indicate the password is pre-hashed

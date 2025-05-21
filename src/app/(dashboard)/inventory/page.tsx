@@ -44,6 +44,10 @@ export default function InventoryPage() {
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [isLoadingCompanies, setIsLoadingCompanies] = useState(false);
 
+  // Check if user can modify inventory (ADMIN or SUPERADMIN)
+  const canModifyInventory =
+    profile?.role === "ADMIN" || profile?.role === "SUPERADMIN";
+
   // Load company data for the current user
   useEffect(() => {
     const fetchCompanyData = async () => {
@@ -104,7 +108,12 @@ export default function InventoryPage() {
 
     if (activeTab === "items") {
       if (inventoryView === "list") {
-        return <InventoryItemsTable companyId={companyId} />;
+        return (
+          <InventoryItemsTable
+            companyId={companyId}
+            canModify={canModifyInventory}
+          />
+        );
       } else {
         return (
           <div className="mt-6">
@@ -118,24 +127,32 @@ export default function InventoryPage() {
                 />
               </div>
               <div className="flex space-x-2">
-                <Button
-                  onClick={handleOpenItemDialog}
-                  disabled={isLoadingCompanies || isLoadingProfile}
-                >
-                  {isLoadingCompanies && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  Añadir Nuevo Artículo
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setCategoryDialogOpen(true)}
-                >
-                  Añadir Categoría
-                </Button>
+                {canModifyInventory && (
+                  <>
+                    <Button
+                      onClick={handleOpenItemDialog}
+                      disabled={isLoadingCompanies || isLoadingProfile}
+                    >
+                      {isLoadingCompanies && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      Añadir Nuevo Artículo
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setCategoryDialogOpen(true)}
+                    >
+                      Añadir Categoría
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
-            <InventoryItemsGridView query={searchQuery} companyId={companyId} />
+            <InventoryItemsGridView
+              query={searchQuery}
+              companyId={companyId}
+              canModify={canModifyInventory}
+            />
           </div>
         );
       }
@@ -145,13 +162,17 @@ export default function InventoryPage() {
           <InventoryCategoriesTable
             companyId={companyId}
             searchQuery={searchQuery}
+            canModify={canModifyInventory}
           />
         </div>
       );
     } else {
       return (
         <div className="mt-6">
-          <LowStockItemsTable companyId={companyId} />
+          <LowStockItemsTable
+            companyId={companyId}
+            canModify={canModifyInventory}
+          />
         </div>
       );
     }

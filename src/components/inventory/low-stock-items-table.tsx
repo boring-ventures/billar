@@ -47,9 +47,13 @@ interface InventoryItem {
 
 interface LowStockItemsTableProps {
   companyId?: string;
+  canModify?: boolean;
 }
 
-export function LowStockItemsTable({ companyId }: LowStockItemsTableProps) {
+export function LowStockItemsTable({
+  companyId,
+  canModify = false,
+}: LowStockItemsTableProps) {
   const router = useRouter();
   const [stockDialogOpen, setStockDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
@@ -58,8 +62,10 @@ export function LowStockItemsTable({ companyId }: LowStockItemsTableProps) {
   const { data: items = [], isLoading } = useLowStockItemsQuery(companyId);
 
   const handleAddStock = (item: InventoryItem) => {
-    setSelectedItem(item);
-    setStockDialogOpen(true);
+    if (canModify) {
+      setSelectedItem(item);
+      setStockDialogOpen(true);
+    }
   };
 
   const handleViewAllItems = () => {
@@ -138,10 +144,12 @@ export function LowStockItemsTable({ companyId }: LowStockItemsTableProps) {
                 <Eye className="mr-2 h-4 w-4" />
                 View Details
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleAddStock(item)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Stock
-              </DropdownMenuItem>
+              {canModify && (
+                <DropdownMenuItem onClick={() => handleAddStock(item)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Stock
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         );

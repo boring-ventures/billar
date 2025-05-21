@@ -99,6 +99,12 @@ export async function PUT(request: NextRequest) {
 
       // Only update inventory if quantity changed
       if (quantityDiff !== 0) {
+        // Get staff profile ID
+        const staffProfile = await tx.profile.findUnique({
+          where: { userId: session.user.id },
+          select: { id: true },
+        });
+
         // Create a stock movement
         await tx.stockMovement.create({
           data: {
@@ -107,7 +113,7 @@ export async function PUT(request: NextRequest) {
             type: quantityDiff > 0 ? "SALE" : "RETURN",
             reason: `Order Item Update: ${orderItem.orderId}`,
             reference: orderItem.orderId,
-            createdBy: session.user.id,
+            createdBy: staffProfile?.id || null,
           },
         });
 
@@ -203,6 +209,12 @@ export async function DELETE(request: NextRequest) {
 
     // Use a transaction to delete the order item, create a stock movement, and update inventory
     const result = await prisma.$transaction(async (tx) => {
+      // Get staff profile ID
+      const staffProfile = await tx.profile.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true },
+      });
+
       // Create a stock movement to return inventory
       await tx.stockMovement.create({
         data: {
@@ -211,7 +223,7 @@ export async function DELETE(request: NextRequest) {
           type: "RETURN",
           reason: `Order Item Removed: ${orderItem.orderId}`,
           reference: orderItem.orderId,
-          createdBy: session.user.id,
+          createdBy: staffProfile?.id || null,
         },
       });
 
@@ -382,6 +394,12 @@ export async function POST(request: NextRequest) {
       }
 
       // Create stock movement
+      // Get staff profile ID
+      const staffProfile = await tx.profile.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true },
+      });
+
       await tx.stockMovement.create({
         data: {
           itemId,
@@ -389,7 +407,7 @@ export async function POST(request: NextRequest) {
           type: "SALE",
           reason: `POS Order: ${orderId}`,
           reference: orderId,
-          createdBy: session.user.id,
+          createdBy: staffProfile?.id || null,
         },
       });
 

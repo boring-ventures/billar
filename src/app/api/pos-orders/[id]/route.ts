@@ -11,6 +11,29 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const cookieStore = cookies();
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+
+    // Get current user
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get the current user's profile to check role/company
+    const userProfile = await prisma.profile.findUnique({
+      where: { userId: session.user.id },
+    });
+
+    if (!userProfile) {
+      return NextResponse.json(
+        { error: "User profile not found" },
+        { status: 404 }
+      );
+    }
 
     if (!id) {
       return NextResponse.json(
@@ -55,11 +78,30 @@ export async function GET(
             name: true,
           },
         },
+        staff: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            userId: true,
+          },
+        },
       },
     });
 
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
+    // Non-superadmins can only access orders from their company
+    if (
+      userProfile.role !== "SUPERADMIN" &&
+      userProfile.companyId !== order.companyId
+    ) {
+      return NextResponse.json(
+        { error: "You don't have permission to view this order" },
+        { status: 403 }
+      );
     }
 
     return NextResponse.json(order);
@@ -197,6 +239,12 @@ export async function DELETE(
 
     // Use a transaction to handle deletion and inventory updates
     await prisma.$transaction(async (tx) => {
+      // Get the staff profile ID from the user ID
+      const staffProfile = await tx.profile.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true },
+      });
+
       // For each item in the order, create a reversing stock movement
       // and update the inventory
       for (const orderItem of order.orderItems) {
@@ -208,7 +256,7 @@ export async function DELETE(
             type: "RETURN",
             reason: `Order Cancelled: ${order.id}`,
             reference: order.id,
-            createdBy: session.user.id,
+            createdBy: staffProfile?.id || null,
           },
         });
 

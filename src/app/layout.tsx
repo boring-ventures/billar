@@ -37,12 +37,12 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: "/icon.png",
-    shortcut: "/favicon.ico",
-    apple: "/apple-icon.png",
+    icon: "/brand-assets/favicon/favicon-32x32.png",
+    shortcut: "/brand-assets/favicon/favicon.ico",
+    apple: "/brand-assets/favicon/apple-touch-icon.png",
     other: {
       rel: "apple-touch-icon",
-      url: "/apple-icon.png",
+      url: "/brand-assets/favicon/apple-touch-icon.png",
     },
   },
 };
@@ -64,6 +64,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="manifest" href="/brand-assets/favicon/site.webmanifest" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

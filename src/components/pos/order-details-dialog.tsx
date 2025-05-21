@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/select";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
+import { User } from "lucide-react";
 
 interface OrderDetailsDialogProps {
   orderId: string;
@@ -93,6 +94,12 @@ export function OrderDetailsDialog({
       </Dialog>
     );
   }
+
+  // Format staff name for display
+  const staffName = order.staff
+    ? `${order.staff.firstName || ""} ${order.staff.lastName || ""}`.trim() ||
+      "Usuario"
+    : "No registrado";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -172,6 +179,21 @@ export function OrderDetailsDialog({
               </CardContent>
             </Card>
           </div>
+
+          {/* Staff Information Card */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">
+                Ejecutado por
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center space-x-2">
+                <User className="h-4 w-4 text-muted-foreground" />
+                <span>{staffName}</span>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Order Items */}
           <Card>

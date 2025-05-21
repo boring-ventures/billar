@@ -25,6 +25,7 @@ model Profile {
   tableSessions         TableSession[]
   tableActivityLogs     TableActivityLog[]
   financialReports      FinancialReport[]
+  posOrders             PosOrder[]
 
   @@index([companyId, userId])
   @@map("profiles")
@@ -213,6 +214,7 @@ model PosOrder {
   orderItems            PosOrderItem[]
   company               Company                @relation(fields: [companyId], references: [id])
   tableSession          TableSession?          @relation(fields: [tableSessionId], references: [id])
+  staff                 Profile?               @relation(fields: [staffId], references: [id])
 
   @@map("pos_orders")
   @@schema("public")

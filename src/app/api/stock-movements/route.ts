@@ -110,6 +110,12 @@ export async function POST(request: NextRequest) {
 
     // Use a transaction to update stock movement and item quantity
     const result = await prisma.$transaction(async (tx) => {
+      // Get the staff profile ID from the user ID
+      const staffProfile = await tx.profile.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true },
+      });
+
       // Create stock movement
       const movement = await tx.stockMovement.create({
         data: {
@@ -119,7 +125,7 @@ export async function POST(request: NextRequest) {
           costPrice: costPrice || undefined,
           reason: reason || undefined,
           reference: reference || undefined,
-          createdBy: session.user.id,
+          createdBy: staffProfile?.id || null,
         },
       });
 

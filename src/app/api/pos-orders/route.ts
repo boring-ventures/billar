@@ -15,6 +15,30 @@ interface OrderItem {
 // GET /api/pos-orders - Get all pos orders
 export async function GET(request: NextRequest) {
   try {
+    const cookieStore = cookies();
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+
+    // Get current user
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get the current user's profile to check role/company
+    const userProfile = await prisma.profile.findUnique({
+      where: { userId: session.user.id },
+    });
+
+    if (!userProfile) {
+      return NextResponse.json(
+        { error: "User profile not found" },
+        { status: 404 }
+      );
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const companyId = searchParams.get("companyId");
     const tableSessionId = searchParams.get("tableSessionId");
@@ -30,7 +54,17 @@ export async function GET(request: NextRequest) {
     // Configure where clause based on provided filters
     const whereClause: Prisma.PosOrderWhereInput = {};
 
-    if (companyId) {
+    // For non-superadmins, restrict to their company regardless of filter
+    if (userProfile.role !== "SUPERADMIN") {
+      if (!userProfile.companyId) {
+        return NextResponse.json(
+          { error: "User is not associated with a company" },
+          { status: 403 }
+        );
+      }
+      whereClause.companyId = userProfile.companyId;
+    } else if (companyId) {
+      // For superadmins, respect the company filter if provided
       whereClause.companyId = companyId;
     }
 
@@ -93,6 +127,14 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             name: true,
+          },
+        },
+        staff: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            userId: true,
           },
         },
       },
@@ -342,11 +384,17 @@ export async function POST(request: NextRequest) {
 
     // Use a transaction to create the order, order items, and update inventory
     const result = await prisma.$transaction(async (tx) => {
+      // Get the staff profile ID from the user ID
+      const staffProfile = await tx.profile.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true },
+      });
+
       // Create the order
       const order = await tx.posOrder.create({
         data: {
           companyId,
-          staffId: session.user.id,
+          staffId: staffProfile?.id,
           tableSessionId: tableSessionId || undefined,
           amount: totalAmount,
           paymentMethod: paymentMethod || "CASH",
@@ -453,6 +501,11 @@ export async function POST(request: NextRequest) {
               );
 
               // Create a stock movement for the tracked portion
+              const trackedStaffProfile = await tx.profile.findUnique({
+                where: { userId: session.user.id },
+                select: { id: true },
+              });
+
               const trackedStockMovement = await tx.stockMovement.create({
                 data: {
                   itemId: typedItem.itemId,
@@ -460,7 +513,7 @@ export async function POST(request: NextRequest) {
                   type: "SALE",
                   reason: `POS Order (from tracked): ${order.id}`,
                   reference: order.id,
-                  createdBy: session.user.id,
+                  createdBy: trackedStaffProfile?.id || null,
                 },
               });
               stockMovements.push(trackedStockMovement);
@@ -473,7 +526,7 @@ export async function POST(request: NextRequest) {
                   type: "SALE",
                   reason: `POS Order (additional quantity): ${order.id}`,
                   reference: order.id,
-                  createdBy: session.user.id,
+                  createdBy: trackedStaffProfile?.id || null,
                 },
               });
               stockMovements.push(additionalStockMovement);
@@ -495,6 +548,13 @@ export async function POST(request: NextRequest) {
             } else {
               // For tracked items with equal or less quantity, create a stock movement to record the purchase
               // But DON'T update inventory as it was already deducted when tracking
+
+              // Get the staff profile for createdBy
+              const trackedStaffProfile = await tx.profile.findUnique({
+                where: { userId: session.user.id },
+                select: { id: true },
+              });
+
               const stockMovement = await tx.stockMovement.create({
                 data: {
                   itemId: typedItem.itemId,
@@ -502,7 +562,7 @@ export async function POST(request: NextRequest) {
                   type: "SALE",
                   reason: `POS Order (from tracked): ${order.id}`,
                   reference: order.id,
-                  createdBy: session.user.id,
+                  createdBy: trackedStaffProfile?.id || null,
                 },
               });
               stockMovements.push(stockMovement);
@@ -528,11 +588,16 @@ export async function POST(request: NextRequest) {
             console.log(
               `Falling back to normal inventory update for ${typedItem.itemId}`
             );
+            // Get the staff profile for createdBy
+            const staffProfile = await tx.profile.findUnique({
+              where: { userId: session.user.id },
+              select: { id: true },
+            });
             const stockMovement = await createStockMovementAndUpdateInventory(
               tx,
               typedItem,
               order.id,
-              session.user.id
+              staffProfile?.id || null
             );
             stockMovements.push(stockMovement);
           }
@@ -552,11 +617,16 @@ export async function POST(request: NextRequest) {
           );
 
           // Create the stock movement and update inventory
+          // Get the staff profile for createdBy
+          const staffProfile = await tx.profile.findUnique({
+            where: { userId: session.user.id },
+            select: { id: true },
+          });
           const stockMovement = await createStockMovementAndUpdateInventory(
             tx,
             typedItem,
             order.id,
-            session.user.id
+            staffProfile?.id || null
           );
           stockMovements.push(stockMovement);
 
@@ -589,7 +659,7 @@ async function createStockMovementAndUpdateInventory(
   tx: Prisma.TransactionClient,
   item: OrderItem,
   orderId: string,
-  userId: string
+  staffId: string | null
 ) {
   console.log(
     `Updating inventory for item ${item.itemId} - removing quantity: ${item.quantity}`
@@ -603,7 +673,7 @@ async function createStockMovementAndUpdateInventory(
       type: "SALE",
       reason: `POS Order: ${orderId}`,
       reference: orderId,
-      createdBy: userId,
+      createdBy: staffId, // Use the staffId (profile.id) instead of userId
     },
   });
 

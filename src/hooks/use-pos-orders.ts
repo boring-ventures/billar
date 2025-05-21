@@ -49,6 +49,12 @@ interface PosOrder {
     id: string;
     name: string;
   };
+  staff?: {
+    id: string;
+    userId: string;
+    firstName: string | null;
+    lastName: string | null;
+  };
 }
 
 // Filters for fetching orders

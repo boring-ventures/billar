@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -20,7 +21,13 @@ export default function Header() {
         <div className="flex justify-between items-center py-4">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-full bg-red-500"></div>
+            <Image
+              src="/brand-assets/logo.svg"
+              alt="BILLAR Logo"
+              width={32}
+              height={32}
+              className="w-8 h-8"
+            />
             <span className="text-xl font-bold text-white">BILLAR</span>
           </Link>
 

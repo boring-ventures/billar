@@ -9,10 +9,11 @@ import {
 } from "@/components/ui/sidebar";
 import { NavGroup } from "./nav-group";
 import { NavUser } from "./nav-user";
-import { TeamSwitcher } from "./team-switcher";
 import { sidebarData } from "./data/sidebar-data";
 import { useAuth } from "@/providers/auth-provider";
 import type { NavGroupProps } from "./types";
+import Image from "next/image";
+import Link from "next/link";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { profile } = useAuth();
@@ -52,7 +53,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" variant="floating" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={sidebarData.teams} />
+        <Link href="/dashboard" className="flex items-center gap-2 px-2 py-4">
+          <Image
+            src="/brand-assets/logo.svg"
+            alt="BILLAR Logo"
+            width={32}
+            height={32}
+            className="h-8 w-8"
+          />
+          <span className="text-xl font-bold">BILLAR</span>
+        </Link>
       </SidebarHeader>
       <SidebarContent>
         {filteredNavGroups.map((props: NavGroupProps) => (

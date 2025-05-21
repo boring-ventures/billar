@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 interface InventoryCategoriesTableProps {
   companyId?: string;
   searchQuery?: string;
+  canModify?: boolean;
 }
 
 interface InventoryCategory {
@@ -42,6 +43,7 @@ interface InventoryCategory {
 export function InventoryCategoriesTable({
   companyId,
   searchQuery = "",
+  canModify = false,
 }: InventoryCategoriesTableProps) {
   const [editingCategory, setEditingCategory] =
     useState<InventoryCategory | null>(null);
@@ -71,18 +73,24 @@ export function InventoryCategoriesTable({
   );
 
   const handleEditCategory = (category: InventoryCategory) => {
-    setEditingCategory(category);
-    setShowEditDialog(true);
+    if (canModify) {
+      setEditingCategory(category);
+      setShowEditDialog(true);
+    }
   };
 
   const handleDeleteCategory = (category: InventoryCategory) => {
-    setDeleteCategory(category);
-    setShowDeleteDialog(true);
+    if (canModify) {
+      setDeleteCategory(category);
+      setShowDeleteDialog(true);
+    }
   };
 
   const handleAddNewCategory = () => {
-    setEditingCategory(null);
-    setShowEditDialog(true);
+    if (canModify) {
+      setEditingCategory(null);
+      setShowEditDialog(true);
+    }
   };
 
   const handleDialogSuccess = () => {
@@ -145,6 +153,10 @@ export function InventoryCategoriesTable({
         const category = row.original;
         const hasItems = category.items && category.items.length > 0;
 
+        if (!canModify) {
+          return null;
+        }
+
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -186,7 +198,7 @@ export function InventoryCategoriesTable({
         data={filteredCategories}
         onSearch={setLocalSearchQuery}
         searchPlaceholder="Search categories..."
-        onAddNew={handleAddNewCategory}
+        onAddNew={canModify ? handleAddNewCategory : undefined}
         addNewLabel="Add New Category"
       />
 

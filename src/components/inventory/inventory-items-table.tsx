@@ -43,6 +43,7 @@ import { Badge } from "@/components/ui/badge";
 
 interface InventoryItemsTableProps {
   companyId?: string;
+  canModify?: boolean;
 }
 
 interface InventoryItem {
@@ -64,7 +65,10 @@ interface InventoryItem {
   };
 }
 
-export function InventoryItemsTable({ companyId }: InventoryItemsTableProps) {
+export function InventoryItemsTable({
+  companyId,
+  canModify = false,
+}: InventoryItemsTableProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
@@ -133,30 +137,40 @@ export function InventoryItemsTable({ companyId }: InventoryItemsTableProps) {
   };
 
   const handleAddNewItem = () => {
-    setEditingItem(null);
-    setShowEditDialog(true);
+    if (canModify) {
+      setEditingItem(null);
+      setShowEditDialog(true);
+    }
   };
 
   const handleEditItem = (item: InventoryItem) => {
-    setEditingItem(item);
-    setShowEditDialog(true);
+    if (canModify) {
+      setEditingItem(item);
+      setShowEditDialog(true);
+    }
   };
 
   const handleDeleteItem = (item: InventoryItem) => {
-    setDeleteItem(item);
-    setShowDeleteDialog(true);
+    if (canModify) {
+      setDeleteItem(item);
+      setShowDeleteDialog(true);
+    }
   };
 
   const handleAddStock = (item: InventoryItem) => {
-    setStockDialogItem(item);
-    setStockDialogType("PURCHASE");
-    setShowStockDialog(true);
+    if (canModify) {
+      setStockDialogItem(item);
+      setStockDialogType("PURCHASE");
+      setShowStockDialog(true);
+    }
   };
 
   const handleRemoveStock = (item: InventoryItem) => {
-    setStockDialogItem(item);
-    setStockDialogType("SALE");
-    setShowStockDialog(true);
+    if (canModify) {
+      setStockDialogItem(item);
+      setStockDialogType("SALE");
+      setShowStockDialog(true);
+    }
   };
 
   const columns: ColumnDef<InventoryItem>[] = [
@@ -244,26 +258,31 @@ export function InventoryItemsTable({ companyId }: InventoryItemsTableProps) {
                 <Eye className="mr-2 h-4 w-4" />
                 View Details
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleAddStock(item)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Stock
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleRemoveStock(item)}>
-                <Minus className="mr-2 h-4 w-4" />
-                Remove Stock
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => handleEditItem(item)}>
-                <Edit className="mr-2 h-4 w-4" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleDeleteItem(item)}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash className="mr-2 h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
+
+              {canModify && (
+                <>
+                  <DropdownMenuItem onClick={() => handleAddStock(item)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Stock
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleRemoveStock(item)}>
+                    <Minus className="mr-2 h-4 w-4" />
+                    Remove Stock
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => handleEditItem(item)}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleDeleteItem(item)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash className="mr-2 h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         );
@@ -303,7 +322,7 @@ export function InventoryItemsTable({ companyId }: InventoryItemsTableProps) {
         data={filteredItems}
         onSearch={setSearchQuery}
         searchPlaceholder="Search items..."
-        onAddNew={handleAddNewItem}
+        onAddNew={canModify ? handleAddNewItem : undefined}
         addNewLabel="Add New Item"
         statusFilter={categoryFilterElement}
       />

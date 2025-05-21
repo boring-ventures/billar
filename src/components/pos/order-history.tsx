@@ -57,6 +57,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/components/ui/use-toast";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 // Define the structure of an order for column typing
 interface Order {
@@ -77,6 +78,13 @@ interface Order {
   amount: number;
   paymentMethod: "CASH" | "QR" | "CREDIT_CARD";
   paymentStatus: "PAID" | "UNPAID";
+  staffId?: string;
+  staff?: {
+    id: string;
+    firstName?: string;
+    lastName?: string;
+    userId: string;
+  };
 }
 
 export function OrderHistory() {
@@ -85,6 +93,10 @@ export function OrderHistory() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const { companies, selectedCompany } = useCompany();
+  const { profile, isLoading: isProfileLoading } = useCurrentUser();
+  const isSuperAdmin = profile?.role === "SUPERADMIN";
+
+  // For non-superadmins, always filter by their company
   const [filterByCompany, setFilterByCompany] = useState(false);
   const [selectedCompanyId, setSelectedCompanyId] = useState<
     string | undefined
@@ -102,6 +114,24 @@ export function OrderHistory() {
   const [isPrintPdfDialogOpen, setIsPrintPdfDialogOpen] = useState(false);
   const [isExportAllDialogOpen, setIsExportAllDialogOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Automatically set company filter based on user's profile
+  useEffect(() => {
+    if (!isProfileLoading && profile) {
+      if (profile.role !== "SUPERADMIN") {
+        if (profile.companyId) {
+          setFilterByCompany(true);
+          setSelectedCompanyId(profile.companyId);
+          console.log(
+            "Auto-filtering orders by user's company:",
+            profile.companyId
+          );
+        }
+      } else if (selectedCompany?.id) {
+        setSelectedCompanyId(selectedCompany.id);
+      }
+    }
+  }, [profile, isProfileLoading, selectedCompany?.id]);
 
   // Use the selected company if filter is enabled, otherwise fetch all orders
   const companyIdFilter = filterByCompany ? selectedCompanyId : undefined;
@@ -198,19 +228,22 @@ export function OrderHistory() {
 
   // Filter orders by company
   const handleCompanyChange = (companyId: string) => {
-    if (companyId === "ALL") {
-      setFilterByCompany(false);
-      updateFilters({
-        companyId: "",
-        page: 1,
-      });
-    } else {
-      setFilterByCompany(true);
-      setSelectedCompanyId(companyId);
-      updateFilters({
-        companyId: companyId,
-        page: 1,
-      });
+    // Only allow superadmins to change company filter
+    if (isSuperAdmin) {
+      if (companyId === "ALL") {
+        setFilterByCompany(false);
+        updateFilters({
+          companyId: "",
+          page: 1,
+        });
+      } else {
+        setFilterByCompany(true);
+        setSelectedCompanyId(companyId);
+        updateFilters({
+          companyId: companyId,
+          page: 1,
+        });
+      }
     }
   };
 
@@ -412,32 +445,61 @@ export function OrderHistory() {
       cell: ({ row }) => <div>{row.original.company?.name || "-"}</div>,
     },
     {
+      accessorKey: "staff",
+      header: "Ejecutado por",
+      cell: ({ row }) => {
+        const staff = row.original.staff;
+        return (
+          <div>
+            {staff
+              ? `${staff.firstName || ""} ${staff.lastName || ""}`.trim() ||
+                "Usuario"
+              : "-"}
+          </div>
+        );
+      },
+    },
+    {
       accessorKey: "tableSession.table.name",
       header: "Mesa",
       cell: ({ row }) => (
         <div>
-          {row.original.tableSession ? (
-            <div className="space-y-1">
-              <div>{row.original.tableSession.table.name}</div>
-              {row.original.tableSession.totalCost && (
-                <div className="text-xs text-muted-foreground">
-                  Sesión: Bs.
-                  {Number(row.original.tableSession.totalCost).toFixed(2)}
-                </div>
-              )}
-            </div>
-          ) : (
-            "-"
-          )}
+          {row.original.tableSession
+            ? row.original.tableSession.table.name
+            : "-"}
         </div>
       ),
     },
     {
-      accessorKey: "amount",
-      header: "Monto",
-      cell: ({ row }) => (
-        <div>Bs. {Number(row.original.amount).toFixed(2)}</div>
-      ),
+      accessorKey: "financialDetails",
+      header: "Detalles Financieros",
+      cell: ({ row }) => {
+        // Calculate product subtotal (total amount - table session cost)
+        const totalAmount = Number(row.original.amount || 0);
+        const sessionCost = Number(row.original.tableSession?.totalCost || 0);
+        const productSubtotal = totalAmount - sessionCost;
+
+        return (
+          <div className="space-y-1">
+            {row.original.tableSession?.totalCost ? (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Subtotal mesa:</span>
+                <span>Bs. {sessionCost.toFixed(2)}</span>
+              </div>
+            ) : null}
+
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Subtotal productos:</span>
+              <span>Bs. {productSubtotal.toFixed(2)}</span>
+            </div>
+
+            <div className="flex justify-between font-medium border-t pt-1 mt-1">
+              <span>Total:</span>
+              <span>Bs. {totalAmount.toFixed(2)}</span>
+            </div>
+          </div>
+        );
+      },
     },
     {
       accessorKey: "paymentMethod",
@@ -525,24 +587,26 @@ export function OrderHistory() {
   // Filter row elements
   const filterRow = (
     <div className="flex flex-col space-y-4 md:flex-row md:items-center md:space-y-0 md:space-x-4">
-      {/* Company Filter */}
-      <Select
-        onValueChange={handleCompanyChange}
-        defaultValue={filterByCompany ? selectedCompanyId : "ALL"}
-        value={filterByCompany ? selectedCompanyId : "ALL"}
-      >
-        <SelectTrigger className="w-full md:w-[180px]">
-          <SelectValue placeholder="Select Company" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="ALL">All Companies</SelectItem>
-          {companies.map((company: { id: string; name: string }) => (
-            <SelectItem key={company.id} value={company.id}>
-              {company.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {/* Company Filter - Only shown to superadmins */}
+      {isSuperAdmin && (
+        <Select
+          onValueChange={handleCompanyChange}
+          defaultValue={filterByCompany ? selectedCompanyId : "ALL"}
+          value={filterByCompany ? selectedCompanyId : "ALL"}
+        >
+          <SelectTrigger className="w-full md:w-[180px]">
+            <SelectValue placeholder="Select Company" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All Companies</SelectItem>
+            {companies.map((company: { id: string; name: string }) => (
+              <SelectItem key={company.id} value={company.id}>
+                {company.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
 
       {/* Date Range Picker */}
       <Popover>

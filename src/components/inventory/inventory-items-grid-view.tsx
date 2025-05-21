@@ -14,6 +14,7 @@ import {
   Minus,
   Edit,
   Trash,
+  Eye,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -51,11 +52,13 @@ interface InventoryItem {
 interface InventoryItemsGridViewProps {
   query: string;
   companyId?: string;
+  canModify?: boolean;
 }
 
 export function InventoryItemsGridView({
   query,
   companyId,
+  canModify = false,
 }: InventoryItemsGridViewProps) {
   const router = useRouter();
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
@@ -93,8 +96,10 @@ export function InventoryItemsGridView({
     e: React.MouseEvent<HTMLElement>
   ) => {
     e.stopPropagation();
-    setEditingItem(item);
-    setShowEditDialog(true);
+    if (canModify) {
+      setEditingItem(item);
+      setShowEditDialog(true);
+    }
   };
 
   const handleDeleteItem = (
@@ -102,8 +107,10 @@ export function InventoryItemsGridView({
     e: React.MouseEvent<HTMLElement>
   ) => {
     e.stopPropagation();
-    setDeleteItem(item);
-    setShowDeleteDialog(true);
+    if (canModify) {
+      setDeleteItem(item);
+      setShowDeleteDialog(true);
+    }
   };
 
   const handleAddStock = (
@@ -111,9 +118,11 @@ export function InventoryItemsGridView({
     e: React.MouseEvent<HTMLElement>
   ) => {
     e.stopPropagation();
-    setStockDialogItem(item);
-    setStockDialogType("PURCHASE");
-    setShowStockDialog(true);
+    if (canModify) {
+      setStockDialogItem(item);
+      setStockDialogType("PURCHASE");
+      setShowStockDialog(true);
+    }
   };
 
   const handleRemoveStock = (
@@ -121,9 +130,11 @@ export function InventoryItemsGridView({
     e: React.MouseEvent<HTMLElement>
   ) => {
     e.stopPropagation();
-    setStockDialogItem(item);
-    setStockDialogType("SALE");
-    setShowStockDialog(true);
+    if (canModify) {
+      setStockDialogItem(item);
+      setStockDialogType("SALE");
+      setShowStockDialog(true);
+    }
   };
 
   if (isLoading) {
@@ -222,37 +233,56 @@ export function InventoryItemsGridView({
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
-                      className="h-8 w-8 p-0"
+                      size="icon"
+                      className="absolute right-2 top-2 h-8 w-8"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <span className="sr-only">Open menu</span>
                       <MoreHorizontal className="h-4 w-4" />
+                      <span className="sr-only">Open menu</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={(e) => handleAddStock(item, e)}>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add Stock
+                    <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+                      <Eye
+                        className="mr-2 h-4 w-4"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCardClick(item.id);
+                        }}
+                      />
+                      View Details
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={(e) => handleRemoveStock(item, e)}
-                    >
-                      <Minus className="mr-2 h-4 w-4" />
-                      Remove Stock
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={(e) => handleEditItem(item, e)}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={(e) => handleDeleteItem(item, e)}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <Trash className="mr-2 h-4 w-4" />
-                      Delete
-                    </DropdownMenuItem>
+
+                    {canModify && (
+                      <>
+                        <DropdownMenuItem
+                          onClick={(e) => handleAddStock(item, e)}
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add Stock
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => handleRemoveStock(item, e)}
+                        >
+                          <Minus className="mr-2 h-4 w-4" />
+                          Remove Stock
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={(e) => handleEditItem(item, e)}
+                        >
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => handleDeleteItem(item, e)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </CardFooter>

@@ -20,6 +20,7 @@ import { StockMovementDialog } from "@/components/inventory/stock-movement-dialo
 import { InventoryItemDialog } from "@/components/inventory/inventory-item-dialog";
 import { ItemDetailsSkeleton } from "@/components/inventory/item-details-skeleton";
 import { formatCurrency } from "@/lib/utils";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 export default function InventoryItemDetailsPage() {
   const params = useParams();
@@ -31,6 +32,10 @@ export default function InventoryItemDetailsPage() {
     "PURCHASE" | "SALE" | "ADJUSTMENT"
   >("PURCHASE");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const { profile } = useCurrentUser();
+
+  // Check if user can modify inventory (ADMIN or SUPERADMIN)
+  const canModify = profile?.role === "ADMIN" || profile?.role === "SUPERADMIN";
 
   const { data: item, isLoading } = useInventoryItemQuery(itemId);
   const { movements } = useStockMovements(itemId);
@@ -49,22 +54,30 @@ export default function InventoryItemDetailsPage() {
   };
 
   const handleEditItem = () => {
-    setEditDialogOpen(true);
+    if (canModify) {
+      setEditDialogOpen(true);
+    }
   };
 
   const handleAddStock = () => {
-    setMovementType("PURCHASE");
-    setStockMovementDialogOpen(true);
+    if (canModify) {
+      setMovementType("PURCHASE");
+      setStockMovementDialogOpen(true);
+    }
   };
 
   const handleRemoveStock = () => {
-    setMovementType("SALE");
-    setStockMovementDialogOpen(true);
+    if (canModify) {
+      setMovementType("SALE");
+      setStockMovementDialogOpen(true);
+    }
   };
 
   const handleAdjustStock = () => {
-    setMovementType("ADJUSTMENT");
-    setStockMovementDialogOpen(true);
+    if (canModify) {
+      setMovementType("ADJUSTMENT");
+      setStockMovementDialogOpen(true);
+    }
   };
 
   if (isLoading) {
@@ -102,20 +115,22 @@ export default function InventoryItemDetailsPage() {
             <Badge className="bg-amber-500/15 text-amber-600">LOW STOCK</Badge>
           )}
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Button onClick={handleAddStock} size="sm">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Stock
-          </Button>
-          <Button onClick={handleRemoveStock} size="sm" variant="secondary">
-            <Minus className="mr-2 h-4 w-4" />
-            Remove Stock
-          </Button>
-          <Button onClick={handleEditItem} size="sm" variant="outline">
-            <Edit className="mr-2 h-4 w-4" />
-            Edit
-          </Button>
-        </div>
+        {canModify && (
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button onClick={handleAddStock} size="sm">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Stock
+            </Button>
+            <Button onClick={handleRemoveStock} size="sm" variant="secondary">
+              <Minus className="mr-2 h-4 w-4" />
+              Remove Stock
+            </Button>
+            <Button onClick={handleEditItem} size="sm" variant="outline">
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </Button>
+          </div>
+        )}
       </div>
 
       {isLowStock && (
@@ -202,11 +217,13 @@ export default function InventoryItemDetailsPage() {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="movements" className="mt-6">
-          <div className="flex justify-end mb-4">
-            <Button size="sm" variant="outline" onClick={handleAdjustStock}>
-              Manual Adjustment
-            </Button>
-          </div>
+          {canModify && (
+            <div className="flex justify-end mb-4">
+              <Button size="sm" variant="outline" onClick={handleAdjustStock}>
+                Manual Adjustment
+              </Button>
+            </div>
+          )}
           <StockMovementTable
             movements={movements}
             itemId={itemId}
@@ -214,11 +231,13 @@ export default function InventoryItemDetailsPage() {
           />
         </TabsContent>
         <TabsContent value="adjustments" className="mt-6">
-          <div className="flex justify-end mb-4">
-            <Button size="sm" variant="outline" onClick={handleAdjustStock}>
-              New Adjustment
-            </Button>
-          </div>
+          {canModify && (
+            <div className="flex justify-end mb-4">
+              <Button size="sm" variant="outline" onClick={handleAdjustStock}>
+                New Adjustment
+              </Button>
+            </div>
+          )}
           <StockMovementTable
             movements={movements.filter((m) => m.type === "ADJUSTMENT")}
             itemId={itemId}

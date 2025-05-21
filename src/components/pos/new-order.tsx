@@ -120,7 +120,7 @@ export function NewOrder() {
     setSelectedCompanyId,
     isLoading: isCompanyLoading,
   } = useCompany();
-  const { profile } = useCurrentUser();
+  const { profile, isLoading: isProfileLoading } = useCurrentUser();
   const [companyId, setCompanyId] = useState<string>("");
   const isSuperAdmin = profile?.role === "SUPERADMIN";
   const [sessionData, setSessionData] = useState<SessionData | null>(null);
@@ -134,6 +134,25 @@ export function NewOrder() {
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [selectedItem, setSelectedItem] = useState<string>("");
   const [selectedQuantity, setSelectedQuantity] = useState<number>(1);
+
+  // Automatically set company ID based on user profile for non-superadmins
+  useEffect(() => {
+    if (!isProfileLoading && profile) {
+      if (profile.role !== "SUPERADMIN") {
+        // For company admin and sellers, automatically use their company
+        if (profile.companyId) {
+          setCompanyId(profile.companyId);
+          console.log(
+            "Automatically selected company ID from user profile:",
+            profile.companyId
+          );
+        }
+      } else if (selectedCompanyId) {
+        // For superadmins, use the selected company (if any)
+        setCompanyId(selectedCompanyId);
+      }
+    }
+  }, [profile, isProfileLoading, selectedCompanyId]);
 
   // Process tracked items from the session to create a consolidated cart
   const processTrackedItems = useCallback(
@@ -303,17 +322,6 @@ export function NewOrder() {
     processTrackedItemsWithInventory,
   ]);
 
-  // Use either the selected company from context or manually selected for superadmin
-  useEffect(() => {
-    if (isSuperAdmin) {
-      if (selectedCompanyId && !companyId) {
-        setCompanyId(selectedCompanyId);
-      }
-    } else if (selectedCompany?.id) {
-      setCompanyId(selectedCompany.id);
-    }
-  }, [selectedCompanyId, selectedCompany, isSuperAdmin, companyId]);
-
   // Hooks
   const { toast } = useToast();
   const { createOrder } = usePosOrders({ companyId });
@@ -356,10 +364,10 @@ export function NewOrder() {
     : 0;
   const cartTotal = cartItemsTotal + sessionCost;
 
-  // Handle company change for superadmin
+  // Modify the handleCompanyChange to apply only for superadmins
   const handleCompanyChange = (id: string) => {
-    setCompanyId(id);
     if (isSuperAdmin) {
+      setCompanyId(id);
       setSelectedCompanyId(id);
     }
   };
@@ -856,7 +864,7 @@ export function NewOrder() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      {/* Company selector for superadmin */}
+      {/* Company selector for superadmin only */}
       {isSuperAdmin && (
         <div className="lg:col-span-12">
           <Card>
@@ -884,6 +892,19 @@ export function NewOrder() {
               </Select>
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {/* Show company info for non-superadmins */}
+      {!isSuperAdmin && profile?.companyId && (
+        <div className="lg:col-span-12">
+          <Alert className="bg-blue-50 border-blue-200">
+            <Building className="h-4 w-4 text-blue-500" />
+            <AlertTitle>Empresa: {selectedCompany?.name}</AlertTitle>
+            <AlertDescription>
+              Creando orden para {selectedCompany?.name}
+            </AlertDescription>
+          </Alert>
         </div>
       )}
 

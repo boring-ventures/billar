@@ -81,7 +81,7 @@ export function InventoryItemDialog({
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>(
     []
   );
-  const { profile, isLoading: isLoadingProfile } = useCurrentUser();
+  const { profile } = useCurrentUser();
   const isSuperAdmin = profile?.role === "SUPERADMIN";
 
   // Use profile's company ID as default if not superadmin

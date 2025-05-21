@@ -90,10 +90,13 @@ export function LowStockItems({ companyId }: LowStockItemsProps) {
                       </div>
                       <Progress
                         value={Math.min(stockPercentage, 100)}
-                        className={`h-2 ${isVeryLow ? "bg-red-100" : isLow ? "bg-amber-100" : "bg-muted"}`}
-                        indicatorClassName={
-                          isVeryLow ? "bg-red-500" : isLow ? "bg-amber-500" : ""
-                        }
+                        className={`h-2 ${
+                          isVeryLow
+                            ? "bg-red-100 [&>div]:bg-red-500"
+                            : isLow
+                              ? "bg-amber-100 [&>div]:bg-amber-500"
+                              : "bg-muted"
+                        }`}
                       />
                     </div>
                   </TableCell>

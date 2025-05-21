@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
+import { PaymentStatus } from "@prisma/client";
 
 export async function GET(request: NextRequest) {
   try {
@@ -46,7 +47,7 @@ export async function GET(request: NextRequest) {
     // Build the query
     const where = {
       companyId,
-      ...(status && { paymentStatus: status }),
+      ...(status && { paymentStatus: status as PaymentStatus }),
     };
 
     // Get orders

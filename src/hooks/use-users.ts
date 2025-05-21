@@ -64,7 +64,7 @@ export function useUsers() {
 
         // If user is not a superadmin, ensure we use their company ID
         // The server will enforce this anyway, but we set it here too
-        let userDataToSubmit = { ...userData };
+        const userDataToSubmit = { ...userData };
         if (
           currentUserProfile?.companyId &&
           currentUserProfile?.role !== "SUPERADMIN"
@@ -81,7 +81,6 @@ export function useUsers() {
         });
 
         if (response.ok) {
-          const data = await response.json();
           toast({
             title: "Usuario creado con éxito",
             description: "El usuario puede iniciar sesión inmediatamente.",

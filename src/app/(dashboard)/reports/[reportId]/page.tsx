@@ -4,13 +4,18 @@ import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
-import { ReportDetailClient } from "@/components/reports/report-detail-client";
+import {
+  ReportDetailClient,
+  Report,
+} from "@/components/reports/report-detail-client";
 import { ReportDetailSkeleton } from "@/components/reports/report-detail-skeleton";
 import type { Decimal } from "decimal.js";
 
 // Define interface for the financial report
 interface FinancialReport {
   id: string;
+  name?: string;
+  reportType?: string;
   salesIncome: Decimal;
   tableRentIncome: Decimal;
   otherIncome: Decimal;
@@ -42,13 +47,18 @@ interface FinancialReport {
 }
 
 // Helper function to convert Decimal objects to strings
-const serializeReport = (report: FinancialReport) => {
+const serializeReport = (report: FinancialReport): Report | null => {
   if (!report) return null;
 
   // Create a new object with all properties serialized
   return {
-    ...report,
-    // Convert all decimal fields to strings
+    id: report.id,
+    name:
+      typeof report.name === "string"
+        ? report.name
+        : `Reporte Financiero ${report.id}`,
+    reportType:
+      typeof report.reportType === "string" ? report.reportType : "CUSTOM",
     salesIncome: report.salesIncome.toString(),
     tableRentIncome: report.tableRentIncome.toString(),
     otherIncome: report.otherIncome.toString(),
@@ -60,10 +70,17 @@ const serializeReport = (report: FinancialReport) => {
     otherExpenses: report.otherExpenses.toString(),
     totalExpense: report.totalExpense.toString(),
     netProfit: report.netProfit.toString(),
-    // Convert dates to ISO strings if needed
     startDate: report.startDate.toISOString(),
     endDate: report.endDate.toISOString(),
     generatedAt: report.generatedAt.toISOString(),
+    company: report.company,
+    generatedBy: report.generatedBy
+      ? {
+          id: report.generatedBy.id,
+          firstName: report.generatedBy.firstName || "",
+          lastName: report.generatedBy.lastName || "",
+        }
+      : undefined,
   };
 };
 
@@ -99,6 +116,11 @@ export default async function ReportDetailPage({
 
     // Serialize the report to handle Decimal objects
     const serializedReport = serializeReport(report);
+
+    // If serialization failed, return not found
+    if (!serializedReport) {
+      notFound();
+    }
 
     return (
       <div className="space-y-6 p-6">

@@ -35,7 +35,7 @@ interface Profile {
   lastName: string;
 }
 
-interface Report {
+export interface Report {
   id: string;
   name: string;
   reportType: string;

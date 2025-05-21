@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     const requestedCompanyId = searchParams.get("companyId");
 
     // Configure where clause based on user role and company
-    let whereClause: any = {};
+    const whereClause: Record<string, string> = {};
 
     // If the user is a SUPERADMIN, they can access all categories
     // If the user is an ADMIN or SELLER, they can only access categories from their company
@@ -108,7 +108,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    let { name, description, companyId } = body;
+    const { name, description, companyId: requestedCompanyId } = body;
+    let companyId = requestedCompanyId;
 
     // Determine the company ID to use
     // If not a superadmin, force the company ID to be the current user's company

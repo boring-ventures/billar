@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import crypto from "crypto";
+import { Prisma } from "@prisma/client";
 
 // GET /api/users - Get all users
 export async function GET(request: NextRequest) {
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get("query") || "";
 
     // Build query based on user role and company
-    let whereClause: any = {};
+    const whereClause: Prisma.ProfileWhereInput = {};
 
     // If the user is a SUPERADMIN, they can access all users
     // If the user is an ADMIN or SELLER, they can only access users from their company

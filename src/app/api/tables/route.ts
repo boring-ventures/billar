@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { TableStatus } from "@prisma/client";
+import { TableStatus, Prisma } from "@prisma/client";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get("query") || "";
 
     // Build query based on user role and company
-    let whereClause: any = {};
+    const whereClause: Prisma.TableWhereInput = {};
 
     // If the user is a SUPERADMIN, they can access all tables
     // If the user is an ADMIN or SELLER, they can only access tables from their company
@@ -122,7 +122,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    let { companyId, name, status, hourlyRate } = body;
+    const { name, status, hourlyRate } = body;
+    let { companyId } = body;
 
     // Determine the company ID to use
     // If not a superadmin, force the company ID to be the current user's company

@@ -130,9 +130,9 @@ export async function POST(request: NextRequest) {
     });
 
     const body = await request.json();
-    let {
+    const {
       name,
-      companyId,
+      companyId: requestedCompanyId,
       categoryId,
       sku,
       quantity,
@@ -141,6 +141,7 @@ export async function POST(request: NextRequest) {
       stockAlerts,
       createInitialMovement,
     } = body;
+    let companyId = requestedCompanyId;
 
     console.log("Request body:", {
       name,

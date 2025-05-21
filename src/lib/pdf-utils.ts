@@ -1,19 +1,79 @@
-import jsPDF from "jspdf";
+import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
 
+// Extended jsPDF type to include lastAutoTable property from autotable plugin
+interface ExtendedJsPdf extends jsPDF {
+  lastAutoTable: {
+    finalY: number;
+  };
+}
+
+// Define proper types to replace any
+interface OrderItem {
+  item?: {
+    name: string;
+    id?: string;
+    sku?: string | null;
+  };
+  quantity: number;
+  unitPrice: number;
+  id?: string;
+  orderId?: string;
+  itemId?: string;
+}
+
+interface TableSession {
+  id: string;
+  startedAt: string;
+  endedAt: string | null;
+  totalCost: number | null;
+  table: {
+    id: string;
+    name: string;
+    hourlyRate?: number | null;
+  };
+}
+
+interface Staff {
+  id?: string;
+  userId?: string;
+  firstName?: string | null;
+  lastName?: string | null;
+}
+
+interface Company {
+  id?: string;
+  name?: string;
+}
+
+interface Order {
+  id: string;
+  createdAt: string | Date;
+  companyId?: string;
+  staffId?: string | null;
+  company?: Company;
+  paymentStatus: string;
+  paymentMethod: string;
+  tableSession?: TableSession;
+  staff?: Staff;
+  orderItems: OrderItem[];
+  amount?: number | null;
+  updatedAt?: string;
+}
+
 // Brand colors from globals.css
 const brandColors = {
-  primary: [239, 68, 68], // Red from --primary (0 84% 60%)
-  secondary: [34, 197, 94], // Green from --secondary (142 76% 36%)
-  accent: [239, 68, 68],
-  background: [255, 255, 255], // White or dark mode [25, 25, 25]
-  foreground: [10, 10, 10], // Dark text or light mode [250, 250, 250]
-  muted: [245, 245, 245], // Light gray background
-  mutedForeground: [115, 115, 115], // Muted text
-  border: [229, 229, 229], // Border color
-  tableHeaderBg: [239, 68, 68], // Primary color for table headers
-  tableHeaderText: [255, 255, 255], // White text on header
+  primary: [239, 68, 68] as [number, number, number], // Red from --primary (0 84% 60%)
+  secondary: [34, 197, 94] as [number, number, number], // Green from --secondary (142 76% 36%)
+  accent: [239, 68, 68] as [number, number, number],
+  background: [255, 255, 255] as [number, number, number], // White or dark mode [25, 25, 25]
+  foreground: [10, 10, 10] as [number, number, number], // Dark text or light mode [250, 250, 250]
+  muted: [245, 245, 245] as [number, number, number], // Light gray background
+  mutedForeground: [115, 115, 115] as [number, number, number], // Muted text
+  border: [229, 229, 229] as [number, number, number], // Border color
+  tableHeaderBg: [239, 68, 68] as [number, number, number], // Primary color for table headers
+  tableHeaderText: [255, 255, 255] as [number, number, number], // White text on header
 };
 
 // Helper function to format currency
@@ -79,7 +139,7 @@ const addHeaderToPdf = (doc: jsPDF, title: string) => {
 };
 
 // Generate PDF for a single order
-export const generateOrderPDF = (order: any) => {
+export const generateOrderPDF = (order: Order) => {
   // Create a new PDF document
   const doc = new jsPDF();
 
@@ -142,7 +202,7 @@ export const generateOrderPDF = (order: any) => {
   if (order.orderItems && order.orderItems.length > 0) {
     // Table header and data
     const headers = [["Ítem", "Cantidad", "Precio Unitario", "Subtotal"]];
-    const data = order.orderItems.map((item: any) => [
+    const data = order.orderItems.map((item: OrderItem) => [
       item.item?.name || "Ítem Desconocido",
       item.quantity.toString(),
       formatCurrency(item.unitPrice),
@@ -163,7 +223,7 @@ export const generateOrderPDF = (order: any) => {
     });
 
     // Add total
-    const finalY = (doc as any).lastAutoTable.finalY + 10;
+    const finalY = (doc as ExtendedJsPdf).lastAutoTable.finalY + 10;
 
     // Calculate proper total
     const productAmount = Number(order.amount || 0);
@@ -219,7 +279,7 @@ export const generateOrderPDF = (order: any) => {
 };
 
 // Generate PDF for multiple orders (new function)
-export const generateMultipleOrdersPDF = (orders: any[]) => {
+export const generateMultipleOrdersPDF = (orders: Order[]) => {
   if (!orders || orders.length === 0) {
     throw new Error("No hay órdenes para exportar");
   }
@@ -294,7 +354,7 @@ export const generateMultipleOrdersPDF = (orders: any[]) => {
     if (order.orderItems && order.orderItems.length > 0) {
       // Table header and data
       const headers = [["Ítem", "Cantidad", "Precio Unitario", "Subtotal"]];
-      const data = order.orderItems.map((item: any) => [
+      const data = order.orderItems.map((item: OrderItem) => [
         item.item?.name || "Ítem Desconocido",
         item.quantity.toString(),
         formatCurrency(item.unitPrice),
@@ -315,7 +375,7 @@ export const generateMultipleOrdersPDF = (orders: any[]) => {
       });
 
       // Add total
-      const finalY = (doc as any).lastAutoTable.finalY + 10;
+      const finalY = (doc as ExtendedJsPdf).lastAutoTable.finalY + 10;
 
       // Calculate proper total
       const productAmount = Number(order.amount || 0);
@@ -374,6 +434,7 @@ export const generateMultipleOrdersPDF = (orders: any[]) => {
 };
 
 // Generate PDF for a financial report
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const generateReportPDF = (report: any) => {
   // Create a new PDF document
   const doc = new jsPDF();
@@ -416,12 +477,25 @@ export const generateReportPDF = (report: any) => {
     brandColors.foreground[2]
   );
 
+  // Convert values to numbers if they are strings
+  const salesIncome = Number(report.salesIncome);
+  const tableRentIncome = Number(report.tableRentIncome);
+  const otherIncome = Number(report.otherIncome);
+  const totalIncome = Number(report.totalIncome);
+  const inventoryCost = Number(report.inventoryCost);
+  const maintenanceCost = Number(report.maintenanceCost);
+  const staffCost = Number(report.staffCost);
+  const utilityCost = Number(report.utilityCost);
+  const otherExpenses = Number(report.otherExpenses);
+  const totalExpense = Number(report.totalExpense);
+  const netProfit = Number(report.netProfit);
+
   // Income table
   const incomeData = [
-    ["Ventas (POS)", formatCurrency(report.salesIncome)],
-    ["Renta de Mesas", formatCurrency(report.tableRentIncome)],
-    ["Otros Ingresos", formatCurrency(report.otherIncome)],
-    ["Total Ingresos", formatCurrency(report.totalIncome)],
+    ["Ventas (POS)", formatCurrency(salesIncome)],
+    ["Renta de Mesas", formatCurrency(tableRentIncome)],
+    ["Otros Ingresos", formatCurrency(otherIncome)],
+    ["Total Ingresos", formatCurrency(totalIncome)],
   ];
 
   autoTable(doc, {
@@ -441,7 +515,7 @@ export const generateReportPDF = (report: any) => {
   });
 
   // Expense section
-  const expenseY = (doc as any).lastAutoTable.finalY + 15;
+  const expenseY = (doc as ExtendedJsPdf).lastAutoTable.finalY + 15;
   doc.setFontSize(14);
   doc.setTextColor(
     brandColors.primary[0],
@@ -458,12 +532,12 @@ export const generateReportPDF = (report: any) => {
 
   // Expense table
   const expenseData = [
-    ["Inventario", formatCurrency(report.inventoryCost)],
-    ["Mantenimiento", formatCurrency(report.maintenanceCost)],
-    ["Personal", formatCurrency(report.staffCost)],
-    ["Servicios", formatCurrency(report.utilityCost)],
-    ["Otros Gastos", formatCurrency(report.otherExpenses)],
-    ["Total Gastos", formatCurrency(report.totalExpense)],
+    ["Inventario", formatCurrency(inventoryCost)],
+    ["Mantenimiento", formatCurrency(maintenanceCost)],
+    ["Personal", formatCurrency(staffCost)],
+    ["Servicios", formatCurrency(utilityCost)],
+    ["Otros Gastos", formatCurrency(otherExpenses)],
+    ["Total Gastos", formatCurrency(totalExpense)],
   ];
 
   autoTable(doc, {
@@ -483,7 +557,7 @@ export const generateReportPDF = (report: any) => {
   });
 
   // Summary section
-  const summaryY = (doc as any).lastAutoTable.finalY + 15;
+  const summaryY = (doc as ExtendedJsPdf).lastAutoTable.finalY + 15;
   doc.setFontSize(14);
   doc.setTextColor(
     brandColors.primary[0],
@@ -500,7 +574,6 @@ export const generateReportPDF = (report: any) => {
     brandColors.foreground[2]
   );
   doc.text("Ganancia Neta:", 15, summaryY + 10);
-  const netProfit = Number(report.netProfit);
   doc.setTextColor(netProfit >= 0 ? 0 : 255, netProfit >= 0 ? 128 : 0, 0);
   doc.text(formatCurrency(netProfit), 75, summaryY + 10);
   doc.setTextColor(

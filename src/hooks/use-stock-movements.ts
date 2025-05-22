@@ -73,7 +73,7 @@ export const useStockMovements = (itemId?: string) => {
         return response.data as StockMovement[];
       } catch (error) {
         console.error("Failed to fetch stock movements:", error);
-        setError("Failed to load stock movements.");
+        setError("Error al cargar los movimientos de stock.");
         return [];
       }
     },
@@ -94,7 +94,7 @@ export const useStockMovements = (itemId?: string) => {
           return response.data as StockMovement;
         } catch (error) {
           console.error("Failed to fetch stock movement:", error);
-          setError("Failed to load stock movement.");
+          setError("Error al cargar el movimiento de stock.");
           return null;
         }
       },
@@ -114,15 +114,15 @@ export const useStockMovements = (itemId?: string) => {
             ? error.message
             : typeof error === "object" && error !== null && "response" in error
               ? (error as ErrorResponse)?.response?.data?.error ||
-                "Failed to create stock movement."
-              : "Failed to create stock movement.";
+                "Error al crear el movimiento de stock."
+              : "Error al crear el movimiento de stock.";
         throw new Error(errorMessage);
       }
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "Stock movement recorded successfully",
+        title: "Éxito",
+        description: "Movimiento de stock registrado exitosamente",
       });
 
       // Invalidate stock movements for this item
@@ -163,15 +163,15 @@ export const useStockMovements = (itemId?: string) => {
             ? error.message
             : typeof error === "object" && error !== null && "response" in error
               ? (error as ErrorResponse)?.response?.data?.error ||
-                "Failed to update stock movement."
-              : "Failed to update stock movement.";
+                "Error al actualizar el movimiento de stock."
+              : "Error al actualizar el movimiento de stock.";
         throw new Error(errorMessage);
       }
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "Stock movement updated successfully",
+        title: "Éxito",
+        description: "Movimiento de stock actualizado exitosamente",
       });
 
       // Invalidate stock movements for this item
@@ -216,15 +216,15 @@ export const useStockMovements = (itemId?: string) => {
             ? error.message
             : typeof error === "object" && error !== null && "response" in error
               ? (error as ErrorResponse)?.response?.data?.error ||
-                "Failed to delete stock movement."
-              : "Failed to delete stock movement.";
+                "Error al eliminar el movimiento de stock."
+              : "Error al eliminar el movimiento de stock.";
         throw new Error(errorMessage);
       }
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "Stock movement deleted successfully",
+        title: "Éxito",
+        description: "Movimiento de stock eliminado exitosamente",
       });
 
       // Invalidate stock movements for this item

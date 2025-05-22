@@ -166,7 +166,7 @@ export const usePosOrders = (filters: PosOrderFilters) => {
         };
       } catch (error) {
         console.error("Failed to fetch orders:", error);
-        setError("Failed to load POS orders.");
+        setError("Error al cargar las órdenes del POS.");
         return { orders: [], pagination: null };
       }
     },

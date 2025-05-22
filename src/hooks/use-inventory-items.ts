@@ -112,7 +112,7 @@ export const useInventoryItems = (filters: InventoryItemFilters) => {
         return response.data as InventoryItem[];
       } catch (error) {
         console.error("Failed to fetch inventory items:", error);
-        setError("Failed to load inventory items.");
+        setError("Error al cargar los artículos del inventario.");
         return [];
       }
     },
@@ -136,7 +136,7 @@ export const useInventoryItems = (filters: InventoryItemFilters) => {
           return response.data as InventoryItem;
         } catch (error) {
           console.error("Failed to fetch inventory item:", error);
-          setError("Failed to load inventory item.");
+          setError("Error al cargar el artículo del inventario.");
           return null;
         }
       },
@@ -158,7 +158,7 @@ export const useInventoryItems = (filters: InventoryItemFilters) => {
         if (axios.isAxiosError(error) && error.response) {
           // Extract error message from response if available
           const serverError =
-            error.response.data?.error || "Failed to create item.";
+            error.response.data?.error || "Error al crear el artículo.";
           throw new Error(serverError);
         }
 
@@ -167,16 +167,16 @@ export const useInventoryItems = (filters: InventoryItemFilters) => {
             ? error.message
             : typeof error === "object" && error !== null && "response" in error
               ? (error as ErrorResponse)?.response?.data?.error ||
-                "Failed to create item."
-              : "Failed to create item.";
+                "Error al crear el artículo."
+              : "Error al crear el artículo.";
 
         throw new Error(errorMessage);
       }
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "Item created successfully",
+        title: "Éxito",
+        description: "Artículo creado exitosamente",
       });
       queryClient.invalidateQueries({ queryKey: ["inventoryItems", filters] });
     },
@@ -209,15 +209,15 @@ export const useInventoryItems = (filters: InventoryItemFilters) => {
             ? error.message
             : typeof error === "object" && error !== null && "response" in error
               ? (error as ErrorResponse)?.response?.data?.error ||
-                "Failed to update item."
-              : "Failed to update item.";
+                "Error al actualizar el artículo."
+              : "Error al actualizar el artículo.";
         throw new Error(errorMessage);
       }
     },
     onSuccess: (_, variables) => {
       toast({
-        title: "Success",
-        description: "Item updated successfully",
+        title: "Éxito",
+        description: "Artículo actualizado exitosamente",
       });
       queryClient.invalidateQueries({ queryKey: ["inventoryItems", filters] });
       queryClient.invalidateQueries({
@@ -253,15 +253,15 @@ export const useInventoryItems = (filters: InventoryItemFilters) => {
             ? error.message
             : typeof error === "object" && error !== null && "response" in error
               ? (error as ErrorResponse)?.response?.data?.error ||
-                "Failed to delete item."
-              : "Failed to delete item.";
+                "Error al eliminar el artículo."
+              : "Error al eliminar el artículo.";
         throw new Error(errorMessage);
       }
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "Item deleted successfully",
+        title: "Éxito",
+        description: "Artículo eliminado exitosamente",
       });
       queryClient.invalidateQueries({ queryKey: ["inventoryItems", filters] });
     },

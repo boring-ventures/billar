@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useCompany } from "@/hooks/use-company";
-import { usePosOrders } from "@/hooks/use-pos-orders";
 import { useInventoryItems } from "@/hooks/use-inventory-items";
 import { useTableSessions } from "@/hooks/use-table-sessions";
 import { useCurrentUser } from "@/hooks/use-current-user";
@@ -324,7 +323,6 @@ export function NewOrder() {
 
   // Hooks
   const { toast } = useToast();
-  const { createOrder } = usePosOrders({ companyId });
   const { items, isLoading: isLoadingItems } = useInventoryItems({ companyId });
   const { activeSessions, activeSessionsLoading, refetchActiveSessions } =
     useTableSessions(companyId);

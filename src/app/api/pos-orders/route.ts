@@ -242,7 +242,9 @@ export async function POST(request: NextRequest) {
     const hasSessionPaymentItem = itemIds.includes("session-payment");
 
     // Only query inventory for real items (not session-payment)
-    const realItemIds = itemIds.filter((id) => id !== "session-payment");
+    const realItemIds = itemIds.filter(
+      (id: string) => id !== "session-payment"
+    );
 
     // If we have real items, validate them against inventory
     const inventoryItems =

@@ -439,7 +439,7 @@ export function SessionOrderCreator({
     if (!effectiveCompanyId) {
       toast({
         title: "Error",
-        description: "Company ID is missing",
+        description: "Falta ID de la empresa",
         variant: "destructive",
       });
       return;
@@ -448,7 +448,7 @@ export function SessionOrderCreator({
     if (cart.length === 0) {
       toast({
         title: "Error",
-        description: "No items to track",
+        description: "No hay artículos para rastrear",
         variant: "destructive",
       });
       return;
@@ -534,8 +534,8 @@ export function SessionOrderCreator({
 
       // Show success toast
       toast({
-        title: "Success",
-        description: "Items tracked for this session successfully!",
+        title: "Éxito",
+        description: "¡Artículos rastreados para esta sesión exitosamente!",
       });
 
       // Actually make the API request
@@ -552,7 +552,7 @@ export function SessionOrderCreator({
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to track items");
+        throw new Error(errorData.error || "Error al rastrear artículos");
       }
 
       // Get the real data from the server
@@ -606,7 +606,9 @@ export function SessionOrderCreator({
       toast({
         title: "Error",
         description:
-          error instanceof Error ? error.message : "Failed to track items",
+          error instanceof Error
+            ? error.message
+            : "Error al rastrear artículos",
         variant: "destructive",
       });
 
@@ -652,7 +654,7 @@ export function SessionOrderCreator({
           <div className="flex justify-center items-center py-8">
             <RefreshCw className="h-6 w-6 animate-spin mr-2 text-muted-foreground" />
             <span className="text-muted-foreground">
-              Loading company data...
+              Cargando datos de la empresa...
             </span>
           </div>
         ) : (
@@ -662,7 +664,7 @@ export function SessionOrderCreator({
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="text"
-                  placeholder="Search inventory items..."
+                  placeholder="Buscar artículos de inventario..."
                   className="pl-8"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -686,12 +688,12 @@ export function SessionOrderCreator({
                       ? "Esperando actualización de stock..."
                       : isInventoryUpdating
                         ? "Actualizando inventario..."
-                        : "Loading..."}
+                        : "Cargando..."}
                   </>
                 ) : (
                   <>
                     <PlusCircle className="mr-2 h-4 w-4" />
-                    Add Item
+                    Agregar Artículo
                   </>
                 )}
               </Button>
@@ -700,16 +702,16 @@ export function SessionOrderCreator({
             <div className="border rounded-md">
               {cart.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  No items tracked yet. Search and add items to track for this
-                  session.
+                  Aún no hay artículos rastreados. Busca y agrega artículos para
+                  rastrear en esta sesión.
                 </div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Item</TableHead>
-                      <TableHead className="text-center">Quantity</TableHead>
-                      <TableHead className="text-right">Price</TableHead>
+                      <TableHead>Artículo</TableHead>
+                      <TableHead className="text-center">Cantidad</TableHead>
+                      <TableHead className="text-right">Precio</TableHead>
                       <TableHead className="text-right">Subtotal</TableHead>
                       <TableHead></TableHead>
                     </TableRow>
@@ -791,7 +793,7 @@ export function SessionOrderCreator({
           {isRefreshing ? (
             <>
               <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-              Processing...
+              Procesando...
             </>
           ) : isInventoryUpdating || isStockUpdating ? (
             <>
@@ -801,7 +803,7 @@ export function SessionOrderCreator({
                 : "Actualizando inventario..."}
             </>
           ) : (
-            <>Track Items</>
+            <>Rastrear Artículos</>
           )}
         </Button>
       </div>

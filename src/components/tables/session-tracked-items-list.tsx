@@ -80,7 +80,9 @@ export function SessionTrackedItemsList({
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.error || "Failed to fetch tracked items");
+          throw new Error(
+            errorData.error || "Error al cargar artículos registrados"
+          );
         }
 
         const data = await response.json();
@@ -106,7 +108,7 @@ export function SessionTrackedItemsList({
         setError(
           error instanceof Error
             ? error.message
-            : "Failed to fetch tracked items"
+            : "Error al cargar artículos registrados"
         );
       } finally {
         setIsLoading(false);
@@ -142,7 +144,7 @@ export function SessionTrackedItemsList({
       // Find the tracked item that's being removed
       const trackedItem = trackedItems.find((item) => item.id === itemId);
       if (!trackedItem) {
-        throw new Error("Item not found");
+        throw new Error("Artículo no encontrado");
       }
 
       // Get the companyId before deletion
@@ -175,7 +177,9 @@ export function SessionTrackedItemsList({
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to remove tracked item");
+        throw new Error(
+          errorData.error || "Error al eliminar artículo registrado"
+        );
       }
 
       // Update local state
@@ -220,7 +224,7 @@ export function SessionTrackedItemsList({
         description:
           error instanceof Error
             ? error.message
-            : "Failed to remove tracked item",
+            : "Error al eliminar artículo registrado",
         variant: "destructive",
       });
 

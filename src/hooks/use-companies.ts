@@ -38,7 +38,7 @@ export function useCompanies() {
         } else {
           toast({
             title: "Error",
-            description: "Failed to fetch companies",
+            description: "Error al cargar empresas",
             variant: "destructive",
           });
         }
@@ -46,7 +46,7 @@ export function useCompanies() {
         console.error("Error fetching companies:", error);
         toast({
           title: "Error",
-          description: "An unexpected error occurred",
+          description: "Ha ocurrido un error inesperado",
           variant: "destructive",
         });
       } finally {
@@ -70,8 +70,8 @@ export function useCompanies() {
 
         if (response.ok) {
           toast({
-            title: "Success",
-            description: "Company created successfully",
+            title: "Éxito",
+            description: "Empresa creada exitosamente",
           });
           await fetchCompanies();
           return true;
@@ -79,7 +79,7 @@ export function useCompanies() {
           const error = await response.json();
           toast({
             title: "Error",
-            description: error.error || "Failed to create company",
+            description: error.error || "Error al crear empresa",
             variant: "destructive",
           });
           return false;
@@ -88,7 +88,7 @@ export function useCompanies() {
         console.error("Error creating company:", error);
         toast({
           title: "Error",
-          description: "An unexpected error occurred",
+          description: "Ha ocurrido un error inesperado",
           variant: "destructive",
         });
         return false;
@@ -116,8 +116,8 @@ export function useCompanies() {
 
         if (response.ok) {
           toast({
-            title: "Success",
-            description: "Company updated successfully",
+            title: "Éxito",
+            description: "Empresa actualizada exitosamente",
           });
           await fetchCompanies();
           return true;
@@ -125,7 +125,7 @@ export function useCompanies() {
           const error = await response.json();
           toast({
             title: "Error",
-            description: error.error || "Failed to update company",
+            description: error.error || "Error al actualizar empresa",
             variant: "destructive",
           });
           return false;
@@ -134,7 +134,7 @@ export function useCompanies() {
         console.error("Error updating company:", error);
         toast({
           title: "Error",
-          description: "An unexpected error occurred",
+          description: "Ha ocurrido un error inesperado",
           variant: "destructive",
         });
         return false;
@@ -155,8 +155,8 @@ export function useCompanies() {
 
         if (response.ok) {
           toast({
-            title: "Success",
-            description: "Company deleted successfully",
+            title: "Éxito",
+            description: "Empresa eliminada exitosamente",
           });
           await fetchCompanies();
           return true;
@@ -164,7 +164,7 @@ export function useCompanies() {
           const error = await response.json();
           toast({
             title: "Error",
-            description: error.error || "Failed to delete company",
+            description: error.error || "Error al eliminar empresa",
             variant: "destructive",
           });
           return false;
@@ -173,7 +173,7 @@ export function useCompanies() {
         console.error("Error deleting company:", error);
         toast({
           title: "Error",
-          description: "An unexpected error occurred",
+          description: "Ha ocurrido un error inesperado",
           variant: "destructive",
         });
         return false;

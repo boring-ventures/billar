@@ -179,7 +179,7 @@ export function TablesGridView({ companyId, query }: TablesGridViewProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
@@ -187,7 +187,7 @@ export function TablesGridView({ companyId, query }: TablesGridViewProps) {
                   }}
                 >
                   <Edit className="mr-2 h-4 w-4" />
-                  View Details
+                  Ver Detalles
                 </DropdownMenuItem>
                 {isAdmin && (
                   <DropdownMenuItem
@@ -197,7 +197,7 @@ export function TablesGridView({ companyId, query }: TablesGridViewProps) {
                     }}
                   >
                     <Edit className="mr-2 h-4 w-4" />
-                    Edit Table
+                    Editar Mesa
                   </DropdownMenuItem>
                 )}
                 {table.status === "AVAILABLE" && (
@@ -210,7 +210,7 @@ export function TablesGridView({ companyId, query }: TablesGridViewProps) {
                       }}
                     >
                       <PlayCircle className="mr-2 h-4 w-4" />
-                      Start Session
+                      Iniciar Sesión
                     </DropdownMenuItem>
                   </>
                 )}
@@ -226,7 +226,7 @@ export function TablesGridView({ companyId, query }: TablesGridViewProps) {
                       }}
                     >
                       <StopCircle className="mr-2 h-4 w-4" />
-                      View Session
+                      Ver Sesión
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={(e) => {
@@ -237,7 +237,7 @@ export function TablesGridView({ companyId, query }: TablesGridViewProps) {
                       className="text-destructive"
                     >
                       <X className="mr-2 h-4 w-4" />
-                      Cancel Session
+                      Cancelar Sesión
                     </DropdownMenuItem>
                   </>
                 )}
@@ -246,7 +246,7 @@ export function TablesGridView({ companyId, query }: TablesGridViewProps) {
           </div>
 
           <div className={`text-sm font-medium ${statusColors.text}`}>
-            {table.company?.name || "Unknown Company"}
+            {table.company?.name || "Empresa Desconocida"}
           </div>
 
           <div className="flex-1 flex items-center justify-center py-2">
@@ -274,7 +274,9 @@ export function TablesGridView({ companyId, query }: TablesGridViewProps) {
             <div
               className={`text-sm font-medium uppercase ${statusColors.text}`}
             >
-              {table.status === "AVAILABLE" ? "CLICK TO START" : table.status}
+              {table.status === "AVAILABLE"
+                ? "CLIC PARA INICIAR"
+                : table.status}
             </div>
             {table.hourlyRate ? (
               <div className={`text-sm font-medium ${statusColors.text}`}>
@@ -282,7 +284,7 @@ export function TablesGridView({ companyId, query }: TablesGridViewProps) {
               </div>
             ) : (
               <div className={`text-sm font-medium ${statusColors.text}`}>
-                No rate set
+                Sin tarifa
               </div>
             )}
           </div>
@@ -322,7 +324,7 @@ export function TablesGridView({ companyId, query }: TablesGridViewProps) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <p className="text-lg text-muted-foreground mb-4">
-          No tables found. Create a new table to get started.
+          No se encontraron mesas. Crea una nueva mesa para comenzar.
         </p>
       </div>
     );
@@ -370,22 +372,22 @@ export function TablesGridView({ companyId, query }: TablesGridViewProps) {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancel this session?</AlertDialogTitle>
+            <AlertDialogTitle>¿Cancelar esta sesión?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will cancel the active session. No charges will be applied.
-              The table will be marked as available again.
+              Esto cancelará la sesión activa. No se aplicarán cargos. La mesa
+              se marcará como disponible nuevamente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleCancelSession}
               className="bg-destructive text-destructive-foreground"
               disabled={cancelSessionMutation.isPending}
             >
               {cancelSessionMutation.isPending
-                ? "Processing..."
-                : "Cancel Session"}
+                ? "Procesando..."
+                : "Cancelar Sesión"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

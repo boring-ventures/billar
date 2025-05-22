@@ -43,7 +43,7 @@ interface SessionDialogProps {
 }
 
 const formSchema = z.object({
-  tableId: z.string().min(1, "Table is required"),
+  tableId: z.string().min(1, "La mesa es obligatoria"),
   staffId: z.string().optional(),
 });
 
@@ -139,10 +139,10 @@ export function SessionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Start New Session</DialogTitle>
+          <DialogTitle>Iniciar Nueva Sesión</DialogTitle>
           <DialogDescription>
-            Start a new session for a table. Only available tables can be
-            selected.
+            Inicia una nueva sesión para una mesa. Solo se pueden seleccionar
+            mesas disponibles.
           </DialogDescription>
         </DialogHeader>
 
@@ -153,7 +153,7 @@ export function SessionDialog({
               name="tableId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Table</FormLabel>
+                  <FormLabel>Mesa</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
@@ -161,19 +161,19 @@ export function SessionDialog({
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a table" />
+                        <SelectValue placeholder="Selecciona una mesa" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       {tables.map((t) => (
                         <SelectItem key={t.id} value={t.id}>
-                          {t.name} - {t.company?.name || "Unknown Company"}
+                          {t.name} - {t.company?.name || "Empresa Desconocida"}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                   <FormDescription>
-                    The table to start a session for.
+                    La mesa para la cual iniciar una sesión.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -185,14 +185,14 @@ export function SessionDialog({
               name="staffId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Staff (Optional)</FormLabel>
+                  <FormLabel>Personal (Opcional)</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Assign staff (optional)" />
+                        <SelectValue placeholder="Asignar personal (opcional)" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -204,7 +204,7 @@ export function SessionDialog({
                     </SelectContent>
                   </Select>
                   <FormDescription>
-                    Staff member responsible for this session.
+                    Miembro del personal responsable de esta sesión.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -217,13 +217,13 @@ export function SessionDialog({
                 variant="outline"
                 onClick={() => onOpenChange(false)}
               >
-                Cancel
+                Cancelar
               </Button>
               <Button type="submit" disabled={createSessionMutation.isPending}>
                 {createSessionMutation.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                Start Session
+                Iniciar Sesión
               </Button>
             </DialogFooter>
           </form>

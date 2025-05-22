@@ -574,14 +574,14 @@ export function UserDialog({
                           }
                         >
                           {form.getValues("role") === "SUPERADMIN"
-                            ? "Super Admin"
+                            ? "Super Administrador"
                             : form.getValues("role") === "ADMIN"
-                              ? "Admin"
+                              ? "Administrador"
                               : "Vendedor"}
                         </Badge>
                       </h3>
                       <div className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-sm">
-                        <span className="font-medium">Email:</span>
+                        <span className="font-medium">Correo:</span>
                         <span>{form.getValues("email")}</span>
                         <span className="font-medium">Contraseña:</span>
                         <span>{form.getValues("password")}</span>

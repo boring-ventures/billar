@@ -39,7 +39,7 @@ export function useUsers() {
         } else {
           toast({
             title: "Error",
-            description: "Failed to fetch users",
+            description: "Error al cargar usuarios",
             variant: "destructive",
           });
         }
@@ -47,7 +47,7 @@ export function useUsers() {
         console.error("Error fetching users:", error);
         toast({
           title: "Error",
-          description: "An unexpected error occurred",
+          description: "Ha ocurrido un error inesperado",
           variant: "destructive",
         });
       } finally {
@@ -91,7 +91,7 @@ export function useUsers() {
           const error = await response.json();
           toast({
             title: "Error",
-            description: error.error || "Failed to create user",
+            description: error.error || "Error al crear usuario",
             variant: "destructive",
           });
           return false;
@@ -100,7 +100,7 @@ export function useUsers() {
         console.error("Error creating user:", error);
         toast({
           title: "Error",
-          description: "An unexpected error occurred",
+          description: "Ha ocurrido un error inesperado",
           variant: "destructive",
         });
         return false;
@@ -125,8 +125,8 @@ export function useUsers() {
 
         if (response.ok) {
           toast({
-            title: "Success",
-            description: "User updated successfully",
+            title: "Éxito",
+            description: "Usuario actualizado exitosamente",
           });
           await fetchUsers();
           return true;
@@ -134,7 +134,7 @@ export function useUsers() {
           const error = await response.json();
           toast({
             title: "Error",
-            description: error.error || "Failed to update user",
+            description: error.error || "Error al actualizar usuario",
             variant: "destructive",
           });
           return false;
@@ -143,7 +143,7 @@ export function useUsers() {
         console.error("Error updating user:", error);
         toast({
           title: "Error",
-          description: "An unexpected error occurred",
+          description: "Ha ocurrido un error inesperado",
           variant: "destructive",
         });
         return false;
@@ -164,8 +164,8 @@ export function useUsers() {
 
         if (response.ok) {
           toast({
-            title: "Success",
-            description: "User deleted successfully",
+            title: "Éxito",
+            description: "Usuario eliminado exitosamente",
           });
           await fetchUsers();
           return true;
@@ -173,7 +173,7 @@ export function useUsers() {
           const error = await response.json();
           toast({
             title: "Error",
-            description: error.error || "Failed to delete user",
+            description: error.error || "Error al eliminar usuario",
             variant: "destructive",
           });
           return false;
@@ -182,7 +182,7 @@ export function useUsers() {
         console.error("Error deleting user:", error);
         toast({
           title: "Error",
-          description: "An unexpected error occurred",
+          description: "Ha ocurrido un error inesperado",
           variant: "destructive",
         });
         return false;

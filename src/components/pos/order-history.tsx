@@ -521,10 +521,13 @@ export function OrderHistory() {
       accessorKey: "amount",
       header: "Total",
       cell: ({ row }) => {
-        const amount = row.getValue("amount") as number;
+        const amount = row.getValue("amount") as number | null;
         return (
           <div className="font-medium">
-            Bs. {amount ? amount.toFixed(2) : "0.00"}
+            Bs.{" "}
+            {amount !== null && amount !== undefined
+              ? Number(amount).toFixed(2)
+              : "0.00"}
           </div>
         );
       },

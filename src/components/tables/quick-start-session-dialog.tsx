@@ -116,7 +116,7 @@ export function QuickStartSessionDialog({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="text-center text-xl">
-            Quick Start Session
+            Inicio Rápido de Sesión
           </DialogTitle>
         </DialogHeader>
 
@@ -129,7 +129,7 @@ export function QuickStartSessionDialog({
                     {table.name}
                   </h3>
                   <div className="text-green-600 font-medium">
-                    {formatCurrency(table.hourlyRate || 0)}/hour
+                    {formatCurrency(table.hourlyRate || 0)}/hora
                   </div>
                 </div>
 
@@ -166,10 +166,10 @@ export function QuickStartSessionDialog({
               name="staffNotes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Quick Note (Optional)</FormLabel>
+                  <FormLabel>Nota Rápida (Opcional)</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Any notes for this session?"
+                      placeholder="¿Alguna nota para esta sesión?"
                       {...field}
                     />
                   </FormControl>
@@ -186,7 +186,7 @@ export function QuickStartSessionDialog({
                 disabled={isSubmitting}
                 className="sm:w-1/2"
               >
-                Cancel
+                Cancelar
               </Button>
               <Button
                 type="submit"
@@ -194,11 +194,11 @@ export function QuickStartSessionDialog({
                 className="bg-green-600 hover:bg-green-700 text-white sm:w-1/2 flex items-center justify-center gap-2"
               >
                 {isSubmitting ? (
-                  "Starting..."
+                  "Iniciando..."
                 ) : (
                   <>
                     <PlayCircle className="h-4 w-4" />
-                    Start Now
+                    Iniciar Ahora
                   </>
                 )}
               </Button>

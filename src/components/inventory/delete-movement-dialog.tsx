@@ -75,21 +75,21 @@ export function DeleteMovementDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete Stock Adjustment</AlertDialogTitle>
+          <AlertDialogTitle>Eliminar Ajuste de Stock</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete this stock adjustment? This action
-            cannot be undone and will affect the current stock level of the
-            item.
+            ¿Estás seguro de que quieres eliminar este ajuste de stock? Esta
+            acción no se puede deshacer y afectará el nivel actual de stock del
+            artículo.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
             disabled={isDeleting}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {isDeleting ? "Deleting..." : "Delete"}
+            {isDeleting ? "Eliminando..." : "Eliminar"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

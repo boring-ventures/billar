@@ -1,8 +1,9 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Inventory Management",
-  description: "Manage inventory items, categories, and stock movements",
+  title: "Gestión de Inventario",
+  description:
+    "Administra artículos de inventario, categorías y movimientos de stock",
 };
 
 export default function InventoryLayout({

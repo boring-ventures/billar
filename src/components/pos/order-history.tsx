@@ -476,114 +476,97 @@ export function OrderHistory() {
     {
       accessorKey: "id",
       header: "ID de Orden",
-      cell: ({ row }) => (
-        <div className="font-medium">{row.original.id.substring(0, 8)}...</div>
-      ),
+      cell: ({ row }) => {
+        const orderId = row.getValue("id") as string;
+        return (
+          <div className="font-mono text-sm">{orderId.substring(0, 8)}</div>
+        );
+      },
     },
     {
       accessorKey: "createdAt",
       header: "Fecha",
-      cell: ({ row }) => (
-        <div>{format(new Date(row.original.createdAt), "MMM dd, yyyy p")}</div>
-      ),
-    },
-    {
-      accessorKey: "company.name",
-      header: "Empresa",
-      cell: ({ row }) => <div>{row.original.company?.name || "-"}</div>,
-    },
-    {
-      accessorKey: "staff",
-      header: "Ejecutado por",
       cell: ({ row }) => {
-        const staff = row.original.staff;
+        const createdAt = row.getValue("createdAt") as string;
         return (
-          <div>
-            {staff
-              ? `${staff.firstName || ""} ${staff.lastName || ""}`.trim() ||
-                "Usuario"
-              : "-"}
+          <div className="text-sm">
+            {format(new Date(createdAt), "dd/MM/yyyy HH:mm")}
           </div>
         );
       },
     },
     {
-      accessorKey: "tableSession.table.name",
-      header: "Mesa",
-      cell: ({ row }) => (
-        <div>
-          {row.original.tableSession
-            ? row.original.tableSession.table.name
-            : "-"}
-        </div>
-      ),
+      id: "company",
+      header: "Empresa",
+      cell: ({ row }) => {
+        const order = row.original;
+        return (
+          <div className="text-sm">{order.company?.name || "Sin empresa"}</div>
+        );
+      },
     },
     {
-      accessorKey: "financialDetails",
-      header: "Detalles Financieros",
+      id: "table",
+      header: "Mesa",
       cell: ({ row }) => {
-        // Get the values from the order
-        const productAmount = Number(row.original.amount || 0);
-        const sessionCost = Number(row.original.tableSession?.totalCost || 0);
-
-        // For session-only orders, the API sets the entire amount to the session cost
-        // We need to check if this is a session-only order
-        const isSessionOnlyOrder =
-          row.original.tableSession &&
-          sessionCost > 0 &&
-          productAmount === sessionCost;
-
-        // If it's a session-only order, we should display the session cost only
-        // and set product amount to 0
-        const displayProductAmount = isSessionOnlyOrder ? 0 : productAmount;
-
-        // Calculate the total - for session-only orders, this will just be the session cost
-        // For regular orders, it's the sum of session cost and product amount
-        const actualTotal = isSessionOnlyOrder
-          ? sessionCost
-          : displayProductAmount + sessionCost;
-
+        const order = row.original;
         return (
-          <div className="space-y-1">
-            {row.original.tableSession?.totalCost ? (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Subtotal mesa:</span>
-                <span>Bs. {sessionCost.toFixed(2)}</span>
-              </div>
-            ) : null}
-
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Subtotal productos:</span>
-              <span>Bs. {displayProductAmount.toFixed(2)}</span>
-            </div>
-
-            <div className="flex justify-between font-medium border-t pt-1 mt-1">
-              <span>Total:</span>
-              <span>Bs. {actualTotal.toFixed(2)}</span>
-            </div>
+          <div className="text-sm">
+            {order.tableSession?.table.name || "Sin mesa"}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "amount",
+      header: "Total",
+      cell: ({ row }) => {
+        const amount = row.getValue("amount") as number;
+        return (
+          <div className="font-medium">
+            Bs. {amount ? amount.toFixed(2) : "0.00"}
           </div>
         );
       },
     },
     {
       accessorKey: "paymentMethod",
-      header: "Payment",
-      cell: ({ row }) => (
-        <div>{getPaymentMethodText(row.original.paymentMethod)}</div>
-      ),
+      header: "Método de Pago",
+      cell: ({ row }) => {
+        const method = row.getValue("paymentMethod") as
+          | "CASH"
+          | "QR"
+          | "CREDIT_CARD";
+        return <Badge variant="outline">{getPaymentMethodText(method)}</Badge>;
+      },
     },
     {
       accessorKey: "paymentStatus",
-      header: "Status",
+      header: "Estado",
       cell: ({ row }) => {
-        const status = row.original.paymentStatus;
+        const status = row.getValue("paymentStatus") as "PAID" | "UNPAID";
         return (
           <Badge
-            variant={status === "PAID" ? "outline" : "secondary"}
-            className={status === "PAID" ? "bg-green-100 text-green-800" : ""}
+            variant={status === "PAID" ? "default" : "destructive"}
+            className={status === "PAID" ? "bg-green-500" : ""}
           >
             {getPaymentStatusText(status)}
           </Badge>
+        );
+      },
+    },
+    {
+      id: "staff",
+      header: "Personal",
+      cell: ({ row }) => {
+        const order = row.original;
+        return (
+          <div className="text-sm">
+            {order.staff
+              ? `${order.staff.firstName || ""} ${order.staff.lastName || ""}`.trim() ||
+                "Desconocido"
+              : "Sin asignar"}
+          </div>
         );
       },
     },
@@ -592,11 +575,12 @@ export function OrderHistory() {
       header: "Acciones",
       cell: ({ row }) => {
         const order = row.original;
+
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
+                <span className="sr-only">Abrir menú</span>
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -616,11 +600,11 @@ export function OrderHistory() {
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleExport(order.id)}>
                 <Download className="mr-2 h-4 w-4" />
-                Exportar Orden
+                Exportar PDF
               </DropdownMenuItem>
-              {order.paymentStatus !== "PAID" && (
+              {order.paymentStatus === "UNPAID" && (
                 <DropdownMenuItem onClick={() => handleMarkAsPaid(order.id)}>
-                  <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
+                  <CheckCircle className="mr-2 h-4 w-4" />
                   Marcar como Pagado
                 </DropdownMenuItem>
               )}
@@ -638,12 +622,12 @@ export function OrderHistory() {
       onValueChange={handleStatusChange}
     >
       <SelectTrigger className="w-full md:w-[180px]">
-        <SelectValue placeholder="Payment Status" />
+        <SelectValue placeholder="Todos los Estados" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="ALL">All Statuses</SelectItem>
-        <SelectItem value="PAID">Paid</SelectItem>
-        <SelectItem value="UNPAID">Unpaid</SelectItem>
+        <SelectItem value="ALL">Todos los Estados</SelectItem>
+        <SelectItem value="PAID">Pagado</SelectItem>
+        <SelectItem value="UNPAID">Pendiente</SelectItem>
       </SelectContent>
     </Select>
   );
@@ -662,7 +646,7 @@ export function OrderHistory() {
             <SelectValue placeholder="Select Company" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">All Companies</SelectItem>
+            <SelectItem value="ALL">Todas las Empresas</SelectItem>
             {companies.map((company: { id: string; name: string }) => (
               <SelectItem key={company.id} value={company.id}>
                 {company.name}
@@ -718,7 +702,7 @@ export function OrderHistory() {
         className="w-full md:w-auto"
       >
         <X className="mr-2 h-4 w-4" />
-        Clear Filters
+        Limpiar Filtros
       </Button>
     </div>
   );
@@ -735,15 +719,15 @@ export function OrderHistory() {
         <RefreshCw
           className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`}
         />
-        {isRefreshing ? "Refreshing..." : "Refresh"}
+        {isRefreshing ? "Actualizando..." : "Actualizar"}
       </Button>
       <Button variant="outline" size="sm" onClick={handleExportAll}>
         <Download className="h-4 w-4 mr-2" />
-        Export All
+        Exportar Todo
       </Button>
       <Button size="sm" onClick={handleCreateNewOrder}>
         <FilePlus className="h-4 w-4 mr-2" />
-        New Order
+        Nueva Orden
       </Button>
     </div>
   );
@@ -760,17 +744,17 @@ export function OrderHistory() {
           <div className="flex flex-col gap-2">
             <div className="flex items-center space-x-2">
               <h3 className="text-xl font-semibold tracking-tight">
-                Orders History
+                Historial de Órdenes
               </h3>
               {(ordersIsFetching || isRefreshing) && (
                 <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
               )}
             </div>
             <p className="text-sm text-muted-foreground">
-              {filteredOrders.length} orders found
+              {filteredOrders.length} órdenes encontradas
               {pagination && (
                 <span className="ml-2">
-                  (Page {pagination.page} of {pagination.totalPages}, Total:{" "}
+                  (Página {pagination.page} de {pagination.totalPages}, Total:{" "}
                   {pagination.total})
                 </span>
               )}
@@ -784,7 +768,7 @@ export function OrderHistory() {
           columns={columns}
           data={filteredOrders}
           onSearch={setSearchTerm}
-          searchPlaceholder="Search orders..."
+          searchPlaceholder="Buscar órdenes..."
         />
       </div>
     );
@@ -807,14 +791,16 @@ export function OrderHistory() {
       <AlertDialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Print Invoice</AlertDialogTitle>
+            <AlertDialogTitle>Imprimir Factura</AlertDialogTitle>
             <AlertDialogDescription>
-              Print invoice for order #{selectedOrderId?.substring(0, 8)}
+              Imprimir factura para la orden #{selectedOrderId?.substring(0, 8)}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={performPrint}>Print</AlertDialogAction>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={performPrint}>
+              Imprimir
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -826,16 +812,16 @@ export function OrderHistory() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Print PDF</AlertDialogTitle>
+            <AlertDialogTitle>Imprimir PDF</AlertDialogTitle>
             <AlertDialogDescription>
-              Generate and print PDF for order #
+              Generar e imprimir PDF para la orden #
               {selectedOrderId?.substring(0, 8)}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={performPrintPdf}>
-              Print PDF
+              Imprimir PDF
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -848,15 +834,16 @@ export function OrderHistory() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Export Order</AlertDialogTitle>
+            <AlertDialogTitle>Exportar Órdenes</AlertDialogTitle>
             <AlertDialogDescription>
-              Export order #{selectedOrderId?.substring(0, 8)} to PDF format
+              Exportar todas las órdenes visibles a PDF. Esto puede tomar un
+              momento.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={performExport}>
-              Export
+              Exportar a PDF
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -869,16 +856,16 @@ export function OrderHistory() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Export All Orders</AlertDialogTitle>
+            <AlertDialogTitle>Exportar Todas las Órdenes</AlertDialogTitle>
             <AlertDialogDescription>
-              Export all {filteredOrders.length} filtered orders to a
-              spreadsheet
+              Exportar todas las {filteredOrders.length} órdenes filtradas a una
+              hoja de cálculo
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={performExportAll}>
-              Export All
+              Exportar Todo
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -891,14 +878,14 @@ export function OrderHistory() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Mark Order as Paid</AlertDialogTitle>
+            <AlertDialogTitle>Marcar Orden como Pagada</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to mark order #
-              {selectedOrderId?.substring(0, 8)} as paid?
+              ¿Estás seguro de que quieres marcar la orden #
+              {selectedOrderId?.substring(0, 8)} como pagada?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={performMarkAsPaid}
               disabled={updateOrder.isPending || isRefreshing}
@@ -906,10 +893,10 @@ export function OrderHistory() {
               {updateOrder.isPending || isRefreshing ? (
                 <>
                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Processing...
+                  Procesando...
                 </>
               ) : (
-                "Mark as Paid"
+                "Marcar como Pagada"
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

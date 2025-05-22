@@ -73,21 +73,21 @@ export function DeleteItemDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete Inventory Item</AlertDialogTitle>
+          <AlertDialogTitle>Eliminar Artículo de Inventario</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete &quot;{item.name}&quot;? This action
-            cannot be undone and will also delete all associated stock
-            movements.
+            ¿Estás seguro de que quieres eliminar &quot;{item.name}&quot;? Esta
+            acción no se puede deshacer y también eliminará todos los
+            movimientos de stock asociados.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
             disabled={isDeleting}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {isDeleting ? "Deleting..." : "Delete"}
+            {isDeleting ? "Eliminando..." : "Eliminar"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

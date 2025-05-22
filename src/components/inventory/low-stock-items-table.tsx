@@ -75,7 +75,7 @@ export function LowStockItemsTable({
   const columns: ColumnDef<InventoryItem>[] = [
     {
       accessorKey: "name",
-      header: "Name",
+      header: "Nombre",
       cell: ({ row }) => {
         const item = row.original;
         return (
@@ -83,7 +83,7 @@ export function LowStockItemsTable({
             {item.name}
             <Badge className="ml-2 bg-amber-500/15 text-amber-600 flex items-center gap-1">
               <AlertTriangle className="h-3 w-3" />
-              LOW
+              BAJO
             </Badge>
           </div>
         );
@@ -91,15 +91,15 @@ export function LowStockItemsTable({
     },
     {
       accessorKey: "category",
-      header: "Category",
+      header: "Categoría",
       cell: ({ row }) => {
         const item = row.original;
-        return <div>{item.category?.name || "Uncategorized"}</div>;
+        return <div>{item.category?.name || "Sin categoría"}</div>;
       },
     },
     {
       accessorKey: "quantity",
-      header: "Current Stock",
+      header: "Stock Actual",
       cell: ({ row }) => {
         const item = row.original;
         return (
@@ -109,14 +109,14 @@ export function LowStockItemsTable({
     },
     {
       accessorKey: "criticalThreshold",
-      header: "Threshold",
+      header: "Umbral",
       cell: ({ row }) => {
         return <div>{row.original.criticalThreshold}</div>;
       },
     },
     {
       accessorKey: "price",
-      header: "Price",
+      header: "Precio",
       cell: ({ row }) => {
         const price = row.original.price;
         return <div>{price ? formatCurrency(price) : "-"}</div>;
@@ -124,7 +124,7 @@ export function LowStockItemsTable({
     },
     {
       id: "actions",
-      header: "Actions",
+      header: "Acciones",
       cell: ({ row }) => {
         const item = row.original;
 
@@ -132,22 +132,22 @@ export function LowStockItemsTable({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
+                <span className="sr-only">Abrir menú</span>
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuLabel>Acciones</DropdownMenuLabel>
               <DropdownMenuItem
                 onClick={() => router.push(`/inventory/${item.id}`)}
               >
                 <Eye className="mr-2 h-4 w-4" />
-                View Details
+                Ver Detalles
               </DropdownMenuItem>
               {canModify && (
                 <DropdownMenuItem onClick={() => handleAddStock(item)}>
                   <Plus className="mr-2 h-4 w-4" />
-                  Add Stock
+                  Agregar Stock
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
@@ -181,16 +181,18 @@ export function LowStockItemsTable({
               />
             </svg>
           </div>
-          <h3 className="text-lg font-medium mt-2">All Stock Levels Good</h3>
+          <h3 className="text-lg font-medium mt-2">
+            Todos los Niveles de Stock Están Bien
+          </h3>
           <p className="text-muted-foreground">
-            No items are currently at or below their critical threshold
+            No hay artículos que estén en o por debajo de su umbral crítico
           </p>
           <Button
             onClick={handleViewAllItems}
             variant="outline"
             className="mt-4"
           >
-            View All Items
+            Ver Todos los Artículos
           </Button>
         </div>
       </div>
@@ -201,22 +203,22 @@ export function LowStockItemsTable({
     <div className="space-y-6">
       <Alert variant="default" className="bg-amber-50 border-amber-200">
         <AlertTriangle className="h-4 w-4 text-amber-600" />
-        <AlertTitle>Low Stock Alert</AlertTitle>
+        <AlertTitle>Alerta de Stock Bajo</AlertTitle>
         <AlertDescription>
-          These items are at or below their critical threshold and need
-          attention.
+          Estos artículos están en o por debajo de su umbral crítico y necesitan
+          atención.
         </AlertDescription>
       </Alert>
 
       <DataTable
         columns={columns}
         data={items}
-        searchPlaceholder="Search low stock items..."
+        searchPlaceholder="Buscar artículos con stock bajo..."
       />
 
       <div className="flex justify-end">
         <Button variant="outline" onClick={handleViewAllItems}>
-          View All Items
+          Ver Todos los Artículos
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>

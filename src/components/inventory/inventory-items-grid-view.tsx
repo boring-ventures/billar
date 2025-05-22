@@ -166,11 +166,13 @@ export function InventoryItemsGridView({
     return (
       <div className="text-center p-8 border rounded-md">
         <Boxes className="h-12 w-12 mx-auto text-muted-foreground" />
-        <h3 className="mt-2 text-lg font-medium">No items found</h3>
+        <h3 className="mt-2 text-lg font-medium">
+          No se encontraron artículos
+        </h3>
         <p className="text-muted-foreground mt-1">
           {query
-            ? `No items matching "${query}"`
-            : "Get started by adding inventory items"}
+            ? `No hay artículos que coincidan con "${query}"`
+            : "Comienza agregando artículos al inventario"}
         </p>
       </div>
     );
@@ -193,15 +195,15 @@ export function InventoryItemsGridView({
                   {isLowStock && (
                     <Badge className="ml-2 bg-amber-500/15 text-amber-600 flex items-center gap-1">
                       <AlertTriangle className="h-3 w-3" />
-                      LOW
+                      BAJO
                     </Badge>
                   )}
                 </div>
 
                 <div className="mt-4 space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Category</span>
-                    <span>{item.category?.name || "Uncategorized"}</span>
+                    <span className="text-muted-foreground">Categoría</span>
+                    <span>{item.category?.name || "Sin categoría"}</span>
                   </div>
 
                   <div className="flex justify-between text-sm">
@@ -221,7 +223,7 @@ export function InventoryItemsGridView({
                   </div>
 
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Price</span>
+                    <span className="text-muted-foreground">Precio</span>
                     <span>{item.price ? formatCurrency(item.price) : "-"}</span>
                   </div>
                 </div>
@@ -237,7 +239,7 @@ export function InventoryItemsGridView({
                       onClick={(e) => e.stopPropagation()}
                     >
                       <MoreHorizontal className="h-4 w-4" />
-                      <span className="sr-only">Open menu</span>
+                      <span className="sr-only">Abrir menú</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -249,7 +251,7 @@ export function InventoryItemsGridView({
                           handleCardClick(item.id);
                         }}
                       />
-                      View Details
+                      Ver Detalles
                     </DropdownMenuItem>
 
                     {canModify && (
@@ -258,27 +260,27 @@ export function InventoryItemsGridView({
                           onClick={(e) => handleAddStock(item, e)}
                         >
                           <Plus className="mr-2 h-4 w-4" />
-                          Add Stock
+                          Agregar Stock
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={(e) => handleRemoveStock(item, e)}
                         >
                           <Minus className="mr-2 h-4 w-4" />
-                          Remove Stock
+                          Retirar Stock
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onClick={(e) => handleEditItem(item, e)}
                         >
                           <Edit className="mr-2 h-4 w-4" />
-                          Edit
+                          Editar
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={(e) => handleDeleteItem(item, e)}
                           className="text-destructive focus:text-destructive"
                         >
                           <Trash className="mr-2 h-4 w-4" />
-                          Delete
+                          Eliminar
                         </DropdownMenuItem>
                       </>
                     )}

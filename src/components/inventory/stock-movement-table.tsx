@@ -101,7 +101,9 @@ export function StockMovementTable({
   if (!movements || movements.length === 0) {
     return (
       <div className="text-center py-8 border rounded-md">
-        <p className="text-muted-foreground">No stock movements found</p>
+        <p className="text-muted-foreground">
+          No se encontraron movimientos de stock
+        </p>
       </div>
     );
   }
@@ -111,13 +113,13 @@ export function StockMovementTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Date</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead className="text-right">Quantity</TableHead>
-            <TableHead>Reason</TableHead>
-            <TableHead className="text-right">Cost Price</TableHead>
-            {showAll && <TableHead>Reference</TableHead>}
-            <TableHead>Created By</TableHead>
+            <TableHead>Fecha</TableHead>
+            <TableHead>Tipo</TableHead>
+            <TableHead className="text-right">Cantidad</TableHead>
+            <TableHead>Motivo</TableHead>
+            <TableHead className="text-right">Precio de Costo</TableHead>
+            {showAll && <TableHead>Referencia</TableHead>}
+            <TableHead>Creado Por</TableHead>
             <TableHead className="text-right"></TableHead>
           </TableRow>
         </TableHeader>
@@ -157,7 +159,7 @@ export function StockMovementTable({
               <TableCell>
                 {movement.creator
                   ? `${movement.creator.firstName || ""} ${movement.creator.lastName || ""}`.trim() ||
-                    "Unknown"
+                    "Desconocido"
                   : "-"}
               </TableCell>
               <TableCell className="text-right">
@@ -165,17 +167,17 @@ export function StockMovementTable({
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Open menu</span>
+                        <span className="sr-only">Abrir menú</span>
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                       <DropdownMenuItem
                         onClick={() => handleEditMovement(movement)}
                       >
                         <Edit className="mr-2 h-4 w-4" />
-                        Edit
+                        Editar
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
@@ -183,7 +185,7 @@ export function StockMovementTable({
                         className="text-destructive focus:text-destructive"
                       >
                         <Trash className="mr-2 h-4 w-4" />
-                        Delete
+                        Eliminar
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

@@ -39,19 +39,22 @@ export function ProfileForm() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || "Failed to update profile");
+        throw new Error(error.message || "Error al actualizar el perfil");
       }
 
       await response.json(); // Wait for response to be fully read
 
       toast({
-        title: "Profile updated",
-        description: "Your profile has been updated successfully.",
+        title: "Perfil actualizado",
+        description: "Tu perfil ha sido actualizado exitosamente.",
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update profile. Please try again.",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Error al actualizar el perfil. Por favor inténtalo de nuevo.",
         variant: "destructive",
       });
     }
@@ -65,12 +68,17 @@ export function ProfileForm() {
           name="firstName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>First Name</FormLabel>
+              <FormLabel>Nombre</FormLabel>
               <FormControl>
-                <Input placeholder="shadcn" {...field} value={field.value ?? ""} />
+                <Input
+                  placeholder="shadcn"
+                  {...field}
+                  value={field.value ?? ""}
+                />
               </FormControl>
               <FormDescription>
-                This is your public display name. It can be your real name or a pseudonym.
+                Este es tu nombre público de visualización. Puede ser tu nombre
+                real o un seudónimo.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -82,21 +90,25 @@ export function ProfileForm() {
           name="lastName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Last Name</FormLabel>
+              <FormLabel>Apellido</FormLabel>
               <FormControl>
-                <Input placeholder="John Doe" {...field} value={field.value ?? ""} />
+                <Input
+                  placeholder="John Doe"
+                  {...field}
+                  value={field.value ?? ""}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
         <div className="flex items-center gap-4">
-          <Button type="submit">Update profile</Button>
+          <Button type="submit">Actualizar perfil</Button>
           <Button type="button" variant="outline" onClick={() => form.reset()}>
-            Cancel
+            Cancelar
           </Button>
         </div>
       </form>
     </Form>
   );
-} 
+}

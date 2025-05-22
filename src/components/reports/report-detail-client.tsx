@@ -95,7 +95,7 @@ export function ReportDetailClient({ report }: ReportDetailProps) {
         description: "Reporte exportado a PDF exitosamente",
       });
     } catch (error) {
-      console.error("Error exporting report to PDF:", error);
+      console.error("Error al exportar reporte a PDF:", error);
       toast({
         title: "Error",
         description: "No se pudo exportar el reporte a PDF",

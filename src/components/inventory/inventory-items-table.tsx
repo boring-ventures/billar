@@ -176,7 +176,7 @@ export function InventoryItemsTable({
   const columns: ColumnDef<InventoryItem>[] = [
     {
       accessorKey: "name",
-      header: "Name",
+      header: "Nombre",
       cell: ({ row }) => {
         const item = row.original;
         const isLowStock = item.quantity <= item.criticalThreshold;
@@ -186,7 +186,7 @@ export function InventoryItemsTable({
             {isLowStock && item.stockAlerts && (
               <Badge className="ml-2 bg-amber-500/15 text-amber-600 flex items-center gap-1">
                 <AlertTriangle className="h-3 w-3" />
-                LOW
+                BAJO
               </Badge>
             )}
           </div>
@@ -203,10 +203,10 @@ export function InventoryItemsTable({
     },
     {
       accessorKey: "category",
-      header: "Category",
+      header: "Categoría",
       cell: ({ row }) => {
         const item = row.original;
-        return <div>{item.category?.name || "Uncategorized"}</div>;
+        return <div>{item.category?.name || "Sin categoría"}</div>;
       },
     },
     {
@@ -230,7 +230,7 @@ export function InventoryItemsTable({
     },
     {
       accessorKey: "price",
-      header: "Price",
+      header: "Precio",
       cell: ({ row }) => {
         const price = row.getValue("price") as number | null;
         return <div>{price ? formatCurrency(price) : "-"}</div>;
@@ -238,7 +238,7 @@ export function InventoryItemsTable({
     },
     {
       id: "actions",
-      header: "Actions",
+      header: "Acciones",
       cell: ({ row }) => {
         const item = row.original;
 
@@ -246,40 +246,40 @@ export function InventoryItemsTable({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
+                <span className="sr-only">Abrir menú</span>
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuLabel>Acciones</DropdownMenuLabel>
               <DropdownMenuItem
                 onClick={() => router.push(`/inventory/${item.id}`)}
               >
                 <Eye className="mr-2 h-4 w-4" />
-                View Details
+                Ver Detalles
               </DropdownMenuItem>
 
               {canModify && (
                 <>
                   <DropdownMenuItem onClick={() => handleAddStock(item)}>
                     <Plus className="mr-2 h-4 w-4" />
-                    Add Stock
+                    Agregar Stock
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleRemoveStock(item)}>
                     <Minus className="mr-2 h-4 w-4" />
-                    Remove Stock
+                    Retirar Stock
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => handleEditItem(item)}>
                     <Edit className="mr-2 h-4 w-4" />
-                    Edit
+                    Editar
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => handleDeleteItem(item)}
                     className="text-destructive focus:text-destructive"
                   >
                     <Trash className="mr-2 h-4 w-4" />
-                    Delete
+                    Eliminar
                   </DropdownMenuItem>
                 </>
               )}
@@ -302,10 +302,10 @@ export function InventoryItemsTable({
       }
     >
       <SelectTrigger className="w-full md:w-[180px]">
-        <SelectValue placeholder="All Categories" />
+        <SelectValue placeholder="Todas las Categorías" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="all">All Categories</SelectItem>
+        <SelectItem value="all">Todas las Categorías</SelectItem>
         {categories.map((category) => (
           <SelectItem key={category.id} value={category.id}>
             {category.name}
@@ -321,9 +321,9 @@ export function InventoryItemsTable({
         columns={columns}
         data={filteredItems}
         onSearch={setSearchQuery}
-        searchPlaceholder="Search items..."
+        searchPlaceholder="Buscar artículos..."
         onAddNew={canModify ? handleAddNewItem : undefined}
-        addNewLabel="Add New Item"
+        addNewLabel="Añadir Nuevo Artículo"
         statusFilter={categoryFilterElement}
       />
 

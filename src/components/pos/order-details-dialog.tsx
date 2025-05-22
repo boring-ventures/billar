@@ -109,132 +109,196 @@ export function OrderDetailsDialog({
     }
   };
 
-  if (isLoading || !order) {
+  if (isLoading) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Cargando Detalles de Orden...</DialogTitle>
+            <DialogTitle>Cargando detalles de la orden...</DialogTitle>
           </DialogHeader>
+          <div className="p-6">Cargando...</div>
         </DialogContent>
       </Dialog>
     );
   }
 
-  // Format staff name for display
-  const staffName = order.staff
-    ? `${order.staff.firstName || ""} ${order.staff.lastName || ""}`.trim() ||
-      "Usuario"
-    : "No registrado";
+  if (!order) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Orden no encontrada</DialogTitle>
+          </DialogHeader>
+          <div className="p-6">
+            No se pudieron cargar los detalles de la orden.
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px]">
+      <DialogContent className="max-w-4xl">
         <DialogHeader>
-          <DialogTitle>Detalles de la Orden</DialogTitle>
+          <DialogTitle className="flex items-center justify-between">
+            <span>Detalles de la Orden #{order.id.substring(0, 8)}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportToPDF}
+              className="ml-4"
+            >
+              <FileDown className="mr-2 h-4 w-4" />
+              Exportar PDF
+            </Button>
+          </DialogTitle>
           <DialogDescription>
-            Orden #{order.id.substring(0, 8)} creada el{" "}
-            {format(new Date(order.createdAt), "MMM dd, yyyy 'at' h:mm a")}
+            Orden creada el{" "}
+            {format(new Date(order.createdAt), "dd/MM/yyyy 'a las' HH:mm")}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Order Summary */}
-          <div className="grid grid-cols-2 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Estado de Pago
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Badge
-                  variant={
-                    order.paymentStatus === "PAID" ? "default" : "outline"
-                  }
-                >
-                  {getPaymentStatusText(order.paymentStatus)}
-                </Badge>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Método de Pago
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div>{getPaymentMethodText(order.paymentMethod)}</div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Mesa</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div>
-                  {order.tableSession ? (
-                    <div className="space-y-1">
-                      <div>{order.tableSession.table.name}</div>
-                      {order.tableSession.totalCost && (
-                        <div className="text-sm text-muted-foreground">
-                          Costo de Sesión: Bs.
-                          {Number(order.tableSession.totalCost).toFixed(2)}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    "Sin mesa asignada"
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Monto Total
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-xl font-bold">
-                  Bs. {Number(order.amount).toFixed(2)}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Staff Information Card */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Order Information */}
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">
-                Ejecutado por
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <User className="mr-2 h-4 w-4" />
+                Información de la Orden
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="flex items-center space-x-2">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span>{staffName}</span>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    ID de Orden
+                  </label>
+                  <p className="font-mono text-sm">
+                    {order.id.substring(0, 8)}...
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Estado de Pago
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <Badge
+                      variant={
+                        order.paymentStatus === "PAID" ? "default" : "secondary"
+                      }
+                      className={
+                        order.paymentStatus === "PAID"
+                          ? "bg-green-500 text-white"
+                          : ""
+                      }
+                    >
+                      {getPaymentStatusText(order.paymentStatus)}
+                    </Badge>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Método de Pago
+                  </label>
+                  <p className="text-sm">
+                    {getPaymentMethodText(order.paymentMethod)}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Mesa
+                  </label>
+                  <p className="text-sm">
+                    {order.tableSession?.table.name || "Sin mesa"}
+                  </p>
+                </div>
               </div>
+
+              {order.staff && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Atendido por
+                  </label>
+                  <p className="text-sm">
+                    {`${order.staff.firstName || ""} ${order.staff.lastName || ""}`.trim() ||
+                      "Personal desconocido"}
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Order Items */}
+          {/* Payment Update */}
           <Card>
             <CardHeader>
-              <CardTitle>Ítems de la Orden</CardTitle>
+              <CardTitle>Actualizar Pago</CardTitle>
               <CardDescription>
-                {order.orderItems.length} ítems en esta orden
+                Modifica el método y estado de pago de la orden
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Método de Pago</label>
+                <Select
+                  value={paymentMethod}
+                  onValueChange={setPaymentMethod}
+                  defaultValue={order.paymentMethod}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona método de pago" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CASH">Efectivo</SelectItem>
+                    <SelectItem value="QR">Pago QR</SelectItem>
+                    <SelectItem value="CREDIT_CARD">
+                      Tarjeta de Crédito
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Estado de Pago</label>
+                <Select
+                  value={paymentStatus}
+                  onValueChange={setPaymentStatus}
+                  defaultValue={order.paymentStatus}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona estado de pago" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PAID">Pagado</SelectItem>
+                    <SelectItem value="UNPAID">Pendiente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                onClick={handleUpdatePayment}
+                disabled={isUpdating || (!paymentMethod && !paymentStatus)}
+                className="w-full"
+              >
+                {isUpdating ? "Actualizando..." : "Actualizar Pago"}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Order Items */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Artículos de la Orden</CardTitle>
+            <CardDescription>
+              Lista de productos incluidos en esta orden
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {order.orderItems && order.orderItems.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Ítem</TableHead>
-                    <TableHead className="text-right">Cantidad</TableHead>
+                    <TableHead>Producto</TableHead>
+                    <TableHead className="text-center">Cantidad</TableHead>
                     <TableHead className="text-right">
                       Precio Unitario
                     </TableHead>
@@ -242,12 +306,21 @@ export function OrderDetailsDialog({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {order.orderItems.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">
-                        {item.item?.name || "Ítem Desconocido"}
+                  {order.orderItems.map((item, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">
+                            {item.item?.name || "Producto Desconocido"}
+                          </p>
+                          {item.item?.sku && (
+                            <p className="text-sm text-muted-foreground">
+                              SKU: {item.item.sku}
+                            </p>
+                          )}
+                        </div>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-center">
                         {item.quantity}
                       </TableCell>
                       <TableCell className="text-right">
@@ -255,86 +328,52 @@ export function OrderDetailsDialog({
                       </TableCell>
                       <TableCell className="text-right">
                         Bs.{" "}
-                        {(Number(item.unitPrice) * item.quantity).toFixed(2)}
+                        {(item.quantity * Number(item.unitPrice)).toFixed(2)}
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-            </CardContent>
-            <CardFooter className="flex justify-between">
-              <div>Total</div>
-              <div className="font-bold">
-                Bs. {Number(order.amount).toFixed(2)}
+            ) : (
+              <div className="text-center py-6 text-muted-foreground">
+                No se encontraron artículos en esta orden
               </div>
-            </CardFooter>
-          </Card>
+            )}
+          </CardContent>
 
-          {/* Update Payment */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Actualizar Pago</CardTitle>
-              <CardDescription>
-                Actualizar método de pago o estado para esta orden
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Método de Pago</label>
-                  <Select
-                    defaultValue={order.paymentMethod}
-                    onValueChange={setPaymentMethod}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar método de pago" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="CASH">Efectivo</SelectItem>
-                      <SelectItem value="QR">Pago QR</SelectItem>
-                      <SelectItem value="CREDIT_CARD">
-                        Tarjeta de Crédito
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+          {/* Order Summary */}
+          <CardFooter className="border-t bg-muted/50">
+            <div className="w-full space-y-2">
+              {order.tableSession?.totalCost && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Costo de Mesa:</span>
+                  <span>
+                    Bs. {Number(order.tableSession.totalCost).toFixed(2)}
+                  </span>
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Estado de Pago</label>
-                  <Select
-                    defaultValue={order.paymentStatus}
-                    onValueChange={setPaymentStatus}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select payment status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="PAID">Pagado</SelectItem>
-                      <SelectItem value="UNPAID">Pendiente de Pago</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">
+                  Subtotal de Productos:
+                </span>
+                <span>
+                  Bs.{" "}
+                  {order.orderItems
+                    ?.reduce(
+                      (sum, item) =>
+                        sum + item.quantity * Number(item.unitPrice),
+                      0
+                    )
+                    .toFixed(2) || "0.00"}
+                </span>
               </div>
-            </CardContent>
-            <CardFooter>
-              <Button
-                onClick={handleUpdatePayment}
-                disabled={isUpdating || (!paymentMethod && !paymentStatus)}
-              >
-                {isUpdating ? "Actualizando..." : "Actualizar Pago"}
-              </Button>
-
-              <Button
-                variant="outline"
-                className="ml-2"
-                onClick={handleExportToPDF}
-              >
-                <FileDown className="mr-2 h-4 w-4" />
-                Exportar a PDF
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
+              <div className="flex justify-between text-lg font-bold border-t pt-2">
+                <span>Total de la Orden:</span>
+                <span>Bs. {Number(order.amount || 0).toFixed(2)}</span>
+              </div>
+            </div>
+          </CardFooter>
+        </Card>
       </DialogContent>
     </Dialog>
   );

@@ -88,11 +88,13 @@ export default function InventoryItemDetailsPage() {
     return (
       <div className="p-8">
         <div className="flex items-center justify-between">
-          <h2 className="text-3xl font-bold tracking-tight">Item not found</h2>
+          <h2 className="text-3xl font-bold tracking-tight">
+            Artículo no encontrado
+          </h2>
         </div>
         <Button onClick={handleBack} className="mt-4" variant="outline">
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
+          Volver
         </Button>
       </div>
     );
@@ -106,28 +108,28 @@ export default function InventoryItemDetailsPage() {
         <div className="flex items-center gap-2">
           <Button onClick={handleBack} size="sm" variant="outline">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+            Volver
           </Button>
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
             {item.name}
           </h2>
           {isLowStock && (
-            <Badge className="bg-amber-500/15 text-amber-600">LOW STOCK</Badge>
+            <Badge className="bg-amber-500/15 text-amber-600">STOCK BAJO</Badge>
           )}
         </div>
         {canModify && (
           <div className="flex flex-col gap-2 sm:flex-row">
             <Button onClick={handleAddStock} size="sm">
               <Plus className="mr-2 h-4 w-4" />
-              Add Stock
+              Agregar Stock
             </Button>
             <Button onClick={handleRemoveStock} size="sm" variant="secondary">
               <Minus className="mr-2 h-4 w-4" />
-              Remove Stock
+              Retirar Stock
             </Button>
             <Button onClick={handleEditItem} size="sm" variant="outline">
               <Edit className="mr-2 h-4 w-4" />
-              Edit
+              Editar
             </Button>
           </div>
         )}
@@ -138,10 +140,11 @@ export default function InventoryItemDetailsPage() {
           <CardContent className="p-4 flex items-center gap-3">
             <AlertTriangle className="h-5 w-5 text-amber-500" />
             <div>
-              <p className="font-medium text-amber-700">Low Stock Alert</p>
+              <p className="font-medium text-amber-700">Alerta de Stock Bajo</p>
               <p className="text-sm text-amber-600">
-                Current quantity ({item.quantity}) is at or below the threshold
-                ({item.criticalThreshold}). Consider restocking this item.
+                La cantidad actual ({item.quantity}) está en o por debajo del
+                límite ({item.criticalThreshold}). Considera reabastecer este
+                artículo.
               </p>
             </div>
           </CardContent>
@@ -150,17 +153,17 @@ export default function InventoryItemDetailsPage() {
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle>Item Details</CardTitle>
+          <CardTitle>Detalles del Artículo</CardTitle>
           <CardDescription>
-            Basic information about this inventory item
+            Información básica sobre este artículo de inventario
           </CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
             <p className="text-sm font-medium text-muted-foreground">
-              Category
+              Categoría
             </p>
-            <p>{item.category?.name || "Uncategorized"}</p>
+            <p>{item.category?.name || "Sin categoría"}</p>
           </div>
           <div>
             <p className="text-sm font-medium text-muted-foreground">SKU</p>
@@ -168,40 +171,40 @@ export default function InventoryItemDetailsPage() {
           </div>
           <div>
             <p className="text-sm font-medium text-muted-foreground">
-              Current Stock
+              Stock Actual
             </p>
             <p className={isLowStock ? "text-amber-600 font-semibold" : ""}>
-              {item.quantity} units
+              {item.quantity} unidades
             </p>
           </div>
           <div>
-            <p className="text-sm font-medium text-muted-foreground">Price</p>
+            <p className="text-sm font-medium text-muted-foreground">Precio</p>
             <p>{item.price ? formatCurrency(item.price) : "N/A"}</p>
           </div>
           <div>
             <p className="text-sm font-medium text-muted-foreground">
-              Critical Threshold
+              Umbral Crítico
             </p>
-            <p>{item.criticalThreshold} units</p>
+            <p>{item.criticalThreshold} unidades</p>
           </div>
           <div>
             <p className="text-sm font-medium text-muted-foreground">
-              Stock Alerts
+              Alertas de Stock
             </p>
-            <p>{item.stockAlerts ? "Enabled" : "Disabled"}</p>
+            <p>{item.stockAlerts ? "Habilitadas" : "Deshabilitadas"}</p>
           </div>
           <div>
             <p className="text-sm font-medium text-muted-foreground">
-              Last Updated
+              Última Actualización
             </p>
             <p>
               {item.lastStockUpdate
                 ? new Date(item.lastStockUpdate).toLocaleString()
-                : "Never"}
+                : "Nunca"}
             </p>
           </div>
           <div>
-            <p className="text-sm font-medium text-muted-foreground">Created</p>
+            <p className="text-sm font-medium text-muted-foreground">Creado</p>
             <p>{new Date(item.createdAt).toLocaleDateString()}</p>
           </div>
         </CardContent>
@@ -210,17 +213,17 @@ export default function InventoryItemDetailsPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="w-full max-w-md">
           <TabsTrigger value="movements" className="flex-1">
-            Stock Movements
+            Movimientos de Stock
           </TabsTrigger>
           <TabsTrigger value="adjustments" className="flex-1">
-            Adjustments
+            Ajustes
           </TabsTrigger>
         </TabsList>
         <TabsContent value="movements" className="mt-6">
           {canModify && (
             <div className="flex justify-end mb-4">
               <Button size="sm" variant="outline" onClick={handleAdjustStock}>
-                Manual Adjustment
+                Ajuste Manual
               </Button>
             </div>
           )}
@@ -234,7 +237,7 @@ export default function InventoryItemDetailsPage() {
           {canModify && (
             <div className="flex justify-end mb-4">
               <Button size="sm" variant="outline" onClick={handleAdjustStock}>
-                New Adjustment
+                Nuevo Ajuste
               </Button>
             </div>
           )}

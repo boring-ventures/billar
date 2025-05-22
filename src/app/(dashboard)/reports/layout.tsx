@@ -1,3 +1,8 @@
+export const metadata = {
+  title: "Reportes Financieros",
+  description: "Gestión de reportes financieros y análisis de datos",
+};
+
 export default function ReportsLayout({
   children,
 }: {

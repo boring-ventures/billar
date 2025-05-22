@@ -88,7 +88,7 @@ export function FinancialReportClient() {
     queryFn: async () => {
       const response = await fetch("/api/companies");
       if (!response.ok) {
-        throw new Error("Failed to fetch companies");
+        throw new Error("Error al cargar las empresas");
       }
       return response.json();
     },
@@ -123,7 +123,7 @@ export function FinancialReportClient() {
 
       const response = await fetch(`/api/financial-reports?${params}`);
       if (!response.ok) {
-        throw new Error("Failed to fetch financial reports");
+        throw new Error("Error al cargar los reportes financieros");
       }
       return response.json();
     },
@@ -151,13 +151,13 @@ export function FinancialReportClient() {
         const response = await fetch(`/api/financial-reports/data?${params}`);
 
         if (!response.ok) {
-          throw new Error("Failed to fetch live report data");
+          throw new Error("Error al cargar datos en tiempo real del reporte");
         }
 
         const data = await response.json();
         setLiveReportData(data);
       } catch (error) {
-        console.error("Error fetching live data:", error);
+        console.error("Error al cargar datos en tiempo real:", error);
         toast({
           title: "Error",
           description: "No se pudo cargar datos en tiempo real",
@@ -227,7 +227,7 @@ export function FinancialReportClient() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || "Failed to generate report");
+        throw new Error(error.message || "Error al generar el reporte");
       }
 
       toast({
@@ -272,7 +272,7 @@ export function FinancialReportClient() {
         description: "Reporte exportado a PDF exitosamente",
       });
     } catch (error) {
-      console.error("Error exporting report to PDF:", error);
+      console.error("Error al exportar reporte a PDF:", error);
       toast({
         title: "Error",
         description: "No se pudo exportar el reporte a PDF",
@@ -646,7 +646,7 @@ export function FinancialReportClient() {
                               onClick={() => handleViewReportDetail(report.id)}
                             >
                               <ExternalLink className="h-4 w-4" />
-                              <span className="sr-only">View Report</span>
+                              <span className="sr-only">Ver Reporte</span>
                             </Button>
                             <Button
                               variant="ghost"
@@ -654,7 +654,7 @@ export function FinancialReportClient() {
                               onClick={() => handleExportToPDF(report)}
                             >
                               <FileDown className="h-4 w-4" />
-                              <span className="sr-only">Export to PDF</span>
+                              <span className="sr-only">Exportar a PDF</span>
                             </Button>
                           </div>
                         </TableCell>

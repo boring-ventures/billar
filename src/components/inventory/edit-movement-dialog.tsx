@@ -121,9 +121,9 @@ export function EditMovementDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Edit Stock Adjustment</DialogTitle>
+          <DialogTitle>Editar Ajuste de Stock</DialogTitle>
           <DialogDescription>
-            Make changes to the stock adjustment record.
+            Modifica los detalles del registro de ajuste de stock.
           </DialogDescription>
         </DialogHeader>
 
@@ -135,7 +135,7 @@ export function EditMovementDialog({
                 name="quantity"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Quantity</FormLabel>
+                    <FormLabel>Cantidad</FormLabel>
                     <FormControl>
                       <Input type="number" min="1" step="1" {...field} />
                     </FormControl>
@@ -149,7 +149,7 @@ export function EditMovementDialog({
                 name="costPrice"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Cost Price (Optional)</FormLabel>
+                    <FormLabel>Precio de Costo (Opcional)</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -179,10 +179,10 @@ export function EditMovementDialog({
               name="reason"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Reason (Optional)</FormLabel>
+                  <FormLabel>Motivo (Opcional)</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Enter reason for this adjustment"
+                      placeholder="Ingresa el motivo de este ajuste"
                       className="resize-none"
                       {...field}
                     />
@@ -198,10 +198,10 @@ export function EditMovementDialog({
                 variant="outline"
                 onClick={() => onOpenChange(false)}
               >
-                Cancel
+                Cancelar
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : "Save Changes"}
+                {isSubmitting ? "Guardando..." : "Guardar Cambios"}
               </Button>
             </DialogFooter>
           </form>

@@ -253,15 +253,15 @@ export const useStockMovements = (itemId?: string) => {
   const getMovementTypeDescription = (type: MovementType) => {
     switch (type) {
       case "PURCHASE":
-        return "Stock Purchase";
+        return "Compra de Stock";
       case "SALE":
-        return "Sale";
+        return "Venta";
       case "ADJUSTMENT":
-        return "Stock Adjustment";
+        return "Ajuste de Stock";
       case "RETURN":
-        return "Return";
+        return "Devolución";
       case "TRANSFER":
-        return "Stock Transfer";
+        return "Transferencia de Stock";
       default:
         return type;
     }

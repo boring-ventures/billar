@@ -166,7 +166,7 @@ export function NewOrder() {
       // Convert tracked items to cart format
       const cartItems = trackedItems.map((item) => ({
         itemId: item.itemId,
-        name: item.item?.name || "Unknown Item",
+        name: item.item?.name || "Artículo Desconocido",
         quantity: item.quantity,
         unitPrice: Number(item.unitPrice),
         // Don't hardcode availability - it will be calculated dynamically
@@ -202,7 +202,7 @@ export function NewOrder() {
 
         return {
           itemId: item.itemId,
-          name: item.item?.name || "Unknown Item",
+          name: item.item?.name || "Artículo Desconocido",
           quantity: item.quantity,
           unitPrice: Number(item.unitPrice),
           // Set availableQuantity based on current inventory plus what's already tracked
@@ -571,7 +571,7 @@ export function NewOrder() {
     if (!companyId) {
       toast({
         title: "Error",
-        description: "Please select a company",
+        description: "Por favor selecciona una empresa",
         variant: "destructive",
       });
       return;
@@ -624,8 +624,8 @@ export function NewOrder() {
 
           // Show success message and redirect to order history with popup
           toast({
-            title: "Success",
-            description: "Session payment completed successfully!",
+            title: "Éxito",
+            description: "¡Pago de sesión completado exitosamente!",
           });
 
           // Navigate to order history and open the order details popup
@@ -647,7 +647,7 @@ export function NewOrder() {
             description:
               error instanceof Error
                 ? error.message
-                : "Failed to create session payment",
+                : "Error al crear el pago de sesión",
             variant: "destructive",
           });
           setIsCreatingOrder(false);
@@ -657,7 +657,7 @@ export function NewOrder() {
         toast({
           title: "Error",
           description:
-            "Cart is empty. Add items or select a table session with a cost to create an order.",
+            "El carrito está vacío. Agrega artículos o selecciona una sesión de mesa con costo para crear una orden.",
           variant: "destructive",
         });
         return;
@@ -735,8 +735,8 @@ export function NewOrder() {
 
         // Always redirect to order history with popup, regardless of origin
         toast({
-          title: "Success",
-          description: "Order created successfully!",
+          title: "Éxito",
+          description: "¡Orden creada exitosamente!",
         });
 
         // Navigate to order history and open the order details popup
@@ -754,7 +754,7 @@ export function NewOrder() {
         toast({
           title: "Error",
           description:
-            error instanceof Error ? error.message : "Failed to create order",
+            error instanceof Error ? error.message : "Error al crear la orden",
           variant: "destructive",
         });
       } finally {
@@ -887,13 +887,13 @@ export function NewOrder() {
                 Seleccionar Empresa
               </CardTitle>
               <CardDescription>
-                Elija una empresa para ver su inventario
+                Elije una empresa para ver su inventario
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Select value={companyId} onValueChange={handleCompanyChange}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a company" />
+                  <SelectValue placeholder="Selecciona una empresa" />
                 </SelectTrigger>
                 <SelectContent>
                   {companies.map((company: Company) => (

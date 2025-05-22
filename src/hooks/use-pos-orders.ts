@@ -189,7 +189,7 @@ export const usePosOrders = (filters: PosOrderFilters) => {
           return response.data as PosOrder;
         } catch (error) {
           console.error("Failed to fetch order:", error);
-          setError("Failed to load POS order.");
+          setError("Error al cargar la orden del POS.");
           return null;
         }
       },
@@ -233,8 +233,8 @@ export const usePosOrders = (filters: PosOrderFilters) => {
             ? error.message
             : typeof error === "object" && error !== null && "response" in error
               ? (error as ErrorResponse)?.response?.data?.error ||
-                "Failed to create order."
-              : "Failed to create order.";
+                "Error al crear la orden."
+              : "Error al crear la orden.";
         throw new Error(errorMessage);
       }
     },
@@ -285,8 +285,8 @@ export const usePosOrders = (filters: PosOrderFilters) => {
             ? error.message
             : typeof error === "object" && error !== null && "response" in error
               ? (error as ErrorResponse)?.response?.data?.error ||
-                "Failed to update order."
-              : "Failed to update order.";
+                "Error al actualizar la orden."
+              : "Error al actualizar la orden.";
         throw new Error(errorMessage);
       }
     },
@@ -324,8 +324,8 @@ export const usePosOrders = (filters: PosOrderFilters) => {
             ? error.message
             : typeof error === "object" && error !== null && "response" in error
               ? (error as ErrorResponse)?.response?.data?.error ||
-                "Failed to delete order."
-              : "Failed to delete order.";
+                "Error al eliminar la orden."
+              : "Error al eliminar la orden.";
         throw new Error(errorMessage);
       }
     },
@@ -366,8 +366,8 @@ export const usePosOrders = (filters: PosOrderFilters) => {
             ? error.message
             : typeof error === "object" && error !== null && "response" in error
               ? (error as ErrorResponse)?.response?.data?.error ||
-                "Failed to add item to order."
-              : "Failed to add item to order.";
+                "Error al agregar artículo a la orden."
+              : "Error al agregar artículo a la orden.";
         throw new Error(errorMessage);
       }
     },
@@ -423,8 +423,8 @@ export const usePosOrders = (filters: PosOrderFilters) => {
             ? error.message
             : typeof error === "object" && error !== null && "response" in error
               ? (error as ErrorResponse)?.response?.data?.error ||
-                "Failed to update order item."
-              : "Failed to update order item.";
+                "Error al actualizar artículo de la orden."
+              : "Error al actualizar artículo de la orden.";
         throw new Error(errorMessage);
       }
     },
@@ -473,8 +473,8 @@ export const usePosOrders = (filters: PosOrderFilters) => {
             ? error.message
             : typeof error === "object" && error !== null && "response" in error
               ? (error as ErrorResponse)?.response?.data?.error ||
-                "Failed to remove item from order."
-              : "Failed to remove item from order.";
+                "Error al eliminar artículo de la orden."
+              : "Error al eliminar artículo de la orden.";
         throw new Error(errorMessage);
       }
     },

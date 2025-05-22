@@ -40,9 +40,9 @@ export function DataTable<TData, TValue>({
   columns,
   data,
   onSearch,
-  searchPlaceholder = "Search...",
+  searchPlaceholder = "Buscar...",
   onAddNew,
-  addNewLabel = "Add New",
+  addNewLabel = "Agregar Nuevo",
   statusFilter,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -142,7 +142,7 @@ export function DataTable<TData, TValue>({
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No results.
+                  No se encontraron resultados.
                 </TableCell>
               </TableRow>
             )}

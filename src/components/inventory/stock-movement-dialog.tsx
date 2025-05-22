@@ -79,13 +79,13 @@ export function StockMovementDialog({
   const getTypeTitle = () => {
     switch (type) {
       case "PURCHASE":
-        return "Add Stock";
+        return "Agregar Stock";
       case "SALE":
-        return "Remove Stock";
+        return "Retirar Stock";
       case "ADJUSTMENT":
-        return "Adjust Stock";
+        return "Ajustar Stock";
       default:
-        return "Record Stock Movement";
+        return "Registrar Movimiento de Stock";
     }
   };
 
@@ -159,7 +159,7 @@ export function StockMovementDialog({
       const errorMessage =
         error instanceof Error
           ? error.message
-          : "Failed to record stock movement";
+          : "Error al registrar el movimiento de stock";
       toast({
         title: "Error",
         description: errorMessage,
@@ -178,7 +178,7 @@ export function StockMovementDialog({
         <DialogHeader>
           <DialogTitle>{getTypeTitle()}</DialogTitle>
           <DialogDescription>
-            {`Record a${type === "PURCHASE" ? "n" : ""} ${type.toLowerCase()} for &quot;${item.name}&quot;.`}
+            {`Registrar un ${type === "PURCHASE" ? "ingreso" : type === "SALE" ? "retiro" : "ajuste"} para &quot;${item.name}&quot;.`}
           </DialogDescription>
         </DialogHeader>
 
@@ -190,7 +190,7 @@ export function StockMovementDialog({
                 name="quantity"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Quantity</FormLabel>
+                    <FormLabel>Cantidad</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -201,7 +201,9 @@ export function StockMovementDialog({
                       />
                     </FormControl>
                     <FormDescription>
-                      {type === "SALE" ? "Units to remove" : "Units to add"}
+                      {type === "SALE"
+                        ? "Unidades a retirar"
+                        : "Unidades a agregar"}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -213,7 +215,7 @@ export function StockMovementDialog({
                 name="costPrice"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Cost Price (Optional)</FormLabel>
+                    <FormLabel>Precio de Costo (Opcional)</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -235,10 +237,10 @@ export function StockMovementDialog({
               name="reason"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Reason (Optional)</FormLabel>
+                  <FormLabel>Motivo (Opcional)</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Enter reason for this stock movement"
+                      placeholder="Ingresa el motivo de este movimiento de stock"
                       className="resize-none"
                       {...field}
                       value={field.value || ""}
@@ -254,10 +256,10 @@ export function StockMovementDialog({
               name="reference"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Reference (Optional)</FormLabel>
+                  <FormLabel>Referencia (Opcional)</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Order number, invoice number, etc."
+                      placeholder="Número de orden, factura, etc."
                       {...field}
                       value={field.value || ""}
                     />
@@ -273,13 +275,13 @@ export function StockMovementDialog({
                 variant="outline"
                 onClick={() => onOpenChange(false)}
               >
-                Cancel
+                Cancelar
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                {isSubmitting ? "Recording..." : "Record Movement"}
+                {isSubmitting ? "Registrando..." : "Registrar Movimiento"}
               </Button>
             </DialogFooter>
           </form>

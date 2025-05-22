@@ -274,11 +274,13 @@ export function InventoryItemDialog({
     <Dialog open={shouldShowDialog} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{isEditMode ? "Edit Item" : "Add New Item"}</DialogTitle>
+          <DialogTitle>
+            {isEditMode ? "Editar Artículo" : "Añadir Nuevo Artículo"}
+          </DialogTitle>
           <DialogDescription>
             {isEditMode
-              ? "Make changes to the inventory item below."
-              : "Enter the details for the new inventory item."}
+              ? "Modifica los detalles del artículo de inventario."
+              : "Ingresa los detalles del nuevo artículo de inventario."}
           </DialogDescription>
         </DialogHeader>
 
@@ -289,9 +291,12 @@ export function InventoryItemDialog({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>Nombre</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter item name" {...field} />
+                    <Input
+                      placeholder="Ingresa el nombre del artículo"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -305,7 +310,7 @@ export function InventoryItemDialog({
                 name="companyId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Company</FormLabel>
+                    <FormLabel>Empresa</FormLabel>
                     <Select
                       value={field.value}
                       onValueChange={handleCompanyChange}
@@ -313,7 +318,7 @@ export function InventoryItemDialog({
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a company" />
+                          <SelectValue placeholder="Selecciona una empresa" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -335,7 +340,7 @@ export function InventoryItemDialog({
               name="categoryId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Category</FormLabel>
+                  <FormLabel>Categoría</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
@@ -347,14 +352,14 @@ export function InventoryItemDialog({
                         <SelectValue
                           placeholder={
                             selectedCompanyId
-                              ? "Select a category"
-                              : "Select a company first"
+                              ? "Selecciona una categoría"
+                              : "Selecciona una empresa primero"
                           }
                         />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="none">Uncategorized</SelectItem>
+                      <SelectItem value="none">Sin categoría</SelectItem>
                       {categories.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
                           {category.name}
@@ -373,10 +378,10 @@ export function InventoryItemDialog({
                 name="sku"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>SKU (Optional)</FormLabel>
+                    <FormLabel>SKU (Opcional)</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Enter SKU"
+                        placeholder="Ingresa el SKU"
                         {...field}
                         value={field.value || ""}
                       />
@@ -391,13 +396,13 @@ export function InventoryItemDialog({
                 name="price"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Price (Optional)</FormLabel>
+                    <FormLabel>Precio (Opcional)</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
                         min="0"
                         step="0.01"
-                        placeholder="Enter price"
+                        placeholder="Ingresa el precio"
                         value={field.value || ""}
                         onChange={(e) => field.onChange(e.target.value)}
                       />
@@ -414,7 +419,7 @@ export function InventoryItemDialog({
                 name="criticalThreshold"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Critical Threshold</FormLabel>
+                    <FormLabel>Umbral Crítico</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -426,7 +431,7 @@ export function InventoryItemDialog({
                       />
                     </FormControl>
                     <FormDescription>
-                      Alert when stock is at or below this level
+                      Alerta cuando el stock esté en o por debajo de este nivel
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -445,9 +450,9 @@ export function InventoryItemDialog({
                       />
                     </FormControl>
                     <div className="space-y-1 leading-none">
-                      <FormLabel>Enable Stock Alerts</FormLabel>
+                      <FormLabel>Habilitar Alertas de Stock</FormLabel>
                       <FormDescription>
-                        Show alerts for low stock levels
+                        Mostrar alertas para niveles bajos de stock
                       </FormDescription>
                     </div>
                   </FormItem>
@@ -462,7 +467,7 @@ export function InventoryItemDialog({
                   name="initialStock"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Initial Stock</FormLabel>
+                      <FormLabel>Stock Inicial</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -474,8 +479,8 @@ export function InventoryItemDialog({
                         />
                       </FormControl>
                       <FormDescription>
-                        Set the initial stock quantity (will be recorded as a
-                        movement)
+                        Establece la cantidad inicial de stock (se registrará
+                        como un movimiento)
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -487,7 +492,7 @@ export function InventoryItemDialog({
                   name="initialCostPrice"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Initial Cost Price</FormLabel>
+                      <FormLabel>Precio de Costo Inicial</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -499,7 +504,7 @@ export function InventoryItemDialog({
                         />
                       </FormControl>
                       <FormDescription>
-                        Cost price per unit for initial stock
+                        Precio de costo por unidad para el stock inicial
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -514,7 +519,7 @@ export function InventoryItemDialog({
                 variant="outline"
                 onClick={() => onOpenChange(false)}
               >
-                Cancel
+                Cancelar
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && (
@@ -522,11 +527,11 @@ export function InventoryItemDialog({
                 )}
                 {isSubmitting
                   ? isEditMode
-                    ? "Saving..."
-                    : "Creating..."
+                    ? "Guardando..."
+                    : "Creando..."
                   : isEditMode
-                    ? "Save Changes"
-                    : "Create Item"}
+                    ? "Guardar Cambios"
+                    : "Crear Artículo"}
               </Button>
             </DialogFooter>
           </form>

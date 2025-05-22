@@ -191,12 +191,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!items || !Array.isArray(items) || items.length === 0) {
+    // Modified validation to allow empty items arrays when a tableSessionId is provided
+    if (
+      (!items || !Array.isArray(items) || items.length === 0) &&
+      !tableSessionId
+    ) {
       return NextResponse.json(
-        { error: "At least one item is required" },
+        {
+          error:
+            "At least one item is required for orders not associated with a table session",
+        },
         { status: 400 }
       );
     }
+
+    // Ensure items is at least an empty array
+    const orderItems = items || [];
 
     // Check if company exists
     const company = await prisma.company.findUnique({
@@ -225,8 +235,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Validate items and check inventory
-    const itemIds = items.map((item: { itemId: string }) => item.itemId);
+    // Validate items and check inventory (only if we have items)
+    const itemIds = orderItems.map((item: { itemId: string }) => item.itemId);
 
     // Special handling for session-payment items
     const hasSessionPaymentItem = itemIds.includes("session-payment");
@@ -252,7 +262,7 @@ export async function POST(request: NextRequest) {
     );
 
     // Validate each item
-    for (const item of items) {
+    for (const item of orderItems) {
       // Skip validation for session-payment items
       if (item.itemId === "session-payment") {
         continue;
@@ -357,16 +367,26 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate total amount
-    const totalAmount = items.reduce(
+    let totalAmount = orderItems.reduce(
       (sum: number, item: { quantity: number; unitPrice: number }) =>
         sum + item.quantity * item.unitPrice,
       0
     );
 
+    // For table sessions without items, get the session cost from the tableSession
+    if (orderItems.length === 0 && tableSessionId && tableSession?.totalCost) {
+      console.log(
+        "Empty order with table session, using session cost:",
+        tableSession.totalCost
+      );
+      // Set the total amount to the table session cost
+      totalAmount = Number(tableSession.totalCost);
+    }
+
     // If this is only a session payment with no real items, we need to look up the session
     // to get the table session cost
     if (hasSessionPaymentItem && realItemIds.length === 0 && tableSessionId) {
-      const sessionItem = items.find(
+      const sessionItem = orderItems.find(
         (item: { itemId: string }) => item.itemId === "session-payment"
       );
       if (sessionItem && tableSession) {
@@ -420,10 +440,21 @@ export async function POST(request: NextRequest) {
       });
 
       // Create order items and update inventory
-      const orderItems = [];
+      const createdOrderItems = [];
       const stockMovements = [];
 
-      for (const item of items) {
+      // If this is a table session with no items, mark the session as completed
+      if (orderItems.length === 0 && tableSessionId) {
+        await tx.tableSession.update({
+          where: { id: tableSessionId },
+          data: {
+            status: "COMPLETED",
+          },
+        });
+        console.log(`Updated session ${tableSessionId} status to COMPLETED`);
+      }
+
+      for (const item of orderItems) {
         // Skip creating real inventory items for session-payment
         if (item.itemId === "session-payment") {
           console.log("Processing session payment only:", item);
@@ -461,8 +492,6 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        orderItems.push(orderItem);
-
         // For tracked items, we need special handling of inventory
         if (typedItem.isTrackedItem && tableSessionId) {
           console.log(
@@ -488,7 +517,7 @@ export async function POST(request: NextRequest) {
               select: { quantity: true, name: true },
             });
             console.log(
-              `Current inventory for ${currentInventory?.name}: ${currentInventory?.quantity}`
+              `Current inventory for ${currentInventory?.name || typedItem.itemId}: ${currentInventory?.quantity}`
             );
 
             // Check if the order quantity is different from the tracked quantity
@@ -639,12 +668,21 @@ export async function POST(request: NextRequest) {
             `Updated inventory for ${itemAfter?.name || typedItem.itemId}: ${itemAfter?.quantity || "unknown"} (updated from ${itemBefore?.quantity || "unknown"})`
           );
         }
+
+        createdOrderItems.push(orderItem);
       }
 
-      return { order, orderItems, stockMovements };
+      return { order, orderItems: createdOrderItems, stockMovements };
     });
 
-    return NextResponse.json(result, { status: 201 });
+    return NextResponse.json(
+      {
+        order: result.order,
+        orderItems: result.orderItems,
+        stockMovements: result.stockMovements,
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Error creating POS order:", error);
     return NextResponse.json(

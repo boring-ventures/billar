@@ -579,36 +579,50 @@ export function NewOrder() {
       return;
     }
 
-    // Check for valid items to order
+    // Check for valid items to order or table session with cost
     if (cart.length === 0) {
-      // If this is a session payment but there are no items, add a dummy item for the session cost
+      // If this is a session payment but there are no items, we can proceed with the empty cart
       if (sessionData?.totalCost && sessionData.totalCost > 0) {
-        // Create a special "session payment" item
-        const sessionPaymentItem = {
-          itemId: "session-payment", // This will be caught and handled specially
-          quantity: 1,
-          unitPrice: Number(sessionData.totalCost),
-        };
-
         try {
           setIsCreatingOrder(true);
 
           // Ensure we're using the session ID from the URL if it exists
           const sessionPaymentTableId = sessionId || undefined;
 
-          // Prepare order data with just the session payment
+          // Prepare order data with just the session information (no items needed)
           const sessionPaymentData = {
             companyId,
             tableSessionId: sessionPaymentTableId,
             paymentMethod: paymentMethod as "CASH" | "QR" | "CREDIT_CARD",
             paymentStatus: paymentStatus as "PAID" | "UNPAID",
-            items: [sessionPaymentItem],
+            items: [], // Empty items array is now allowed by the API
           };
 
           console.log("Submitting session-only payment:", sessionPaymentData);
 
-          const result = await createOrder.mutateAsync(sessionPaymentData);
-          console.log("Order created successfully:", result);
+          // Use the regular API endpoint for this
+          const response = await fetch("/api/pos-orders", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(sessionPaymentData),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            console.error(
+              "Session payment failed with status:",
+              response.status
+            );
+            console.error("Error details:", errorData);
+            throw new Error(
+              errorData.error || `Request failed with status ${response.status}`
+            );
+          }
+
+          const result = await response.json();
+          console.log("Session payment completed successfully:", result);
 
           // Show success message and redirect to order history with popup
           toast({
@@ -619,7 +633,7 @@ export function NewOrder() {
           // Navigate to order history and open the order details popup
           setTimeout(() => {
             // The result contains the created order ID
-            const orderId = result?.id;
+            const orderId = result?.order?.id;
             if (orderId) {
               router.push(`/pos?tab=history&viewOrder=${orderId}`);
             } else {
@@ -644,7 +658,8 @@ export function NewOrder() {
       } else {
         toast({
           title: "Error",
-          description: "Cart is empty. Add items to create an order.",
+          description:
+            "Cart is empty. Add items or select a table session with a cost to create an order.",
           variant: "destructive",
         });
         return;
@@ -729,7 +744,7 @@ export function NewOrder() {
         // Navigate to order history and open the order details popup
         setTimeout(() => {
           // The result contains the created order ID
-          const orderId = result?.id;
+          const orderId = result?.order?.id;
           if (orderId) {
             router.push(`/pos?tab=history&viewOrder=${orderId}`);
           } else {
@@ -1246,7 +1261,12 @@ export function NewOrder() {
             <Button
               variant="default"
               onClick={handleCreateOrder}
-              disabled={cart.length === 0 || isCreatingOrder}
+              disabled={
+                (cart.length === 0 &&
+                  (!sessionData?.totalCost ||
+                    Number(sessionData?.totalCost) <= 0)) ||
+                isCreatingOrder
+              }
             >
               <ShoppingBag className="mr-2 h-4 w-4" />
               {isCreatingOrder ? "Procesando..." : "Completar Orden"}

@@ -522,13 +522,26 @@ export function OrderHistory() {
       accessorKey: "financialDetails",
       header: "Detalles Financieros",
       cell: ({ row }) => {
-        // The order amount appears to only store the product costs, not including session costs
-        // In the API, only product costs are summed in totalAmount
+        // Get the values from the order
         const productAmount = Number(row.original.amount || 0);
         const sessionCost = Number(row.original.tableSession?.totalCost || 0);
 
-        // Calculate the proper total by adding session cost and product amount
-        const actualTotal = productAmount + sessionCost;
+        // For session-only orders, the API sets the entire amount to the session cost
+        // We need to check if this is a session-only order
+        const isSessionOnlyOrder =
+          row.original.tableSession &&
+          sessionCost > 0 &&
+          productAmount === sessionCost;
+
+        // If it's a session-only order, we should display the session cost only
+        // and set product amount to 0
+        const displayProductAmount = isSessionOnlyOrder ? 0 : productAmount;
+
+        // Calculate the total - for session-only orders, this will just be the session cost
+        // For regular orders, it's the sum of session cost and product amount
+        const actualTotal = isSessionOnlyOrder
+          ? sessionCost
+          : displayProductAmount + sessionCost;
 
         return (
           <div className="space-y-1">
@@ -541,7 +554,7 @@ export function OrderHistory() {
 
             <div className="flex justify-between">
               <span className="text-muted-foreground">Subtotal productos:</span>
-              <span>Bs. {productAmount.toFixed(2)}</span>
+              <span>Bs. {displayProductAmount.toFixed(2)}</span>
             </div>
 
             <div className="flex justify-between font-medium border-t pt-1 mt-1">

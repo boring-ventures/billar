@@ -75,7 +75,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" variant="floating" {...props}>
       <SidebarHeader>
-        <Link href="/dashboard" className="flex flex-col px-2 py-4">
+        <Link href="/" className="flex flex-col px-2 py-4">
           <div className="flex items-center gap-2">
             <Image
               src="/brand-assets/logo.svg"

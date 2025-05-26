@@ -5,19 +5,64 @@ import { UserTable } from "@/components/users/user-table";
 import { CompanyTable } from "@/components/users/company-table";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 export default function UsersPage() {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
-  const [activeTab, setActiveTab] = useState(
-    tabParam === "companies" ? "companies" : "users"
-  );
+  const { profile, isLoading } = useCurrentUser();
 
-  // Update the tab when URL changes
+  // Only superadmins can access companies tab
+  const canAccessCompanies = profile?.role === "SUPERADMIN";
+
+  // Default to users tab, or companies if explicitly requested and user has access
+  const [activeTab, setActiveTab] = useState(() => {
+    if (tabParam === "companies" && canAccessCompanies) {
+      return "companies";
+    }
+    return "users";
+  });
+
+  // Update the tab when URL changes or user profile loads
   useEffect(() => {
-    setActiveTab(tabParam === "companies" ? "companies" : "users");
-  }, [tabParam]);
+    if (tabParam === "companies" && canAccessCompanies) {
+      setActiveTab("companies");
+    } else {
+      setActiveTab("users");
+    }
+  }, [tabParam, canAccessCompanies]);
 
+  // Show loading state while fetching user profile
+  if (isLoading) {
+    return (
+      <div className="flex flex-col space-y-6 p-4 md:p-8">
+        <div className="flex flex-col gap-2">
+          <div className="h-8 w-64 bg-muted animate-pulse rounded" />
+          <div className="h-4 w-96 bg-muted animate-pulse rounded" />
+        </div>
+        <div className="h-10 w-full bg-muted animate-pulse rounded" />
+      </div>
+    );
+  }
+
+  // For company admins, show only user management without tabs
+  if (!canAccessCompanies) {
+    return (
+      <div className="flex flex-col space-y-6 p-4 md:p-8">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-3xl font-bold tracking-tight">
+            Gestión de Usuarios
+          </h2>
+          <p className="text-muted-foreground">
+            Administra usuarios de tu empresa.
+          </p>
+        </div>
+        <UserTable />
+      </div>
+    );
+  }
+
+  // For superadmins, show the full tab system
   return (
     <div className="flex flex-col space-y-6 p-4 md:p-8">
       <div className="flex flex-col gap-2">

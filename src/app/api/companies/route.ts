@@ -63,7 +63,7 @@ export async function GET() {
       ];
     }
 
-    return NextResponse.json(companies);
+    return NextResponse.json({ companies });
   } catch (error) {
     console.error("Error fetching companies:", error);
     return NextResponse.json(

@@ -241,9 +241,10 @@ export function SettingsForm() {
                 <div className="flex items-center space-x-2">
                   <span className="text-sm font-medium">Rol:</span>
                   <span className="text-sm text-muted-foreground">
-                    {(profile?.role as string) === "USER" && "Usuario"}
+                    {(profile?.role as string) === "SELLER" && "Vendedor"}
+                    {(profile?.role as string) === "ADMIN" && "Administrador"}
                     {(profile?.role as string) === "SUPERADMIN" &&
-                      "Administrador"}
+                      "Super Administrador"}
                   </span>
                 </div>
               </CardContent>

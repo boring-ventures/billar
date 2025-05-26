@@ -64,6 +64,14 @@ export async function PATCH(
   }
 }
 
+// PUT /api/companies/[id] - Update a company (alias for PATCH)
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  return PATCH(request, { params });
+}
+
 // DELETE /api/companies/[id] - Delete a company
 export async function DELETE(
   request: NextRequest,

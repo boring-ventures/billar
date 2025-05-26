@@ -46,6 +46,7 @@ const formSchema = z.object({
   stockAlerts: z.boolean().default(true),
   initialStock: z.coerce.number().min(0).default(0),
   initialCostPrice: z.string().optional().default(""),
+  itemType: z.enum(["SALE", "INTERNAL_USE"]).default("SALE"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -60,6 +61,7 @@ interface InventoryItem {
   criticalThreshold: number;
   price: number | null;
   stockAlerts: boolean;
+  itemType?: string;
 }
 
 interface InventoryItemDialogProps {
@@ -68,6 +70,7 @@ interface InventoryItemDialogProps {
   item: InventoryItem | null;
   companyId?: string;
   onSuccess?: () => void;
+  defaultItemType?: string;
 }
 
 export function InventoryItemDialog({
@@ -76,6 +79,7 @@ export function InventoryItemDialog({
   item,
   companyId,
   onSuccess,
+  defaultItemType,
 }: InventoryItemDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingCompanies, setIsLoadingCompanies] = useState(false);
@@ -137,6 +141,7 @@ export function InventoryItemDialog({
       stockAlerts: true,
       initialStock: 0,
       initialCostPrice: "",
+      itemType: (defaultItemType as "SALE" | "INTERNAL_USE") || "SALE",
     },
   });
 
@@ -165,6 +170,7 @@ export function InventoryItemDialog({
           stockAlerts: item.stockAlerts,
           initialStock: 0,
           initialCostPrice: "",
+          itemType: (item.itemType as "SALE" | "INTERNAL_USE") || "SALE",
         });
         setSelectedCompanyId(
           isSuperAdmin ? item.companyId : profile?.companyId || item.companyId
@@ -181,11 +187,21 @@ export function InventoryItemDialog({
           stockAlerts: true,
           initialStock: 0,
           initialCostPrice: "",
+          itemType: (defaultItemType as "SALE" | "INTERNAL_USE") || "SALE",
         });
         setSelectedCompanyId(defaultCompanyId);
       }
     }
-  }, [open, item, companyId, form, profile, isSuperAdmin, defaultCompanyId]);
+  }, [
+    open,
+    item,
+    companyId,
+    form,
+    profile,
+    isSuperAdmin,
+    defaultCompanyId,
+    defaultItemType,
+  ]);
 
   const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true);
@@ -220,6 +236,7 @@ export function InventoryItemDialog({
           price: price !== null ? price : undefined,
           criticalThreshold: data.criticalThreshold,
           stockAlerts: data.stockAlerts,
+          itemType: data.itemType,
         });
       } else {
         // Convert initial cost price from string to number or undefined
@@ -239,6 +256,7 @@ export function InventoryItemDialog({
           stockAlerts: data.stockAlerts,
           quantity: data.initialStock,
           initialCostPrice,
+          itemType: data.itemType,
         });
 
         await createItem.mutateAsync({
@@ -252,6 +270,7 @@ export function InventoryItemDialog({
           quantity: data.initialStock,
           initialCostPrice,
           createInitialMovement: true,
+          itemType: data.itemType,
         });
       }
 
@@ -512,6 +531,43 @@ export function InventoryItemDialog({
                 />
               </div>
             )}
+
+            <FormField
+              control={form.control}
+              name="itemType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tipo de Artículo</FormLabel>
+                  <FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      value={field.value || "SALE"}
+                      disabled={!selectedCompanyId}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={
+                              selectedCompanyId
+                                ? "Selecciona un tipo de artículo"
+                                : "Selecciona una empresa primero"
+                            }
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="SALE">Venta</SelectItem>
+                        <SelectItem value="INTERNAL_USE">
+                          Uso Interno
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <DialogFooter>
               <Button

@@ -44,6 +44,7 @@ import { Badge } from "@/components/ui/badge";
 interface InventoryItemsTableProps {
   companyId?: string;
   canModify?: boolean;
+  itemType?: string;
 }
 
 interface InventoryItem {
@@ -68,6 +69,7 @@ interface InventoryItem {
 export function InventoryItemsTable({
   companyId,
   canModify = false,
+  itemType,
 }: InventoryItemsTableProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -91,6 +93,7 @@ export function InventoryItemsTable({
   const { data: items = [], isLoading } = useInventoryItemsQuery({
     companyId,
     categoryId: categoryFilter === "all" ? undefined : categoryFilter,
+    itemType,
   });
 
   // Fetch categories for the filter dropdown

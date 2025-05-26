@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
     const requestedCompanyId = searchParams.get("companyId");
     const categoryId = searchParams.get("categoryId");
     const lowStock = searchParams.get("lowStock");
+    const itemType = searchParams.get("itemType");
 
     // Configure where clause based on provided filters and user role
     const whereClause: Prisma.InventoryItemWhereInput = {};
@@ -59,6 +60,10 @@ export async function GET(request: NextRequest) {
 
     if (categoryId) {
       whereClause.categoryId = categoryId;
+    }
+
+    if (itemType) {
+      whereClause.itemType = itemType as "SALE" | "INTERNAL_USE";
     }
 
     if (lowStock === "true") {
@@ -141,6 +146,7 @@ export async function POST(request: NextRequest) {
       stockAlerts,
       createInitialMovement,
       initialCostPrice,
+      itemType,
     } = body;
     let companyId = requestedCompanyId;
 
@@ -264,6 +270,7 @@ export async function POST(request: NextRequest) {
         price: price !== undefined && price !== null ? price : null,
         criticalThreshold: criticalThreshold || 5,
         stockAlerts: stockAlerts !== undefined ? stockAlerts : true,
+        itemType: (itemType as "SALE" | "INTERNAL_USE") || "SALE",
         lastStockUpdate: new Date(),
       },
     });

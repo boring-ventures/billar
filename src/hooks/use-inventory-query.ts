@@ -60,6 +60,7 @@ interface UseInventoryItemsOptions {
   companyId?: string;
   categoryId?: string;
   lowStock?: boolean;
+  itemType?: string;
   enabled?: boolean;
 }
 
@@ -110,10 +111,11 @@ export const useInventoryItemsQuery = ({
   companyId,
   categoryId,
   lowStock,
+  itemType,
   enabled = true,
 }: UseInventoryItemsOptions) => {
   return useQuery({
-    queryKey: ["inventoryItems", { companyId, categoryId, lowStock }],
+    queryKey: ["inventoryItems", { companyId, categoryId, lowStock, itemType }],
     queryFn: async () => {
       let url = `/api/inventory-items`;
       const params = new URLSearchParams();
@@ -126,6 +128,9 @@ export const useInventoryItemsQuery = ({
       }
       if (lowStock) {
         params.append("lowStock", "true");
+      }
+      if (itemType) {
+        params.append("itemType", itemType);
       }
 
       // Add params to URL if we have any

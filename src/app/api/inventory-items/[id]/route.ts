@@ -69,8 +69,15 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
-    const { name, categoryId, sku, price, criticalThreshold, stockAlerts } =
-      body;
+    const {
+      name,
+      categoryId,
+      sku,
+      price,
+      criticalThreshold,
+      stockAlerts,
+      itemType,
+    } = body;
 
     // Validate required fields
     if (!name) {
@@ -124,6 +131,7 @@ export async function PUT(
         price: price || undefined,
         criticalThreshold: criticalThreshold || undefined,
         stockAlerts: stockAlerts !== undefined ? stockAlerts : undefined,
+        itemType: (itemType as "SALE" | "INTERNAL_USE") || undefined,
       },
     });
 

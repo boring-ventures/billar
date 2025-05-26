@@ -47,6 +47,7 @@ interface CreateInventoryItemPayload {
   stockAlerts?: boolean;
   createInitialMovement?: boolean;
   initialCostPrice?: number;
+  itemType?: string;
 }
 
 interface UpdateInventoryItemPayload {
@@ -57,6 +58,7 @@ interface UpdateInventoryItemPayload {
   price?: number;
   criticalThreshold?: number;
   stockAlerts?: boolean;
+  itemType?: string;
 }
 
 // Define error response type

@@ -52,12 +52,14 @@ interface InventoryItemsGridViewProps {
   query: string;
   companyId?: string;
   canModify?: boolean;
+  itemType?: string;
 }
 
 export function InventoryItemsGridView({
   query,
   companyId,
   canModify = false,
+  itemType,
 }: InventoryItemsGridViewProps) {
   const router = useRouter();
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
@@ -75,6 +77,7 @@ export function InventoryItemsGridView({
   // Fetch inventory items
   const { data: items = [], isLoading } = useInventoryItemsQuery({
     companyId,
+    itemType,
   });
 
   // Filter items by search query

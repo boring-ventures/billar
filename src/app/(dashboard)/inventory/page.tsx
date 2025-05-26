@@ -8,6 +8,8 @@ import {
   Table as TableIcon,
   AlertTriangle,
   Loader2,
+  ShoppingCart,
+  Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +34,9 @@ export default function InventoryPage() {
       ? "categories"
       : tabParam === "low-stock"
         ? "low-stock"
-        : "items"
+        : tabParam === "internal-use"
+          ? "internal-use"
+          : "sale"
   );
 
   const [inventoryView, setInventoryView] = useState(
@@ -72,7 +76,9 @@ export default function InventoryPage() {
         ? "categories"
         : tabParam === "low-stock"
           ? "low-stock"
-          : "items"
+          : tabParam === "internal-use"
+            ? "internal-use"
+            : "sale"
     );
     setInventoryView(viewParam === "grid" ? "grid" : "list");
   }, [tabParam, viewParam]);
@@ -80,21 +86,19 @@ export default function InventoryPage() {
   // Update URL when tab changes
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    if (value === "items") {
+    if (value === "sale") {
       router.push("/inventory");
-    } else if (value === "categories") {
-      router.push("/inventory?tab=categories");
-    } else if (value === "low-stock") {
-      router.push("/inventory?tab=low-stock");
+    } else {
+      router.push(`/inventory?tab=${value}`);
     }
   };
 
   // Update URL when view changes
   const handleViewChange = (view: string) => {
     setInventoryView(view);
-    if (activeTab === "items") {
-      router.push(`/inventory?view=${view}`);
-    }
+    const currentTab = activeTab === "sale" ? "" : `?tab=${activeTab}`;
+    const separator = currentTab ? "&" : "?";
+    router.push(`/inventory${currentTab}${separator}view=${view}`);
   };
 
   // Function to handle opening the item dialog
@@ -102,16 +106,50 @@ export default function InventoryPage() {
     setItemDialogOpen(true);
   };
 
+  // Get the current item type based on active tab
+  const getCurrentItemType = () => {
+    switch (activeTab) {
+      case "sale":
+        return "SALE";
+      case "internal-use":
+        return "INTERNAL_USE";
+      default:
+        return undefined;
+    }
+  };
+
   // Function to render the appropriate content based on active tab
   const renderTabContent = () => {
     const companyId = profile?.companyId as string | undefined;
+    const itemType = getCurrentItemType();
 
-    if (activeTab === "items") {
+    if (activeTab === "categories") {
+      return (
+        <div className="mt-6">
+          <InventoryCategoriesTable
+            companyId={companyId}
+            searchQuery={searchQuery}
+            canModify={canModifyInventory}
+          />
+        </div>
+      );
+    } else if (activeTab === "low-stock") {
+      return (
+        <div className="mt-6">
+          <LowStockItemsTable
+            companyId={companyId}
+            canModify={canModifyInventory}
+          />
+        </div>
+      );
+    } else {
+      // Handle item type tabs (sale, internal-use)
       if (inventoryView === "list") {
         return (
           <InventoryItemsTable
             companyId={companyId}
             canModify={canModifyInventory}
+            itemType={itemType}
           />
         );
       } else {
@@ -152,29 +190,27 @@ export default function InventoryPage() {
               query={searchQuery}
               companyId={companyId}
               canModify={canModifyInventory}
+              itemType={itemType}
             />
           </div>
         );
       }
-    } else if (activeTab === "categories") {
-      return (
-        <div className="mt-6">
-          <InventoryCategoriesTable
-            companyId={companyId}
-            searchQuery={searchQuery}
-            canModify={canModifyInventory}
-          />
-        </div>
-      );
-    } else {
-      return (
-        <div className="mt-6">
-          <LowStockItemsTable
-            companyId={companyId}
-            canModify={canModifyInventory}
-          />
-        </div>
-      );
+    }
+  };
+
+  // Get tab description based on active tab
+  const getTabDescription = () => {
+    switch (activeTab) {
+      case "sale":
+        return "Artículos disponibles para venta a clientes";
+      case "internal-use":
+        return "Artículos para uso interno (limpieza, mantenimiento, oficina, etc.)";
+      case "categories":
+        return "Gestiona las categorías de inventario";
+      case "low-stock":
+        return "Artículos con stock bajo que requieren atención";
+      default:
+        return "Administra artículos de inventario, categorías y niveles de stock.";
     }
   };
 
@@ -184,19 +220,24 @@ export default function InventoryPage() {
         <h2 className="text-3xl font-bold tracking-tight">
           Gestión de Inventario
         </h2>
-        <p className="text-muted-foreground">
-          Administra artículos de inventario, categorías y niveles de stock.
-        </p>
+        <p className="text-muted-foreground">{getTabDescription()}</p>
       </div>
 
       <div className="flex justify-between items-center">
         <Tabs
           value={activeTab}
           onValueChange={handleTabChange}
-          className="w-full max-w-md"
+          className="w-full max-w-2xl"
         >
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="items">Artículos</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="sale" className="flex items-center">
+              <ShoppingCart className="h-4 w-4 mr-2" />
+              Venta
+            </TabsTrigger>
+            <TabsTrigger value="internal-use" className="flex items-center">
+              <Package className="h-4 w-4 mr-2" />
+              Uso Interno
+            </TabsTrigger>
             <TabsTrigger value="categories">Categorías</TabsTrigger>
             <TabsTrigger value="low-stock" className="flex items-center">
               <AlertTriangle className="h-4 w-4 mr-2 text-amber-500" />
@@ -205,7 +246,7 @@ export default function InventoryPage() {
           </TabsList>
         </Tabs>
 
-        {activeTab === "items" && (
+        {!["categories", "low-stock"].includes(activeTab) && (
           <div className="flex items-center space-x-2">
             <Button
               variant={inventoryView === "list" ? "default" : "outline"}
@@ -237,6 +278,7 @@ export default function InventoryPage() {
           // Refresh data
         }}
         companyId={profile?.companyId as string | undefined}
+        defaultItemType={getCurrentItemType()}
       />
 
       <InventoryCategoryDialog

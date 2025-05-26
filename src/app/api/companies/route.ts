@@ -63,7 +63,8 @@ export async function GET() {
       ];
     }
 
-    return NextResponse.json({ companies });
+    // Return the companies array directly instead of wrapped in an object
+    return NextResponse.json(companies);
   } catch (error) {
     console.error("Error fetching companies:", error);
     return NextResponse.json(

@@ -185,10 +185,24 @@ export function UserDialog({
         const response = await fetch("/api/companies");
         if (response.ok) {
           const data = await response.json();
-          setCompanies(data);
+
+          // Check if data.companies exists (API returns { companies: [...] })
+          if (data.companies && Array.isArray(data.companies)) {
+            setCompanies(data.companies);
+          } else if (Array.isArray(data)) {
+            // Fallback for direct array response
+            setCompanies(data);
+          } else {
+            console.error("Companies data has unexpected format:", data);
+            setCompanies([]);
+          }
+        } else {
+          console.error("Error fetching companies:", response.statusText);
+          setCompanies([]);
         }
       } catch (error) {
         console.error("Error fetching companies:", error);
+        setCompanies([]);
       }
     };
 
@@ -486,8 +500,11 @@ export function UserDialog({
               <div className="space-y-2">
                 <FormLabel>Empresa</FormLabel>
                 <div className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground">
-                  {companies.find((c) => c.id === currentUserProfile.companyId)
-                    ?.name || "Cargando empresa..."}
+                  {Array.isArray(companies) && companies.length > 0
+                    ? companies.find(
+                        (c) => c.id === currentUserProfile.companyId
+                      )?.name || "Empresa no encontrada"
+                    : "Cargando empresa..."}
                 </div>
                 <p className="text-[0.8rem] text-muted-foreground">
                   Los usuarios creados estarán asociados a tu empresa.
@@ -589,12 +606,13 @@ export function UserDialog({
                         <span>
                           {form.getValues("companyId") === NO_COMPANY
                             ? "Ninguna"
-                            : companies.find(
-                                (c) => c.id === form.getValues("companyId")
-                              )?.name ||
-                              (!isSuperAdmin && currentUserProfile?.companyId
+                            : Array.isArray(companies) && companies.length > 0
+                              ? companies.find(
+                                  (c) => c.id === form.getValues("companyId")
+                                )?.name || "Empresa no encontrada"
+                              : !isSuperAdmin && currentUserProfile?.companyId
                                 ? "Tu Empresa"
-                                : "N/A")}
+                                : "N/A"}
                         </span>
                         <span className="font-medium">Estado:</span>
                         <span>

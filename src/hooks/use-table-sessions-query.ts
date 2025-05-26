@@ -78,17 +78,19 @@ const createTableSessionApi = async ({
   tableId,
   staffId,
   staffNotes,
+  startedAt,
 }: {
   tableId: string;
   staffId?: string;
   staffNotes?: string;
+  startedAt?: string;
 }) => {
   const response = await fetch("/api/table-sessions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ tableId, staffId, staffNotes }),
+    body: JSON.stringify({ tableId, staffId, staffNotes, startedAt }),
   });
 
   if (!response.ok) {
@@ -99,13 +101,13 @@ const createTableSessionApi = async ({
   return response.json();
 };
 
-const endTableSessionApi = async (sessionId: string) => {
+const endTableSessionApi = async (sessionId: string, endedAt?: string) => {
   const response = await fetch(`/api/table-sessions/${sessionId}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ endSession: true }),
+    body: JSON.stringify({ endSession: true, endedAt }),
   });
 
   if (!response.ok) {
@@ -221,8 +223,14 @@ export function useEndTableSessionMutation() {
   const router = useRouter();
 
   return useMutation({
-    mutationFn: async (sessionId: string) => {
-      const response = await endTableSessionApi(sessionId);
+    mutationFn: async ({
+      sessionId,
+      endedAt,
+    }: {
+      sessionId: string;
+      endedAt?: string;
+    }) => {
+      const response = await endTableSessionApi(sessionId, endedAt);
       return response;
     },
     onSuccess: (data) => {

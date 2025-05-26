@@ -84,7 +84,7 @@ export async function PATCH(
   try {
     const sessionId = (await params).id;
     const body = await request.json();
-    const { status, endSession } = body;
+    const { status, endSession, endedAt } = body;
 
     // Find session first to check if it exists
     const session = await prisma.tableSession.findUnique({
@@ -112,7 +112,25 @@ export async function PATCH(
 
     // If we're ending the session
     if (endSession && session.status === "ACTIVE") {
-      const endTime = new Date();
+      // Parse custom end time if provided, otherwise use current time
+      const endTime = endedAt ? new Date(endedAt) : new Date();
+
+      // Validate that custom end time is not before start time
+      if (endedAt && endTime < new Date(session.startedAt)) {
+        return NextResponse.json(
+          { error: "End time cannot be before start time" },
+          { status: 400 }
+        );
+      }
+
+      // Validate that custom end time is not in the future
+      if (endedAt && endTime > new Date()) {
+        return NextResponse.json(
+          { error: "End time cannot be in the future" },
+          { status: 400 }
+        );
+      }
+
       const totalCost = calculateSessionCost(
         session.startedAt,
         endTime,
@@ -145,7 +163,9 @@ export async function PATCH(
             tableId: session.tableId,
             previousStatus: "OCCUPIED",
             newStatus: "AVAILABLE",
-            notes: "Table session ended",
+            notes: endedAt
+              ? `Table session ended with custom time: ${endTime.toISOString()}`
+              : "Table session ended",
             // changedById would be set in a real app based on auth
           },
         });

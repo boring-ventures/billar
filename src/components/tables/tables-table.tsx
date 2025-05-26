@@ -103,7 +103,7 @@ export function TablesTable() {
         (s: { tableId: string; id: string }) => s.tableId === selectedTable.id
       );
       if (session) {
-        await endSessionMutation.mutateAsync(session.id);
+        await endSessionMutation.mutateAsync({ sessionId: session.id });
         setIsEndSessionAlertOpen(false);
       }
     }

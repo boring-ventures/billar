@@ -32,6 +32,7 @@ import { SessionCancelDialog } from "@/components/tables/session-cancel-dialog";
 import { SessionDetailsSkeleton } from "@/components/tables/session-details-skeleton";
 import { SessionOrderCreator } from "@/components/tables/session-order-creator";
 import { SessionTrackedItemsList } from "@/components/tables/session-tracked-items-list";
+import { EndSessionDialog } from "@/components/tables/end-session-dialog";
 
 export default function TableSessionDetailsPage() {
   const params = useParams();
@@ -87,11 +88,6 @@ export default function TableSessionDetailsPage() {
     router.back();
   };
 
-  const handleEndSession = () => {
-    if (session?.status !== "ACTIVE") return;
-    endSessionMutation.mutate(sessionId);
-  };
-
   const getStatusColor = (status: SessionStatus) => {
     switch (status) {
       case "ACTIVE":
@@ -143,15 +139,19 @@ export default function TableSessionDetailsPage() {
         <div className="flex flex-col gap-2 sm:flex-row">
           {session.status === "ACTIVE" && (
             <>
-              <Button
-                onClick={handleEndSession}
-                size="sm"
-                variant="destructive"
-                disabled={endSessionMutation.isPending}
+              <EndSessionDialog
+                sessionId={sessionId}
+                sessionStartTime={new Date(session.startedAt)}
               >
-                <StopCircle className="mr-2 h-4 w-4" />
-                Finalizar Sesión
-              </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  disabled={endSessionMutation.isPending}
+                >
+                  <StopCircle className="mr-2 h-4 w-4" />
+                  Finalizar Sesión
+                </Button>
+              </EndSessionDialog>
               <SessionCancelDialog sessionId={sessionId} />
             </>
           )}

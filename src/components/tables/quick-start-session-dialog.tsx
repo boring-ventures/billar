@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { formatCurrency } from "@/lib/utils";
-import { Clock, PlayCircle } from "lucide-react";
+import { Clock, PlayCircle, Calendar } from "lucide-react";
 import { useAuth } from "@/providers/auth-provider";
 
 import {
@@ -15,7 +15,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,10 +26,12 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Separator } from "@/components/ui/separator";
 
 const formSchema = z.object({
   tableId: z.string(),
   staffNotes: z.string().optional(),
+  customTime: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -50,6 +51,7 @@ export function QuickStartSessionDialog({
 }: QuickStartSessionDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [showCustomTime, setShowCustomTime] = useState(false);
   const createSessionMutation = useCreateTableSessionMutation();
   const { profile } = useAuth();
 
@@ -64,12 +66,14 @@ export function QuickStartSessionDialog({
     return () => clearInterval(timer);
   }, [open]);
 
-  // Reset form values when table changes
+  // Reset form values when table changes or dialog opens
   useEffect(() => {
     if (table && open) {
+      setShowCustomTime(false);
       form.reset({
         tableId: table.id,
         staffNotes: "",
+        customTime: "",
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -80,11 +84,65 @@ export function QuickStartSessionDialog({
     defaultValues: {
       tableId: table?.id || "",
       staffNotes: "",
+      customTime: "",
     },
   });
 
-  const onSubmit = async (values: FormValues) => {
+  const handleStartNow = async () => {
     if (!table || !profile) return;
+
+    const staffNotes = form.getValues("staffNotes");
+
+    setIsSubmitting(true);
+    try {
+      await createSessionMutation.mutateAsync({
+        tableId: table.id,
+        staffId: profile.id,
+        staffNotes,
+      });
+
+      form.reset();
+      onOpenChange(false);
+      onSuccess?.();
+    } catch (error) {
+      console.error("Failed to start session:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleStartWithCustomTime = async () => {
+    if (!table || !profile) return;
+
+    const values = form.getValues();
+
+    if (!values.customTime) {
+      form.setError("customTime", {
+        type: "required",
+        message: "Por favor selecciona una hora de inicio",
+      });
+      return;
+    }
+
+    // Create a date object with today's date and the selected time
+    const today = new Date();
+    const [hours, minutes] = values.customTime.split(":").map(Number);
+    const customStartTime = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+      hours,
+      minutes
+    );
+
+    // Validate that the time is not in the future
+    if (customStartTime > new Date()) {
+      form.setError("customTime", {
+        type: "validate",
+        message: "La hora de inicio no puede ser en el futuro",
+      });
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -92,6 +150,7 @@ export function QuickStartSessionDialog({
         tableId: table.id,
         staffId: profile.id,
         staffNotes: values.staffNotes,
+        startedAt: customStartTime.toISOString(),
       });
 
       form.reset();
@@ -111,17 +170,23 @@ export function QuickStartSessionDialog({
 
   const tableStyles = getTableStyles();
 
+  // Get current time in HH:MM format for time input max value
+  const getCurrentTimeString = () => {
+    const now = new Date();
+    return `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="text-center text-xl">
-            Inicio Rápido de Sesión
+            Inicio de Sesión
           </DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <div className="space-y-6">
             {table && (
               <div className="bg-green-50 border border-green-200 p-4 rounded-md">
                 <div className="text-center">
@@ -156,7 +221,7 @@ export function QuickStartSessionDialog({
 
                 <div className="flex items-center justify-center text-sm text-green-600 mb-2">
                   <Clock className="w-4 h-4 mr-1" />
-                  {currentTime.toLocaleTimeString()}
+                  Hora actual: {currentTime.toLocaleTimeString()}
                 </div>
               </div>
             )}
@@ -178,32 +243,88 @@ export function QuickStartSessionDialog({
               )}
             />
 
-            <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-4">
+            <Separator />
+
+            <div className="space-y-4">
+              <h4 className="font-medium text-center">
+                Selecciona una opción:
+              </h4>
+
+              {/* Start Now Option */}
+              <Button
+                type="button"
+                onClick={handleStartNow}
+                disabled={isSubmitting}
+                className="w-full bg-green-600 hover:bg-green-700 text-white flex items-center justify-center gap-2 h-12"
+              >
+                <PlayCircle className="h-5 w-5" />
+                Iniciar Ahora
+              </Button>
+
+              {/* Start with Custom Time Option */}
+              <div className="space-y-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowCustomTime(!showCustomTime)}
+                  className="w-full border-green-600 text-green-600 hover:bg-green-50 flex items-center justify-center gap-2 h-12"
+                >
+                  <Calendar className="h-5 w-5" />
+                  Iniciar Sesión con Hora Específica
+                </Button>
+
+                {showCustomTime && (
+                  <div className="bg-gray-50 p-4 rounded-md border">
+                    <FormField
+                      control={form.control}
+                      name="customTime"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Hora de Inicio</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="time"
+                              max={getCurrentTimeString()}
+                              {...field}
+                              className="w-full"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Selecciona la hora en que realmente comenzó la
+                            sesión
+                          </p>
+                        </FormItem>
+                      )}
+                    />
+
+                    <Button
+                      type="button"
+                      onClick={handleStartWithCustomTime}
+                      disabled={isSubmitting}
+                      className="w-full mt-3 bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2"
+                    >
+                      <Calendar className="h-4 w-4" />
+                      {isSubmitting
+                        ? "Iniciando..."
+                        : "Iniciar con Hora Seleccionada"}
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Cancel Option */}
               <Button
                 variant="outline"
                 type="button"
                 onClick={() => onOpenChange(false)}
                 disabled={isSubmitting}
-                className="sm:w-1/2"
+                className="w-full"
               >
                 Cancelar
               </Button>
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="bg-green-600 hover:bg-green-700 text-white sm:w-1/2 flex items-center justify-center gap-2"
-              >
-                {isSubmitting ? (
-                  "Iniciando..."
-                ) : (
-                  <>
-                    <PlayCircle className="h-4 w-4" />
-                    Iniciar Ahora
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
+            </div>
+          </div>
         </Form>
       </DialogContent>
     </Dialog>

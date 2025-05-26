@@ -97,7 +97,7 @@ export default function TableDetailsPage() {
 
   const handleEndSession = () => {
     if (activeSession) {
-      endSessionMutation.mutate(activeSession.id);
+      endSessionMutation.mutate({ sessionId: activeSession.id });
     }
   };
 

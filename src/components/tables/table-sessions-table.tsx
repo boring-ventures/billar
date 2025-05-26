@@ -108,7 +108,7 @@ export function TableSessionsTable({
 
   const handleEndSession = async () => {
     if (selectedSession) {
-      await endSessionMutation.mutateAsync(selectedSession.id);
+      await endSessionMutation.mutateAsync({ sessionId: selectedSession.id });
       setIsEndSessionAlertOpen(false);
     }
   };

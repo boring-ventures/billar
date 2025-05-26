@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { tableId, staffId, staffNotes } = body;
+    const { tableId, staffId, staffNotes, startedAt } = body;
 
     // Validate required fields
     if (!tableId) {
@@ -119,6 +119,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Parse custom start time if provided, otherwise use current time
+    const sessionStartTime = startedAt ? new Date(startedAt) : new Date();
+
+    // Validate that custom start time is not in the future
+    if (startedAt && sessionStartTime > new Date()) {
+      return NextResponse.json(
+        { error: "Start time cannot be in the future" },
+        { status: 400 }
+      );
+    }
+
     // Create a transaction to start session and update table status
     const result = await prisma.$transaction(async (tx) => {
       // Create session
@@ -126,7 +137,7 @@ export async function POST(request: NextRequest) {
         data: {
           tableId,
           staffId: staffId || undefined,
-          startedAt: new Date(),
+          startedAt: sessionStartTime,
           status: "ACTIVE",
           staffNotes: staffNotes || undefined,
         },
@@ -144,7 +155,9 @@ export async function POST(request: NextRequest) {
           tableId,
           previousStatus: "AVAILABLE",
           newStatus: "OCCUPIED",
-          notes: "Table session started",
+          notes: startedAt
+            ? `Table session started with custom time: ${sessionStartTime.toISOString()}`
+            : "Table session started",
           changedById: staffId || undefined,
         },
       });

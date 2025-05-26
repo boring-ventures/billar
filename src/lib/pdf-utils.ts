@@ -532,11 +532,11 @@ export const generateReportPDF = (report: any) => {
 
   // Expense table
   const expenseData = [
-    ["Inventario", formatCurrency(inventoryCost)],
+    ["Inventario (Venta)", formatCurrency(inventoryCost)],
     ["Mantenimiento", formatCurrency(maintenanceCost)],
     ["Personal", formatCurrency(staffCost)],
     ["Servicios", formatCurrency(utilityCost)],
-    ["Otros Gastos", formatCurrency(otherExpenses)],
+    ["Uso Interno", formatCurrency(otherExpenses)],
     ["Total Gastos", formatCurrency(totalExpense)],
   ];
 

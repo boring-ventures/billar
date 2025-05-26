@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
       return total.plus(session.totalCost || 0);
     }, new Decimal(0));
 
-    // Calculate inventory costs (purchases)
+    // Calculate inventory costs (purchases) - separate by item type
     const stockMovements = await prisma.stockMovement.findMany({
       where: {
         createdAt: {
@@ -149,13 +149,36 @@ export async function POST(request: NextRequest) {
           companyId,
         },
       },
+      include: {
+        item: {
+          select: {
+            itemType: true,
+          },
+        },
+      },
     });
 
-    const inventoryCost = stockMovements.reduce((total, movement) => {
-      const costPerItem = movement.costPrice || new Decimal(0);
-      const quantity = movement.quantity;
-      return total.plus(costPerItem.mul(quantity));
+    // Separate costs by item type
+    const saleItemsCost = stockMovements.reduce((total, movement) => {
+      if (movement.item?.itemType === "SALE") {
+        const costPerItem = movement.costPrice || new Decimal(0);
+        const quantity = movement.quantity;
+        return total.plus(costPerItem.mul(quantity));
+      }
+      return total;
     }, new Decimal(0));
+
+    const internalUseCost = stockMovements.reduce((total, movement) => {
+      if (movement.item?.itemType === "INTERNAL_USE") {
+        const costPerItem = movement.costPrice || new Decimal(0);
+        const quantity = movement.quantity;
+        return total.plus(costPerItem.mul(quantity));
+      }
+      return total;
+    }, new Decimal(0));
+
+    // For backward compatibility, inventoryCost represents sale items cost
+    const inventoryCost = saleItemsCost;
 
     // Calculate maintenance costs
     const maintenances = await prisma.tableMaintenance.findMany({
@@ -178,7 +201,8 @@ export async function POST(request: NextRequest) {
     const otherIncome = new Decimal(0);
     const staffCost = new Decimal(0);
     const utilityCost = new Decimal(0);
-    const otherExpenses = new Decimal(0);
+    // Include internal use items (cleaning, maintenance, office supplies) as other expenses
+    const otherExpenses = internalUseCost;
 
     // Calculate totals
     const totalIncome = salesIncome.plus(tableRentIncome).plus(otherIncome);

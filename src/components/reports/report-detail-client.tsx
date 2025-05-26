@@ -270,11 +270,14 @@ export function ReportDetailClient({ report }: ReportDetailProps) {
         <Card>
           <CardHeader>
             <CardTitle>Desglose de Gastos</CardTitle>
-            <CardDescription>Detalle de gastos operativos</CardDescription>
+            <CardDescription>
+              Detalle de gastos operativos incluyendo inventario de venta y uso
+              interno
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">Inventario</span>
+              <span className="text-sm font-medium">Inventario (Venta)</span>
               <span className="text-sm">
                 {formatCurrency(report.inventoryCost)}
               </span>
@@ -298,7 +301,7 @@ export function ReportDetailClient({ report }: ReportDetailProps) {
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">Otros Gastos</span>
+              <span className="text-sm font-medium">Uso Interno</span>
               <span className="text-sm">
                 {formatCurrency(report.otherExpenses)}
               </span>

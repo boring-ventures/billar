@@ -499,7 +499,10 @@ export function FinancialReportClient() {
             <Card>
               <CardHeader>
                 <CardTitle>Desglose de Gastos</CardTitle>
-                <CardDescription>Detalle de gastos operativos</CardDescription>
+                <CardDescription>
+                  Detalle de gastos operativos incluyendo inventario de venta y
+                  uso interno
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 {isLoadingReports ? (
@@ -509,7 +512,9 @@ export function FinancialReportClient() {
                 ) : (
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Inventario</span>
+                      <span className="text-sm font-medium">
+                        Inventario (Venta)
+                      </span>
                       <span className="text-sm">
                         {formatCurrency(
                           reports.reduce(
@@ -557,7 +562,9 @@ export function FinancialReportClient() {
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Otros Gastos</span>
+                      <span className="text-sm font-medium">
+                        Inventario (Uso Interno)
+                      </span>
                       <span className="text-sm">
                         {formatCurrency(
                           reports.reduce(

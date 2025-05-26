@@ -23,10 +23,30 @@ export async function GET(
     // Get user profile
     const userProfile = await prisma.profile.findUnique({
       where: { userId: session.user.id },
+    });
+
+    if (!userProfile) {
+      return NextResponse.json(
+        { error: "User profile not found" },
+        { status: 404 }
+      );
+    }
+
+    // Check if user has access to expenses module (ADMIN or SUPERADMIN only)
+    if (userProfile.role !== "ADMIN" && userProfile.role !== "SUPERADMIN") {
+      return NextResponse.json(
+        { error: "Access denied: Only administrators can access expenses" },
+        { status: 403 }
+      );
+    }
+
+    // Get user profile
+    const userProfileWithCompany = await prisma.profile.findUnique({
+      where: { userId: session.user.id },
       include: { company: true },
     });
 
-    if (!userProfile || !userProfile.companyId) {
+    if (!userProfileWithCompany || !userProfileWithCompany.companyId) {
       return NextResponse.json(
         { error: "User profile or company not found" },
         { status: 404 }
@@ -52,7 +72,7 @@ export async function GET(
     }
 
     // Verify user has access to the expense
-    if (expense.companyId !== userProfile.companyId) {
+    if (expense.companyId !== userProfileWithCompany.companyId) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
@@ -86,10 +106,30 @@ export async function PUT(
     // Get user profile
     const userProfile = await prisma.profile.findUnique({
       where: { userId: session.user.id },
+    });
+
+    if (!userProfile) {
+      return NextResponse.json(
+        { error: "User profile not found" },
+        { status: 404 }
+      );
+    }
+
+    // Check if user has access to expenses module (ADMIN or SUPERADMIN only)
+    if (userProfile.role !== "ADMIN" && userProfile.role !== "SUPERADMIN") {
+      return NextResponse.json(
+        { error: "Access denied: Only administrators can access expenses" },
+        { status: 403 }
+      );
+    }
+
+    // Get user profile
+    const userProfileWithCompany = await prisma.profile.findUnique({
+      where: { userId: session.user.id },
       include: { company: true },
     });
 
-    if (!userProfile || !userProfile.companyId) {
+    if (!userProfileWithCompany || !userProfileWithCompany.companyId) {
       return NextResponse.json(
         { error: "User profile or company not found" },
         { status: 404 }
@@ -105,7 +145,7 @@ export async function PUT(
       return NextResponse.json({ error: "Expense not found" }, { status: 404 });
     }
 
-    if (existingExpense.companyId !== userProfile.companyId) {
+    if (existingExpense.companyId !== userProfileWithCompany.companyId) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
@@ -180,10 +220,30 @@ export async function DELETE(
     // Get user profile
     const userProfile = await prisma.profile.findUnique({
       where: { userId: session.user.id },
+    });
+
+    if (!userProfile) {
+      return NextResponse.json(
+        { error: "User profile not found" },
+        { status: 404 }
+      );
+    }
+
+    // Check if user has access to expenses module (ADMIN or SUPERADMIN only)
+    if (userProfile.role !== "ADMIN" && userProfile.role !== "SUPERADMIN") {
+      return NextResponse.json(
+        { error: "Access denied: Only administrators can access expenses" },
+        { status: 403 }
+      );
+    }
+
+    // Get user profile
+    const userProfileWithCompany = await prisma.profile.findUnique({
+      where: { userId: session.user.id },
       include: { company: true },
     });
 
-    if (!userProfile || !userProfile.companyId) {
+    if (!userProfileWithCompany || !userProfileWithCompany.companyId) {
       return NextResponse.json(
         { error: "User profile or company not found" },
         { status: 404 }
@@ -199,7 +259,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Expense not found" }, { status: 404 });
     }
 
-    if (existingExpense.companyId !== userProfile.companyId) {
+    if (existingExpense.companyId !== userProfileWithCompany.companyId) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 

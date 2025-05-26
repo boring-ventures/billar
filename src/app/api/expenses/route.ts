@@ -31,6 +31,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Check if user has access to expenses module (ADMIN or SUPERADMIN only)
+    if (userProfile.role !== "ADMIN" && userProfile.role !== "SUPERADMIN") {
+      return NextResponse.json(
+        { error: "Access denied: Only administrators can view expenses" },
+        { status: 403 }
+      );
+    }
+
     // Get query parameters
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get("companyId");
@@ -136,6 +144,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "User profile not found" },
         { status: 404 }
+      );
+    }
+
+    // Check if user has access to expenses module (ADMIN or SUPERADMIN only)
+    if (userProfile.role !== "ADMIN" && userProfile.role !== "SUPERADMIN") {
+      return NextResponse.json(
+        { error: "Access denied: Only administrators can create expenses" },
+        { status: 403 }
       );
     }
 

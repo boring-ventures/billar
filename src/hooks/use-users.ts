@@ -37,19 +37,26 @@ export function useUsers() {
           const data = await response.json();
           setUsers(data);
         } else {
-          toast({
-            title: "Error",
-            description: "Error al cargar usuarios",
-            variant: "destructive",
-          });
+          // Only show error toast if user is still logged in
+          // This prevents showing errors during logout process
+          if (currentUserProfile) {
+            toast({
+              title: "Error",
+              description: "Error al cargar usuarios",
+              variant: "destructive",
+            });
+          }
         }
       } catch (error) {
         console.error("Error fetching users:", error);
-        toast({
-          title: "Error",
-          description: "Ha ocurrido un error inesperado",
-          variant: "destructive",
-        });
+        // Only show error toast if user is still logged in
+        if (currentUserProfile) {
+          toast({
+            title: "Error",
+            description: "Ha ocurrido un error inesperado",
+            variant: "destructive",
+          });
+        }
       } finally {
         setIsLoading(false);
       }

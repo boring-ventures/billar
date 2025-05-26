@@ -6,11 +6,13 @@ import { CompanyTable } from "@/components/users/company-table";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { useAuth } from "@/providers/auth-provider";
 
 export default function UsersPage() {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
   const { profile, isLoading } = useCurrentUser();
+  const { user } = useAuth();
 
   // Only superadmins can access companies tab
   const canAccessCompanies = profile?.role === "SUPERADMIN";
@@ -32,8 +34,8 @@ export default function UsersPage() {
     }
   }, [tabParam, canAccessCompanies]);
 
-  // Show loading state while fetching user profile
-  if (isLoading) {
+  // Show loading state while fetching user profile or if user is logging out
+  if (isLoading || !user) {
     return (
       <div className="flex flex-col space-y-6 p-4 md:p-8">
         <div className="flex flex-col gap-2">

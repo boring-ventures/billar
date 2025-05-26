@@ -29,6 +29,7 @@ import {
 import { TableSkeleton } from "@/components/tables/table-skeleton";
 import { useUsers } from "@/hooks/use-users";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { useAuth } from "@/providers/auth-provider";
 import { cn } from "@/lib/utils";
 
 export function UserTable() {
@@ -38,10 +39,13 @@ export function UserTable() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const { profile: currentUserProfile } = useCurrentUser();
+  const { user } = useAuth();
 
   useEffect(() => {
-    fetchUsers(searchQuery);
-  }, [searchQuery, fetchUsers]);
+    if (user) {
+      fetchUsers(searchQuery);
+    }
+  }, [searchQuery, fetchUsers, user]);
 
   const handleAddEdit = (user: User | null = null) => {
     setSelectedUser(user);

@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   ArrowRight,
@@ -13,8 +15,11 @@ import {
 import { BlurFade } from "@/components/magicui/blur-fade";
 import { ShimmerButton } from "@/components/magicui/shimmer-button";
 import { AnimatedShinyText } from "@/components/magicui/animated-shiny-text";
+import { useAuth } from "@/providers/auth-provider";
 
 export default function Hero() {
+  const { user, session, isLoading } = useAuth();
+
   return (
     <section className="relative py-28 md:py-40 overflow-hidden bg-[#191919] text-white">
       {/* Background patterns */}
@@ -61,18 +66,44 @@ export default function Hero() {
                 </p>
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-10">
-                  <ShimmerButton shimmerColor="#ef4444">
-                    <Link
-                      href="/sign-up"
-                      className="inline-flex items-center px-8 py-3 text-lg font-medium"
-                    >
-                      Empezar Gratis
-                      <ArrowRight
-                        className="ml-2 group-hover:translate-x-1 transition-transform"
-                        size={20}
-                      />
-                    </Link>
-                  </ShimmerButton>
+                  {isLoading ? (
+                    // Show loading state while checking authentication
+                    <ShimmerButton shimmerColor="#ef4444">
+                      <div className="inline-flex items-center px-8 py-3 text-lg font-medium">
+                        <div className="w-5 h-5 mr-2 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
+                        Cargando...
+                      </div>
+                    </ShimmerButton>
+                  ) : user && session ? (
+                    // Show Dashboard button for authenticated users
+                    <ShimmerButton shimmerColor="#ef4444">
+                      <Link
+                        href="/dashboard"
+                        className="inline-flex items-center px-8 py-3 text-lg font-medium"
+                      >
+                        <LayoutDashboard className="mr-2 h-5 w-5" />
+                        Ir al Dashboard
+                        <ArrowRight
+                          className="ml-2 group-hover:translate-x-1 transition-transform"
+                          size={20}
+                        />
+                      </Link>
+                    </ShimmerButton>
+                  ) : (
+                    // Show Sign Up button for non-authenticated users
+                    <ShimmerButton shimmerColor="#ef4444">
+                      <Link
+                        href="/sign-up"
+                        className="inline-flex items-center px-8 py-3 text-lg font-medium"
+                      >
+                        Empezar Gratis
+                        <ArrowRight
+                          className="ml-2 group-hover:translate-x-1 transition-transform"
+                          size={20}
+                        />
+                      </Link>
+                    </ShimmerButton>
+                  )}
 
                   <Link
                     href="/#features"

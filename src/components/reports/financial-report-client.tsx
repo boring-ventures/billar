@@ -500,8 +500,7 @@ export function FinancialReportClient() {
               <CardHeader>
                 <CardTitle>Desglose de Gastos</CardTitle>
                 <CardDescription>
-                  Detalle de gastos operativos incluyendo inventario de venta y
-                  uso interno
+                  Detalle completo de gastos operativos por categoría
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -511,72 +510,112 @@ export function FinancialReportClient() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">
-                        Inventario (Venta)
-                      </span>
-                      <span className="text-sm">
-                        {formatCurrency(
-                          reports.reduce(
-                            (acc: number, report: FinancialReport) =>
-                              acc + Number(report.inventoryCost),
-                            0
-                          )
-                        )}
-                      </span>
+                    {/* Inventory Costs */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium">
+                          Inventario para Venta
+                        </span>
+                        <span className="text-sm">
+                          {formatCurrency(
+                            reports.reduce(
+                              (acc: number, report: FinancialReport) =>
+                                acc + Number(report.inventoryCost),
+                              0
+                            )
+                          )}
+                        </span>
+                      </div>
+                      <div className="text-xs text-muted-foreground ml-4">
+                        Productos comprados para reventa
+                      </div>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Mantenimiento</span>
-                      <span className="text-sm">
-                        {formatCurrency(
-                          reports.reduce(
-                            (acc: number, report: FinancialReport) =>
-                              acc + Number(report.maintenanceCost),
-                            0
-                          )
-                        )}
-                      </span>
+
+                    {/* Staff Costs */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium">Personal</span>
+                        <span className="text-sm">
+                          {formatCurrency(
+                            reports.reduce(
+                              (acc: number, report: FinancialReport) =>
+                                acc + Number(report.staffCost),
+                              0
+                            )
+                          )}
+                        </span>
+                      </div>
+                      <div className="text-xs text-muted-foreground ml-4">
+                        Salarios, bonos, beneficios del personal
+                      </div>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Personal</span>
-                      <span className="text-sm">
-                        {formatCurrency(
-                          reports.reduce(
-                            (acc: number, report: FinancialReport) =>
-                              acc + Number(report.staffCost),
-                            0
-                          )
-                        )}
-                      </span>
+
+                    {/* Utilities */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium">
+                          Servicios Públicos
+                        </span>
+                        <span className="text-sm">
+                          {formatCurrency(
+                            reports.reduce(
+                              (acc: number, report: FinancialReport) =>
+                                acc + Number(report.utilityCost),
+                              0
+                            )
+                          )}
+                        </span>
+                      </div>
+                      <div className="text-xs text-muted-foreground ml-4">
+                        Electricidad, agua, gas, internet, teléfono
+                      </div>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Servicios</span>
-                      <span className="text-sm">
-                        {formatCurrency(
-                          reports.reduce(
-                            (acc: number, report: FinancialReport) =>
-                              acc + Number(report.utilityCost),
-                            0
-                          )
-                        )}
-                      </span>
+
+                    {/* Maintenance */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium">
+                          Mantenimiento
+                        </span>
+                        <span className="text-sm">
+                          {formatCurrency(
+                            reports.reduce(
+                              (acc: number, report: FinancialReport) =>
+                                acc + Number(report.maintenanceCost),
+                              0
+                            )
+                          )}
+                        </span>
+                      </div>
+                      <div className="text-xs text-muted-foreground ml-4">
+                        Reparación de mesas, equipos, instalaciones
+                      </div>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">
-                        Inventario (Uso Interno)
-                      </span>
-                      <span className="text-sm">
-                        {formatCurrency(
-                          reports.reduce(
-                            (acc: number, report: FinancialReport) =>
-                              acc + Number(report.otherExpenses),
-                            0
-                          )
-                        )}
-                      </span>
+
+                    {/* Other Expenses */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium">
+                          Otros Gastos Operativos
+                        </span>
+                        <span className="text-sm">
+                          {formatCurrency(
+                            reports.reduce(
+                              (acc: number, report: FinancialReport) =>
+                                acc + Number(report.otherExpenses),
+                              0
+                            )
+                          )}
+                        </span>
+                      </div>
+                      <div className="text-xs text-muted-foreground ml-4">
+                        Suministros, alquiler, seguros, marketing, limpieza,
+                        papelería
+                      </div>
                     </div>
+
                     <div className="pt-2 border-t flex justify-between items-center font-bold">
-                      <span>Total</span>
+                      <span>Total Gastos</span>
                       <span>{formatCurrency(summaryData.totalExpense)}</span>
                     </div>
                   </div>

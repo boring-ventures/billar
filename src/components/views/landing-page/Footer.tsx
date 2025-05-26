@@ -26,7 +26,7 @@ export default function Footer() {
           <div className="mb-8 md:mb-0">
             <Link href="/" className="flex items-center space-x-2 mb-4">
               <div className="w-8 h-8 rounded-full bg-red-500"></div>
-              <span className="text-xl font-bold text-white">BILLAR</span>
+              <span className="text-xl font-bold text-white">BILLARPRO</span>
             </Link>
             <p className="text-sm max-w-xs">
               Sistema de gestión integral para salones de billar.
@@ -65,7 +65,7 @@ export default function Footer() {
             </div>
 
             <p className="text-sm text-gray-500">
-              &copy; {currentYear} BILLAR. Todos los derechos reservados.
+              &copy; {currentYear} BILLARPRO. Todos los derechos reservados.
             </p>
           </div>
         </div>

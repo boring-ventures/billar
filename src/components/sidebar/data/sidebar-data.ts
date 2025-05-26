@@ -6,6 +6,7 @@ import {
   PackageOpen,
   ShoppingCart,
   BarChart,
+  Receipt,
 } from "lucide-react";
 import type { SidebarData } from "../types";
 
@@ -17,7 +18,7 @@ export const sidebarData: SidebarData = {
   },
   teams: [
     {
-      name: "Billar",
+      name: "BILLARPRO",
       logo: Command,
       plan: "",
     },
@@ -50,6 +51,11 @@ export const sidebarData: SidebarData = {
           title: "Punto de Venta",
           url: "/pos",
           icon: ShoppingCart,
+        },
+        {
+          title: "Gastos",
+          url: "/gastos",
+          icon: Receipt,
         },
         {
           title: "Reportes Financieros",

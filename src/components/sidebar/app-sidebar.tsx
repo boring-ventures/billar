@@ -85,7 +85,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="h-8 w-8 transition-all duration-200 group-data-[state=collapsed]:h-10 group-data-[state=collapsed]:w-10"
             />
             <span className="text-xl font-bold transition-opacity duration-200 group-data-[state=collapsed]:opacity-0">
-              BILLAR
+              BILLARPRO
             </span>
           </div>
           {profile?.company && (

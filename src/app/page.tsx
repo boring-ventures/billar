@@ -7,7 +7,7 @@ import PricingCTA from "@/components/views/landing-page/CTA";
 import Footer from "@/components/views/landing-page/Footer";
 
 export const metadata: Metadata = {
-  title: "BILLAR - Aplicación de Gestión para Salones de Billar",
+  title: "BILLARPRO - Aplicación de Gestión para Salones de Billar",
   description:
     "Aplicación completa de gestión para salones de billar. Gestiona mesas, inventario, reservas y pagos por solo $20 al mes.",
 };

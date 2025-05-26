@@ -27,6 +27,7 @@ model Profile {
   financialReports      FinancialReport[]
   posOrders             PosOrder[]
   stockMovements        StockMovement[]
+  expenses              Expense[]
 
   @@index([companyId, userId])
   @@map("profiles")
@@ -46,6 +47,7 @@ model Company {
   profiles              Profile[]
   tables                Table[]
   financialReports      FinancialReport[]
+  expenses              Expense[]
 
   @@map("companies")
   @@schema("public")
@@ -367,5 +369,36 @@ model SessionTrackedItem {
   item          InventoryItem @relation(fields: [itemId], references: [id])
 
   @@map("session_tracked_items")
+  @@schema("public")
+}
+
+model Expense {
+  id            String        @id @default(uuid()) @db.Uuid
+  companyId     String        @map("company_id") @db.Uuid
+  category      ExpenseCategory
+  description   String
+  amount        Decimal       @db.Decimal(10, 2)
+  expenseDate   DateTime      @map("expense_date") @db.Timestamptz(6)
+  notes         String?
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdById   String?       @map("created_by_id") @db.Uuid
+  company       Company       @relation(fields: [companyId], references: [id])
+  createdBy     Profile?      @relation(fields: [createdById], references: [id])
+
+  @@map("expenses")
+  @@schema("public")
+}
+
+enum ExpenseCategory {
+  STAFF
+  UTILITIES
+  MAINTENANCE
+  SUPPLIES
+  RENT
+  INSURANCE
+  MARKETING
+  OTHER
+
   @@schema("public")
 }

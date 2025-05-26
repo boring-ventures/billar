@@ -23,7 +23,7 @@ export default function About() {
                   <div className="absolute w-full h-full flex items-center justify-center">
                     <div className="w-3/4 h-3/4 bg-gradient-to-br from-red-500/20 to-green-500/20 rounded-lg flex items-center justify-center">
                       <span className="text-4xl font-bold text-white">
-                        BILLAR
+                        BILLARPRO
                       </span>
                     </div>
                   </div>

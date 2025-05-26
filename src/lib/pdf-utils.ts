@@ -108,7 +108,7 @@ const addHeaderToPdf = (doc: jsPDF, title: string) => {
     brandColors.primary[1],
     brandColors.primary[2]
   );
-  doc.text("BILLAR", 15, 25);
+  doc.text("BILLARPRO", 15, 25);
 
   doc.setFontSize(18);
   doc.setTextColor(
@@ -624,7 +624,7 @@ const addFooterToPdf = (doc: jsPDF) => {
 
     // Add company info
     doc.text(
-      "Billar - Sistema de Gestión",
+      "BILLARPRO - Sistema de Gestión",
       15,
       doc.internal.pageSize.height - 10
     );

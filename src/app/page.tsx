@@ -7,9 +7,18 @@ import PricingCTA from "@/components/views/landing-page/CTA";
 import Footer from "@/components/views/landing-page/Footer";
 
 export const metadata: Metadata = {
-  title: "BILLARPRO - Aplicación de Gestión para Salones de Billar",
+  title:
+    "BILLARPRO - Plataforma Completa de Gestión para Salones de Billar | 8+ Módulos Integrados",
   description:
-    "Aplicación completa de gestión para salones de billar. Gestiona mesas, inventario, reservas y pagos por solo $20 al mes.",
+    "La solución más completa para salones de billar. 8+ módulos integrados: Dashboard inteligente, gestión de mesas, inventario, POS, control de gastos, reportes financieros, usuarios y configuración. Todo por solo $20/mes.",
+  keywords:
+    "gestión salón billar, software billar, POS billar, inventario billar, reportes financieros billar, dashboard billar, control mesas billar",
+  openGraph: {
+    title: "BILLARPRO - Plataforma Completa para Salones de Billar",
+    description:
+      "8+ módulos integrados para gestionar cada aspecto de tu salón de billar. Dashboard, mesas, inventario, POS, gastos, reportes y más.",
+    type: "website",
+  },
 };
 
 export default function Home() {

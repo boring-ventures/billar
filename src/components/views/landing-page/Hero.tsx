@@ -1,5 +1,15 @@
 import Link from "next/link";
-import { ArrowRight, Clock, BarChart3, CreditCard } from "lucide-react";
+import {
+  ArrowRight,
+  LayoutDashboard,
+  Table,
+  Package,
+  ShoppingCart,
+  Receipt,
+  BarChart3,
+  Users,
+  Settings,
+} from "lucide-react";
 import { BlurFade } from "@/components/magicui/blur-fade";
 import { ShimmerButton } from "@/components/magicui/shimmer-button";
 import { AnimatedShinyText } from "@/components/magicui/animated-shiny-text";
@@ -15,13 +25,16 @@ export default function Hero() {
       <div className="absolute bottom-1/3 -right-1/4 w-3/4 h-1/2 bg-green-500/10 rounded-full blur-3xl -z-10"></div>
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="space-y-8 text-center">
               <BlurFade>
                 <div className="inline-flex items-center rounded-full bg-white/5 border border-white/10 px-4 py-1.5 mb-4 shadow-sm backdrop-blur-sm">
                   <span className="text-sm font-medium text-white">
-                    Gestión todo-en-uno por{" "}
+                    <span className="text-green-500 font-semibold">
+                      8+ Módulos
+                    </span>{" "}
+                    integrados por solo{" "}
                     <span className="text-red-500 font-semibold">$20</span>
                     /mes
                   </span>
@@ -31,20 +44,20 @@ export default function Hero() {
               <BlurFade delay={0.1}>
                 <AnimatedShinyText>
                   <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-tight tracking-tight">
-                    Administra Tu Salón de Billar
+                    La Plataforma Completa Para
                     <span className="block text-red-500 mt-2">
-                      Sin Complicaciones
+                      Tu Salón de Billar
                     </span>
                   </h1>
                 </AnimatedShinyText>
               </BlurFade>
 
               <BlurFade delay={0.2}>
-                <p className="text-xl text-gray-300 max-w-2xl mx-auto mt-6">
-                  Gestiona mesas, controla ingresos, maneja inventario, y mejora
-                  tu negocio de billar con nuestra plataforma todo-en-uno
-                  diseñada específicamente para propietarios de salones de
-                  billar.
+                <p className="text-xl text-gray-300 max-w-3xl mx-auto mt-6">
+                  Dashboard inteligente, gestión de mesas, inventario, POS,
+                  control de gastos, reportes financieros, gestión de usuarios y
+                  configuración avanzada. Todo lo que necesitas en una sola
+                  plataforma.
                 </p>
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-10">
@@ -53,7 +66,7 @@ export default function Hero() {
                       href="/sign-up"
                       className="inline-flex items-center px-8 py-3 text-lg font-medium"
                     >
-                      Empezar Ahora
+                      Empezar Gratis
                       <ArrowRight
                         className="ml-2 group-hover:translate-x-1 transition-transform"
                         size={20}
@@ -62,46 +75,120 @@ export default function Hero() {
                   </ShimmerButton>
 
                   <Link
-                    href="/#pricing"
+                    href="/#features"
                     className="inline-flex items-center text-gray-300 hover:text-red-500 transition-colors px-8 py-3"
                   >
-                    Ver Precios
+                    Ver Todos los Módulos
                   </Link>
                 </div>
               </BlurFade>
             </div>
 
-            {/* Features highlight */}
-            <div className="mt-20 grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            {/* Enhanced modules showcase */}
+            <div className="mt-20">
+              <BlurFade delay={0.3}>
+                <h3 className="text-2xl font-bold text-center text-white mb-8">
+                  Módulos Principales Incluidos
+                </h3>
+              </BlurFade>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4 max-w-6xl mx-auto">
+                {[
+                  {
+                    icon: LayoutDashboard,
+                    label: "Dashboard",
+                    desc: "Panel de control",
+                    color: "text-blue-500",
+                  },
+                  {
+                    icon: Table,
+                    label: "Mesas",
+                    desc: "Gestión completa",
+                    color: "text-green-500",
+                  },
+                  {
+                    icon: Package,
+                    label: "Inventario",
+                    desc: "Control de stock",
+                    color: "text-purple-500",
+                  },
+                  {
+                    icon: ShoppingCart,
+                    label: "POS",
+                    desc: "Punto de venta",
+                    color: "text-orange-500",
+                  },
+                  {
+                    icon: Receipt,
+                    label: "Gastos",
+                    desc: "Control financiero",
+                    color: "text-red-500",
+                  },
+                  {
+                    icon: BarChart3,
+                    label: "Reportes",
+                    desc: "Analytics avanzado",
+                    color: "text-cyan-500",
+                  },
+                  {
+                    icon: Users,
+                    label: "Usuarios",
+                    desc: "Gestión de equipo",
+                    color: "text-pink-500",
+                  },
+                  {
+                    icon: Settings,
+                    label: "Configuración",
+                    desc: "Personalización",
+                    color: "text-teal-500",
+                  },
+                ].map((module, i) => (
+                  <BlurFade
+                    key={module.label}
+                    delay={i * 0.05 + 0.4}
+                    className="flex flex-col items-center p-4 rounded-xl border border-gray-800 bg-gray-800/30 backdrop-blur-sm hover:bg-gray-800/60 transition-all duration-300 hover:transform hover:scale-105"
+                  >
+                    <module.icon className={`h-6 w-6 mb-2 ${module.color}`} />
+                    <div className="text-sm font-semibold text-white mb-1 text-center">
+                      {module.label}
+                    </div>
+                    <div className="text-xs text-gray-400 text-center">
+                      {module.desc}
+                    </div>
+                  </BlurFade>
+                ))}
+              </div>
+            </div>
+
+            {/* Key benefits */}
+            <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-4xl mx-auto">
               {[
                 {
-                  icon: Clock,
-                  label: "Gestión de Mesas en Tiempo Real",
-                  desc: "Seguimiento de uso y reservas de mesas",
-                  color: "bg-gray-800 text-white",
+                  icon: LayoutDashboard,
+                  label: "Todo en Una Plataforma",
+                  desc: "8+ módulos integrados sin complicaciones",
+                  color: "text-red-500",
                 },
                 {
                   icon: BarChart3,
-                  label: "Análisis de Negocio",
-                  desc: "Informes financieros completos",
-                  color: "bg-red-500/10 text-red-500",
+                  label: "Datos en Tiempo Real",
+                  desc: "Métricas y analytics actualizados al instante",
+                  color: "text-green-500",
                 },
                 {
-                  icon: CreditCard,
-                  label: "Sistema de Punto de Venta",
-                  desc: "Maneja pagos con facilidad",
-                  color: "bg-green-500/10 text-green-500",
+                  icon: Users,
+                  label: "Fácil de Usar",
+                  desc: "Interfaz intuitiva para todo tu equipo",
+                  color: "text-blue-500",
                 },
               ].map((feature, i) => (
                 <BlurFade
                   key={feature.label}
-                  delay={i * 0.1 + 0.3}
+                  delay={i * 0.1 + 0.6}
                   className="flex flex-col items-center p-6 rounded-xl border border-gray-800 bg-gray-800/50 backdrop-blur-sm hover:bg-gray-800/80 transition-all duration-300"
                 >
-                  <feature.icon
-                    className={`h-8 w-8 mb-3 ${i === 1 ? "text-red-500" : i === 2 ? "text-green-500" : "text-white"}`}
-                  />
-                  <div className="text-lg font-semibold text-white mb-1">
+                  <feature.icon className={`h-8 w-8 mb-3 ${feature.color}`} />
+                  <div className="text-lg font-semibold text-white mb-1 text-center">
                     {feature.label}
                   </div>
                   <div className="text-sm text-gray-400 text-center">

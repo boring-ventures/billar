@@ -117,6 +117,7 @@ export function SessionOrderCreator({
   // Only fetch items when we have a valid company ID
   const { items, isLoading: isInventoryLoading } = useInventoryItems({
     companyId: effectiveCompanyId,
+    itemType: "SALE",
   });
 
   const [cart, setCart] = useState<CartItem[]>([]);

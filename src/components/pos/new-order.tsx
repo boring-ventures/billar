@@ -261,7 +261,7 @@ export function NewOrder() {
                 // First get inventory data to properly set available quantities
                 try {
                   const inventoryResponse = await fetch(
-                    `/api/inventory-items?companyId=${companyToUse}`
+                    `/api/inventory-items?companyId=${companyToUse}&itemType=SALE`
                   );
 
                   if (inventoryResponse.ok) {
@@ -323,7 +323,10 @@ export function NewOrder() {
 
   // Hooks
   const { toast } = useToast();
-  const { items, isLoading: isLoadingItems } = useInventoryItems({ companyId });
+  const { items, isLoading: isLoadingItems } = useInventoryItems({
+    companyId,
+    itemType: "SALE",
+  });
   const { activeSessions, activeSessionsLoading, refetchActiveSessions } =
     useTableSessions(companyId);
 

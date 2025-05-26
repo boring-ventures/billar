@@ -34,6 +34,7 @@ interface InventoryItemFilters {
   search?: string;
   inStock?: boolean;
   belowThreshold?: boolean;
+  itemType?: "SALE" | "INTERNAL_USE";
 }
 
 interface CreateInventoryItemPayload {
@@ -97,6 +98,10 @@ export const useInventoryItems = (filters: InventoryItemFilters) => {
 
     if (filters.belowThreshold !== undefined) {
       params.append("belowThreshold", String(filters.belowThreshold));
+    }
+
+    if (filters.itemType) {
+      params.append("itemType", filters.itemType);
     }
 
     return params.toString();

@@ -35,7 +35,6 @@ import {
   Minus,
   Eye,
   AlertTriangle,
-  Power,
   PowerOff,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
@@ -336,9 +335,7 @@ export function InventoryItemsTable({
                         Eliminar
                       </>
                     ) : (
-                      <>
-                        
-                      </>
+                      <></>
                     )}
                   </DropdownMenuItem>
                   {!item.active && (

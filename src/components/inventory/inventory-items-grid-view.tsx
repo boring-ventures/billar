@@ -16,7 +16,6 @@ import {
   Edit,
   Trash,
   Eye,
-  Power,
   PowerOff,
 } from "lucide-react";
 import {
@@ -325,9 +324,7 @@ export function InventoryItemsGridView({
                               Eliminar
                             </>
                           ) : (
-                            <>
-                              
-                            </>
+                            <></>
                           )}
                         </DropdownMenuItem>
                         {!item.active && (

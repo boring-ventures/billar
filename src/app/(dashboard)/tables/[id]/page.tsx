@@ -29,6 +29,7 @@ import { formatDuration, formatCurrency } from "@/lib/utils";
 import { QuickStartSessionDialog } from "@/components/tables/quick-start-session-dialog";
 import { TableDetailsSkeleton } from "@/components/tables/table-details-skeleton";
 import { ActiveSessionSkeleton } from "@/components/tables/active-session-skeleton";
+import { TableDialog } from "@/components/tables/table-dialog";
 import { useAuth } from "@/providers/auth-provider";
 
 export default function TableDetailsPage() {
@@ -39,6 +40,7 @@ export default function TableDetailsPage() {
   const [activeTab, setActiveTab] = useState("sessions");
   const [activeDuration, setActiveDuration] = useState("");
   const [quickStartDialogOpen, setQuickStartDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   // Check if user has admin privileges (ADMIN or SUPERADMIN)
   const isAdmin = profile?.role === "ADMIN" || profile?.role === "SUPERADMIN";
@@ -84,7 +86,9 @@ export default function TableDetailsPage() {
   };
 
   const handleEditTable = () => {
-    router.push(`/tables/${tableId}/edit`);
+    if (isAdmin) {
+      setEditDialogOpen(true);
+    }
   };
 
   const handleStartSession = () => {
@@ -334,6 +338,15 @@ export default function TableDetailsPage() {
         table={table}
         onSuccess={() => {
           setQuickStartDialogOpen(false);
+        }}
+      />
+
+      <TableDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        table={table}
+        onSuccess={() => {
+          setEditDialogOpen(false);
         }}
       />
     </div>

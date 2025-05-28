@@ -67,6 +67,15 @@ export async function GET(request: NextRequest) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // Debug logging
+    console.log("Dashboard Stats Debug:", {
+      companyId,
+      today: today.toISOString(),
+      todayEnd: new Date(
+        today.getTime() + 24 * 60 * 60 * 1000 - 1
+      ).toISOString(),
+    });
+
     const todaySales = await prisma.posOrder.aggregate({
       where: {
         companyId,

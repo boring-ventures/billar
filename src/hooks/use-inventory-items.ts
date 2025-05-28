@@ -16,6 +16,7 @@ interface InventoryItem {
   stockAlerts: boolean;
   createdAt: string;
   updatedAt: string;
+  active: boolean;
   category?: {
     id: string;
     name: string;
@@ -201,16 +202,22 @@ export const useInventoryItems = (filters: InventoryItemFilters) => {
   const updateItem = useMutation({
     mutationFn: async (data: UpdateInventoryItemPayload) => {
       try {
-        const response = await axios.put(`/api/inventory-items/${data.id}`, {
-          name: data.name,
-          categoryId: data.categoryId,
-          sku: data.sku,
-          price: data.price,
-          criticalThreshold: data.criticalThreshold,
-          stockAlerts: data.stockAlerts,
-        });
+        console.log("Updating inventory item with data:", data);
+        const response = await axios.put(
+          `/api/inventory-items/${data.id}`,
+          data
+        );
         return response.data as InventoryItem;
       } catch (error: unknown) {
+        console.error("Error updating item:", error);
+
+        // Enhanced error handling to extract the error message
+        if (axios.isAxiosError(error) && error.response) {
+          const serverError =
+            error.response.data?.error || "Error al actualizar el artículo.";
+          throw new Error(serverError);
+        }
+
         const errorMessage =
           error instanceof Error
             ? error.message
@@ -218,25 +225,65 @@ export const useInventoryItems = (filters: InventoryItemFilters) => {
               ? (error as ErrorResponse)?.response?.data?.error ||
                 "Error al actualizar el artículo."
               : "Error al actualizar el artículo.";
+
         throw new Error(errorMessage);
       }
     },
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
       toast({
         title: "Éxito",
         description: "Artículo actualizado exitosamente",
       });
       queryClient.invalidateQueries({ queryKey: ["inventoryItems", filters] });
-      queryClient.invalidateQueries({
-        queryKey: ["inventoryItem", variables.id],
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
       });
+      setError(error.message);
+    },
+  });
 
-      // If the category is changed, invalidate the category queries as well
-      if (variables.categoryId) {
-        queryClient.invalidateQueries({
-          queryKey: ["inventoryCategory", variables.categoryId],
-        });
+  // Toggle active status of an inventory item
+  const toggleActiveItem = useMutation({
+    mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
+      try {
+        console.log("Toggling item active status:", { id, active });
+        const response = await axios.patch(
+          `/api/inventory-items/${id}/toggle-active`,
+          { active }
+        );
+        return response.data;
+      } catch (error: unknown) {
+        console.error("Error toggling item active status:", error);
+
+        // Enhanced error handling to extract the error message
+        if (axios.isAxiosError(error) && error.response) {
+          const serverError =
+            error.response.data?.error ||
+            "Error al cambiar el estado del artículo.";
+          throw new Error(serverError);
+        }
+
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : typeof error === "object" && error !== null && "response" in error
+              ? (error as ErrorResponse)?.response?.data?.error ||
+                "Error al cambiar el estado del artículo."
+              : "Error al cambiar el estado del artículo.";
+
+        throw new Error(errorMessage);
       }
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Éxito",
+        description: data.message || "Estado del artículo actualizado",
+      });
+      queryClient.invalidateQueries({ queryKey: ["inventoryItems", filters] });
     },
     onError: (error: Error) => {
       toast({
@@ -293,6 +340,7 @@ export const useInventoryItems = (filters: InventoryItemFilters) => {
     useInventoryItem,
     createItem,
     updateItem,
+    toggleActiveItem,
     deleteItem,
   };
 };

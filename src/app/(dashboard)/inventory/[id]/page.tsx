@@ -113,11 +113,25 @@ export default function InventoryItemDetailsPage() {
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
             {item.name}
           </h2>
-          {isLowStock && (
-            <Badge className="bg-amber-500/15 text-amber-600">STOCK BAJO</Badge>
-          )}
+          <div className="flex items-center gap-2">
+            {isLowStock && (
+              <Badge className="bg-amber-500/15 text-amber-600">
+                STOCK BAJO
+              </Badge>
+            )}
+            <Badge
+              variant={item.active ? "default" : "secondary"}
+              className={
+                item.active
+                  ? "bg-green-500/15 text-green-600"
+                  : "bg-gray-500/15 text-gray-600"
+              }
+            >
+              {item.active ? "Activo" : "Inactivo"}
+            </Badge>
+          </div>
         </div>
-        {canModify && (
+        {canModify && item.active && (
           <div className="flex flex-col gap-2 sm:flex-row">
             <Button onClick={handleAddStock} size="sm">
               <Plus className="mr-2 h-4 w-4" />
@@ -127,6 +141,14 @@ export default function InventoryItemDetailsPage() {
               <Minus className="mr-2 h-4 w-4" />
               Retirar Stock
             </Button>
+            <Button onClick={handleEditItem} size="sm" variant="outline">
+              <Edit className="mr-2 h-4 w-4" />
+              Editar
+            </Button>
+          </div>
+        )}
+        {canModify && !item.active && (
+          <div className="flex flex-col gap-2 sm:flex-row">
             <Button onClick={handleEditItem} size="sm" variant="outline">
               <Edit className="mr-2 h-4 w-4" />
               Editar
@@ -168,6 +190,16 @@ export default function InventoryItemDetailsPage() {
           <div>
             <p className="text-sm font-medium text-muted-foreground">SKU</p>
             <p>{item.sku || "N/A"}</p>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">Estado</p>
+            <p
+              className={
+                item.active ? "text-green-600 font-semibold" : "text-gray-600"
+              }
+            >
+              {item.active ? "Activo" : "Inactivo"}
+            </p>
           </div>
           <div>
             <p className="text-sm font-medium text-muted-foreground">

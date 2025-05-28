@@ -28,6 +28,7 @@ interface InventoryItem {
   stockAlerts: boolean;
   createdAt: string;
   updatedAt: string;
+  active: boolean;
   category?: {
     id: string;
     name: string;

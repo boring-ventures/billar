@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["multiSchema"]
 }
 
@@ -11,43 +11,42 @@ datasource db {
 }
 
 model Profile {
-  id                    String                 @id @default(uuid()) @db.Uuid
-  userId                String                 @unique @db.Uuid
-  companyId             String?                @map("company_id") @db.Uuid
-  avatarUrl             String?
-  firstName             String?                @map("first_name")
-  lastName              String?                @map("last_name")
-  role                  UserRole               @default(SELLER)
-  active                Boolean                @default(true)
-  createdAt             DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt             DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  company               Company?               @relation(fields: [companyId], references: [id])
-  tableSessions         TableSession[]
-  tableActivityLogs     TableActivityLog[]
-  financialReports      FinancialReport[]
-  posOrders             PosOrder[]
-  stockMovements        StockMovement[]
-  expenses              Expense[]
+  avatarUrl         String?
+  active            Boolean            @default(true)
+  firstName         String?            @map("first_name")
+  lastName          String?            @map("last_name")
+  role              UserRole           @default(SELLER)
+  companyId         String?            @map("company_id") @db.Uuid
+  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                String             @id @default(uuid()) @db.Uuid
+  userId            String             @unique @db.Uuid
+  expenses          Expense[]
+  financialReports  FinancialReport[]
+  posOrders         PosOrder[]
+  company           Company?           @relation(fields: [companyId], references: [id])
+  stockMovements    StockMovement[]
+  tableActivityLogs TableActivityLog[]
+  tableSessions     TableSession[]
 
   @@index([companyId, userId])
   @@map("profiles")
   @@schema("public")
 }
 
-
 model Company {
-  id                    String                 @id @default(uuid()) @db.Uuid
-  name                  String
-  address               String?
-  phone                 String?
-  createdAt             DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
-  inventoryCategories   InventoryCategory[]
-  inventoryItems        InventoryItem[]
-  posOrders             PosOrder[]
-  profiles              Profile[]
-  tables                Table[]
-  financialReports      FinancialReport[]
-  expenses              Expense[]
+  id                  String              @id @default(uuid()) @db.Uuid
+  name                String
+  address             String?
+  phone               String?
+  createdAt           DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  expenses            Expense[]
+  financialReports    FinancialReport[]
+  inventoryCategories InventoryCategory[]
+  inventoryItems      InventoryItem[]
+  posOrders           PosOrder[]
+  profiles            Profile[]
+  tables              Table[]
 
   @@map("companies")
   @@schema("public")
@@ -61,10 +60,10 @@ model Table {
   hourlyRate   Decimal?           @map("hourly_rate") @db.Decimal(10, 2)
   createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  activityLogs TableActivityLog[]
   maintenances TableMaintenance[]
   reservations TableReservation[]
   sessions     TableSession[]
-  activityLogs TableActivityLog[]
   company      Company            @relation(fields: [companyId], references: [id])
 
   @@map("tables")
@@ -72,35 +71,35 @@ model Table {
 }
 
 model TableActivityLog {
-  id            String      @id @default(uuid()) @db.Uuid
-  tableId       String      @map("table_id") @db.Uuid
+  id             String      @id @default(uuid()) @db.Uuid
+  tableId        String      @map("table_id") @db.Uuid
   previousStatus TableStatus
-  newStatus     TableStatus
-  changedAt     DateTime    @default(now()) @map("changed_at") @db.Timestamptz(6)
-  changedById   String?     @map("changed_by") @db.Uuid
-  notes         String?
-  table         Table       @relation(fields: [tableId], references: [id])
-  changedBy     Profile?    @relation(fields: [changedById], references: [id])
+  newStatus      TableStatus
+  changedAt      DateTime    @default(now()) @map("changed_at") @db.Timestamptz(6)
+  changedById    String?     @map("changed_by") @db.Uuid
+  notes          String?
+  changedBy      Profile?    @relation(fields: [changedById], references: [id])
+  table          Table       @relation(fields: [tableId], references: [id])
 
   @@map("table_activity_logs")
   @@schema("public")
 }
 
 model TableSession {
-  id          String        @id @default(uuid()) @db.Uuid
-  tableId     String        @map("table_id") @db.Uuid
-  staffId     String?       @map("staff_id") @db.Uuid
-  startedAt   DateTime      @map("started_at") @db.Timestamptz(6)
-  endedAt     DateTime?     @map("ended_at") @db.Timestamptz(6)
-  totalCost   Decimal?      @map("total_cost") @db.Decimal(10, 2)
-  status      SessionStatus @default(ACTIVE)
-  staffNotes  String?       @map("staff_notes")
-  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  posOrders   PosOrder[]
+  id           String               @id @default(uuid()) @db.Uuid
+  tableId      String               @map("table_id") @db.Uuid
+  staffId      String?              @map("staff_id") @db.Uuid
+  startedAt    DateTime             @map("started_at") @db.Timestamptz(6)
+  endedAt      DateTime?            @map("ended_at") @db.Timestamptz(6)
+  totalCost    Decimal?             @map("total_cost") @db.Decimal(10, 2)
+  status       SessionStatus        @default(ACTIVE)
+  createdAt    DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  staffNotes   String?              @map("staff_notes")
+  posOrders    PosOrder[]
   trackedItems SessionTrackedItem[]
-  staff       Profile?      @relation(fields: [staffId], references: [id])
-  table       Table         @relation(fields: [tableId], references: [id])
+  staff        Profile?             @relation(fields: [staffId], references: [id])
+  table        Table                @relation(fields: [tableId], references: [id])
 
   @@map("table_sessions")
   @@schema("public")
@@ -121,31 +120,31 @@ model TableMaintenance {
 }
 
 model Customer {
-  id            String             @id @default(uuid()) @db.Uuid
-  name          String
-  phone         String?
-  address       String?
-  createdAt     DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  reservations  TableReservation[]
+  id           String             @id @default(uuid()) @db.Uuid
+  name         String
+  phone        String?
+  address      String?
+  createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  reservations TableReservation[]
 
   @@map("customers")
   @@schema("public")
 }
 
 model TableReservation {
-  id              String            @id @default(uuid()) @db.Uuid
-  tableId         String            @map("table_id") @db.Uuid
-  customerId      String?           @map("customer_id") @db.Uuid
-  reservedFrom    DateTime          @map("reserved_from") @db.Timestamptz(6)
-  reservedTo      DateTime          @map("reserved_to") @db.Timestamptz(6)
-  status          ReservationStatus @default(PENDING)
-  paymentStatus   PaymentStatus     @default(UNPAID)
-  advanceAmount   Decimal?          @map("advance_amount") @db.Decimal(10, 2)
-  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  table           Table             @relation(fields: [tableId], references: [id])
-  customer        Customer?         @relation(fields: [customerId], references: [id])
+  id            String            @id @default(uuid()) @db.Uuid
+  tableId       String            @map("table_id") @db.Uuid
+  customerId    String?           @map("customer_id") @db.Uuid
+  reservedFrom  DateTime          @map("reserved_from") @db.Timestamptz(6)
+  reservedTo    DateTime          @map("reserved_to") @db.Timestamptz(6)
+  status        ReservationStatus @default(PENDING)
+  paymentStatus PaymentStatus     @default(UNPAID)
+  advanceAmount Decimal?          @map("advance_amount") @db.Decimal(10, 2)
+  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  customer      Customer?         @relation(fields: [customerId], references: [id])
+  table         Table             @relation(fields: [tableId], references: [id])
 
   @@map("table_reservations")
   @@schema("public")
@@ -166,110 +165,137 @@ model InventoryCategory {
 }
 
 model InventoryItem {
-  id                String                 @id @default(uuid()) @db.Uuid
-  companyId         String                 @map("company_id") @db.Uuid
-  categoryId        String?                @map("category_id") @db.Uuid
+  id                String               @id @default(uuid()) @db.Uuid
+  companyId         String               @map("company_id") @db.Uuid
+  categoryId        String?              @map("category_id") @db.Uuid
   name              String
-  sku               String?                @unique
-  quantity          Int                    @default(0)
-  criticalThreshold Int                    @default(5) @map("critical_threshold")
-  price             Decimal?               @db.Decimal(10, 2)
-  lastStockUpdate   DateTime?              @map("last_stock_update") @db.Timestamptz(6)
-  stockAlerts       Boolean                @default(true) @map("stock_alerts")
-  itemType          ItemType               @default(SALE) @map("item_type")
-  createdAt         DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt         DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  category          InventoryCategory?     @relation(fields: [categoryId], references: [id])
-  company           Company                @relation(fields: [companyId], references: [id])
+  sku               String?              @unique
+  quantity          Int                  @default(0)
+  criticalThreshold Int                  @default(5) @map("critical_threshold")
+  price             Decimal?             @db.Decimal(10, 2)
+  lastStockUpdate   DateTime?            @map("last_stock_update") @db.Timestamptz(6)
+  stockAlerts       Boolean              @default(true) @map("stock_alerts")
+  createdAt         DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  itemType          ItemType             @default(SALE) @map("item_type")
+  active            Boolean              @default(true)
+  category          InventoryCategory?   @relation(fields: [categoryId], references: [id])
+  company           Company              @relation(fields: [companyId], references: [id])
   posOrderItems     PosOrderItem[]
-  stockMovements    StockMovement[]
   trackedItems      SessionTrackedItem[]
+  stockMovements    StockMovement[]
 
   @@map("inventory_items")
   @@schema("public")
 }
 
 model StockMovement {
-  id            String          @id @default(uuid()) @db.Uuid
-  itemId        String          @map("item_id") @db.Uuid
-  quantity      Int
-  type          MovementType
-  costPrice     Decimal?        @map("cost_price") @db.Decimal(10, 2)
-  reason        String?
-  reference     String?
-  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
-  createdBy     String?         @map("created_by") @db.Uuid
-  item          InventoryItem   @relation(fields: [itemId], references: [id])
-  creator       Profile?        @relation(fields: [createdBy], references: [id])
+  id        String        @id @default(uuid()) @db.Uuid
+  itemId    String        @map("item_id") @db.Uuid
+  quantity  Int
+  type      MovementType
+  costPrice Decimal?      @map("cost_price") @db.Decimal(10, 2)
+  reason    String?
+  reference String?
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy String?       @map("created_by") @db.Uuid
+  creator   Profile?      @relation(fields: [createdBy], references: [id])
+  item      InventoryItem @relation(fields: [itemId], references: [id])
 
   @@map("stock_movements")
   @@schema("public")
 }
 
 model PosOrder {
-  id                    String                 @id @default(uuid()) @db.Uuid
-  companyId             String                 @map("company_id") @db.Uuid
-  staffId               String?                @map("staff_id") @db.Uuid
-  tableSessionId        String?                @map("table_session_id") @db.Uuid
-  amount                Decimal?               @map("amount") @db.Decimal(10, 2)
-  paymentMethod         PaymentMethod          @default(CASH)
-  paymentStatus         PaymentStatus          @default(UNPAID)
-  createdAt             DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt             DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  orderItems            PosOrderItem[]
-  company               Company                @relation(fields: [companyId], references: [id])
-  tableSession          TableSession?          @relation(fields: [tableSessionId], references: [id])
-  staff                 Profile?               @relation(fields: [staffId], references: [id])
+  id             String         @id @default(uuid()) @db.Uuid
+  companyId      String         @map("company_id") @db.Uuid
+  staffId        String?        @map("staff_id") @db.Uuid
+  tableSessionId String?        @map("table_session_id") @db.Uuid
+  amount         Decimal?       @map("amount") @db.Decimal(10, 2)
+  paymentMethod  PaymentMethod  @default(CASH)
+  paymentStatus  PaymentStatus  @default(UNPAID)
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  orderItems     PosOrderItem[]
+  company        Company        @relation(fields: [companyId], references: [id])
+  staff          Profile?       @relation(fields: [staffId], references: [id])
+  tableSession   TableSession?  @relation(fields: [tableSessionId], references: [id])
 
   @@map("pos_orders")
   @@schema("public")
 }
 
 model PosOrderItem {
-  id                   String                @id @default(uuid()) @db.Uuid
-  orderId              String                @map("order_id") @db.Uuid
-  itemId               String                @map("item_id") @db.Uuid
-  quantity             Int
-  unitPrice            Decimal               @map("unit_price") @db.Decimal(10, 2)
-  item                 InventoryItem         @relation(fields: [itemId], references: [id])
-  order                PosOrder              @relation(fields: [orderId], references: [id])
+  id        String        @id @default(uuid()) @db.Uuid
+  orderId   String        @map("order_id") @db.Uuid
+  itemId    String        @map("item_id") @db.Uuid
+  quantity  Int
+  unitPrice Decimal       @map("unit_price") @db.Decimal(10, 2)
+  item      InventoryItem @relation(fields: [itemId], references: [id])
+  order     PosOrder      @relation(fields: [orderId], references: [id])
 
   @@map("pos_order_items")
   @@schema("public")
 }
 
-// Financial models
 model FinancialReport {
-  id                  String               @id @default(uuid()) @db.Uuid
-  companyId           String               @map("company_id") @db.Uuid
-  name                String
-  reportType          ReportType
-  startDate           DateTime             @map("start_date") @db.Timestamptz(6)
-  endDate             DateTime             @map("end_date") @db.Timestamptz(6)
-  
-  // Income summary
-  salesIncome         Decimal              @map("sales_income") @db.Decimal(10, 2)
-  tableRentIncome     Decimal              @map("table_rent_income") @db.Decimal(10, 2)
-  otherIncome         Decimal              @map("other_income") @db.Decimal(10, 2)
-  totalIncome         Decimal              @map("total_income") @db.Decimal(10, 2)
-  
-  // Expense summary
-  inventoryCost       Decimal              @map("inventory_cost") @db.Decimal(10, 2)
-  maintenanceCost     Decimal              @map("maintenance_cost") @db.Decimal(10, 2)
-  staffCost           Decimal              @map("staff_cost") @db.Decimal(10, 2)
-  utilityCost         Decimal              @map("utility_cost") @db.Decimal(10, 2)
-  otherExpenses       Decimal              @map("other_expenses") @db.Decimal(10, 2)
-  totalExpense        Decimal              @map("total_expense") @db.Decimal(10, 2)
-  
-  // Results
-  netProfit           Decimal              @map("net_profit") @db.Decimal(10, 2)
-  notes               String?
-  generatedAt         DateTime             @default(now()) @map("generated_at") @db.Timestamptz(6)
-  generatedById       String?              @map("generated_by_id") @db.Uuid
-  generatedBy         Profile?             @relation(fields: [generatedById], references: [id])
-  company             Company              @relation(fields: [companyId], references: [id])
+  id              String     @id @default(uuid()) @db.Uuid
+  companyId       String     @map("company_id") @db.Uuid
+  name            String
+  reportType      ReportType
+  startDate       DateTime   @map("start_date") @db.Timestamptz(6)
+  endDate         DateTime   @map("end_date") @db.Timestamptz(6)
+  salesIncome     Decimal    @map("sales_income") @db.Decimal(10, 2)
+  tableRentIncome Decimal    @map("table_rent_income") @db.Decimal(10, 2)
+  otherIncome     Decimal    @map("other_income") @db.Decimal(10, 2)
+  totalIncome     Decimal    @map("total_income") @db.Decimal(10, 2)
+  inventoryCost   Decimal    @map("inventory_cost") @db.Decimal(10, 2)
+  maintenanceCost Decimal    @map("maintenance_cost") @db.Decimal(10, 2)
+  staffCost       Decimal    @map("staff_cost") @db.Decimal(10, 2)
+  utilityCost     Decimal    @map("utility_cost") @db.Decimal(10, 2)
+  otherExpenses   Decimal    @map("other_expenses") @db.Decimal(10, 2)
+  totalExpense    Decimal    @map("total_expense") @db.Decimal(10, 2)
+  netProfit       Decimal    @map("net_profit") @db.Decimal(10, 2)
+  notes           String?
+  generatedAt     DateTime   @default(now()) @map("generated_at") @db.Timestamptz(6)
+  generatedById   String?    @map("generated_by_id") @db.Uuid
+  company         Company    @relation(fields: [companyId], references: [id])
+  generatedBy     Profile?   @relation(fields: [generatedById], references: [id])
 
   @@map("financial_reports")
+  @@schema("public")
+}
+
+model SessionTrackedItem {
+  id             String        @id @default(uuid()) @db.Uuid
+  tableSessionId String        @map("table_session_id") @db.Uuid
+  itemId         String        @map("item_id") @db.Uuid
+  quantity       Int
+  unitPrice      Decimal       @map("unit_price") @db.Decimal(10, 2)
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  item           InventoryItem @relation(fields: [itemId], references: [id])
+  tableSession   TableSession  @relation(fields: [tableSessionId], references: [id])
+
+  @@map("session_tracked_items")
+  @@schema("public")
+}
+
+model Expense {
+  id          String          @id @default(uuid()) @db.Uuid
+  companyId   String          @map("company_id") @db.Uuid
+  category    ExpenseCategory
+  description String
+  amount      Decimal         @db.Decimal(10, 2)
+  expenseDate DateTime        @map("expense_date") @db.Timestamptz(6)
+  notes       String?
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdById String?         @map("created_by_id") @db.Uuid
+  company     Company         @relation(fields: [companyId], references: [id])
+  createdBy   Profile?        @relation(fields: [createdById], references: [id])
+
+  @@map("expenses")
   @@schema("public")
 }
 
@@ -354,39 +380,6 @@ enum ItemType {
   SALE
   INTERNAL_USE
 
-  @@schema("public")
-}
-
-model SessionTrackedItem {
-  id            String      @id @default(uuid()) @db.Uuid
-  tableSessionId String     @map("table_session_id") @db.Uuid
-  itemId        String      @map("item_id") @db.Uuid
-  quantity      Int
-  unitPrice     Decimal     @map("unit_price") @db.Decimal(10, 2)
-  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  tableSession  TableSession @relation(fields: [tableSessionId], references: [id])
-  item          InventoryItem @relation(fields: [itemId], references: [id])
-
-  @@map("session_tracked_items")
-  @@schema("public")
-}
-
-model Expense {
-  id            String        @id @default(uuid()) @db.Uuid
-  companyId     String        @map("company_id") @db.Uuid
-  category      ExpenseCategory
-  description   String
-  amount        Decimal       @db.Decimal(10, 2)
-  expenseDate   DateTime      @map("expense_date") @db.Timestamptz(6)
-  notes         String?
-  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  createdById   String?       @map("created_by_id") @db.Uuid
-  company       Company       @relation(fields: [companyId], references: [id])
-  createdBy     Profile?      @relation(fields: [createdById], references: [id])
-
-  @@map("expenses")
   @@schema("public")
 }
 

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useInventoryItemsQuery } from "@/hooks/use-inventory-query";
+import { useInventoryItems } from "@/hooks/use-inventory-items";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
@@ -15,6 +16,8 @@ import {
   Edit,
   Trash,
   Eye,
+  Power,
+  PowerOff,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -42,6 +45,7 @@ interface InventoryItem {
   lastStockUpdate: string | null;
   createdAt: string;
   updatedAt: string;
+  active: boolean;
   category?: {
     id: string;
     name: string;
@@ -80,6 +84,11 @@ export function InventoryItemsGridView({
     itemType,
   });
 
+  // Get toggle active function
+  const { toggleActiveItem } = useInventoryItems({
+    companyId: companyId || "",
+  });
+
   // Filter items by search query
   const filteredItems = items.filter(
     (item) =>
@@ -115,12 +124,25 @@ export function InventoryItemsGridView({
     }
   };
 
-  const handleAddStock = (
+  const handleToggleActive = async (
     item: InventoryItem,
     e: React.MouseEvent<HTMLElement>
   ) => {
     e.stopPropagation();
     if (canModify) {
+      await toggleActiveItem.mutateAsync({
+        id: item.id,
+        active: !item.active,
+      });
+    }
+  };
+
+  const handleAddStock = (
+    item: InventoryItem,
+    e: React.MouseEvent<HTMLElement>
+  ) => {
+    e.stopPropagation();
+    if (canModify && item.active) {
       setStockDialogItem(item);
       setStockDialogType("PURCHASE");
       setShowStockDialog(true);
@@ -132,7 +154,7 @@ export function InventoryItemsGridView({
     e: React.MouseEvent<HTMLElement>
   ) => {
     e.stopPropagation();
-    if (canModify) {
+    if (canModify && item.active) {
       setStockDialogItem(item);
       setStockDialogType("SALE");
       setShowStockDialog(true);
@@ -195,12 +217,24 @@ export function InventoryItemsGridView({
               <CardContent className="p-6">
                 <div className="flex justify-between items-start">
                   <h3 className="font-medium text-lg truncate">{item.name}</h3>
-                  {isLowStock && (
-                    <Badge className="ml-2 bg-amber-500/15 text-amber-600 flex items-center gap-1">
-                      <AlertTriangle className="h-3 w-3" />
-                      BAJO
+                  <div className="flex items-center gap-2 ml-2">
+                    {isLowStock && (
+                      <Badge className="bg-amber-500/15 text-amber-600 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" />
+                        BAJO
+                      </Badge>
+                    )}
+                    <Badge
+                      variant={item.active ? "default" : "secondary"}
+                      className={
+                        item.active
+                          ? "bg-green-500/15 text-green-600"
+                          : "bg-gray-500/15 text-gray-600"
+                      }
+                    >
+                      {item.active ? "Activo" : "Inactivo"}
                     </Badge>
-                  )}
+                  </div>
                 </div>
 
                 <div className="mt-4 space-y-2">
@@ -259,19 +293,23 @@ export function InventoryItemsGridView({
 
                     {canModify && (
                       <>
-                        <DropdownMenuItem
-                          onClick={(e) => handleAddStock(item, e)}
-                        >
-                          <Plus className="mr-2 h-4 w-4" />
-                          Agregar Stock
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={(e) => handleRemoveStock(item, e)}
-                        >
-                          <Minus className="mr-2 h-4 w-4" />
-                          Retirar Stock
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
+                        {item.active && (
+                          <>
+                            <DropdownMenuItem
+                              onClick={(e) => handleAddStock(item, e)}
+                            >
+                              <Plus className="mr-2 h-4 w-4" />
+                              Agregar Stock
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => handleRemoveStock(item, e)}
+                            >
+                              <Minus className="mr-2 h-4 w-4" />
+                              Retirar Stock
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                          </>
+                        )}
                         <DropdownMenuItem
                           onClick={(e) => handleEditItem(item, e)}
                         >
@@ -279,12 +317,28 @@ export function InventoryItemsGridView({
                           Editar
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={(e) => handleDeleteItem(item, e)}
-                          className="text-destructive focus:text-destructive"
+                          onClick={(e) => handleToggleActive(item, e)}
                         >
-                          <Trash className="mr-2 h-4 w-4" />
-                          Eliminar
+                          {item.active ? (
+                            <>
+                              <PowerOff className="mr-2 h-4 w-4" />
+                              Eliminar
+                            </>
+                          ) : (
+                            <>
+                              
+                            </>
+                          )}
                         </DropdownMenuItem>
+                        {!item.active && (
+                          <DropdownMenuItem
+                            onClick={(e) => handleDeleteItem(item, e)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash className="mr-2 h-4 w-4" />
+                            Eliminar Permanentemente
+                          </DropdownMenuItem>
+                        )}
                       </>
                     )}
                   </DropdownMenuContent>

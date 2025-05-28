@@ -36,9 +36,16 @@ export async function GET(request: NextRequest) {
     const categoryId = searchParams.get("categoryId");
     const lowStock = searchParams.get("lowStock");
     const itemType = searchParams.get("itemType");
+    const includeInactive = searchParams.get("includeInactive") === "true";
 
     // Configure where clause based on provided filters and user role
-    const whereClause: Prisma.InventoryItemWhereInput = {};
+    const whereClause: Prisma.InventoryItemWhereInput & { active?: boolean } =
+      {};
+
+    // Only fetch active items by default, unless explicitly requested to include inactive
+    if (!includeInactive) {
+      whereClause.active = true;
+    }
 
     // If the user is a SUPERADMIN, they can access all items
     // If the user is an ADMIN or SELLER, they can only access items from their company
@@ -259,7 +266,7 @@ export async function POST(request: NextRequest) {
       stockAlerts,
     });
 
-    // Create inventory item
+    // Create inventory item (active defaults to true in schema)
     const item = await prisma.inventoryItem.create({
       data: {
         name,
@@ -341,8 +348,15 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, categoryId, sku, price, criticalThreshold, stockAlerts } =
-      body;
+    const {
+      name,
+      categoryId,
+      sku,
+      price,
+      criticalThreshold,
+      stockAlerts,
+      active,
+    } = body;
 
     // Validate required fields
     if (!name) {
@@ -387,16 +401,32 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update the item
+    interface UpdateData {
+      name?: string;
+      categoryId?: string;
+      sku?: string;
+      price?: number;
+      criticalThreshold?: number;
+      stockAlerts?: boolean;
+      active?: boolean;
+    }
+
+    const updateData: UpdateData = {
+      name,
+      categoryId: categoryId || undefined,
+      sku: sku || undefined,
+      price: price || undefined,
+      criticalThreshold: criticalThreshold || undefined,
+      stockAlerts: stockAlerts !== undefined ? stockAlerts : undefined,
+    };
+
+    if (active !== undefined) {
+      updateData.active = active;
+    }
+
     const updatedItem = await prisma.inventoryItem.update({
       where: { id },
-      data: {
-        name,
-        categoryId: categoryId || undefined,
-        sku: sku || undefined,
-        price: price || undefined,
-        criticalThreshold: criticalThreshold || undefined,
-        stockAlerts: stockAlerts !== undefined ? stockAlerts : undefined,
-      },
+      data: updateData,
     });
 
     return NextResponse.json(updatedItem);

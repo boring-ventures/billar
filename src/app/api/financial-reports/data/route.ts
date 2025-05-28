@@ -70,9 +70,15 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Parse dates
+    // Parse dates and ensure proper time boundaries
     const parsedStartDate = new Date(startDate);
+    parsedStartDate.setHours(0, 0, 0, 0); // Start of day
+
     const parsedEndDate = new Date(endDate);
+    // If it's the same day or end date doesn't have time, set to end of day
+    if (parsedEndDate.getHours() === 0 && parsedEndDate.getMinutes() === 0) {
+      parsedEndDate.setHours(23, 59, 59, 999); // End of day
+    }
 
     // Calculate report name based on type and date range
     let reportName = "";

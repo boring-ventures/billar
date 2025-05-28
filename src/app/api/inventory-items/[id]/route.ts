@@ -77,6 +77,7 @@ export async function PUT(
       criticalThreshold,
       stockAlerts,
       itemType,
+      active,
     } = body;
 
     // Validate required fields
@@ -122,17 +123,34 @@ export async function PUT(
     }
 
     // Update the item
+    interface UpdateData {
+      name?: string;
+      categoryId?: string;
+      sku?: string;
+      price?: number;
+      criticalThreshold?: number;
+      stockAlerts?: boolean;
+      itemType?: "SALE" | "INTERNAL_USE";
+      active?: boolean;
+    }
+
+    const updateData: UpdateData = {
+      name,
+      categoryId: categoryId || undefined,
+      sku: sku || undefined,
+      price: price || undefined,
+      criticalThreshold: criticalThreshold || undefined,
+      stockAlerts: stockAlerts !== undefined ? stockAlerts : undefined,
+      itemType: (itemType as "SALE" | "INTERNAL_USE") || undefined,
+    };
+
+    if (active !== undefined) {
+      updateData.active = active;
+    }
+
     const updatedItem = await prisma.inventoryItem.update({
       where: { id },
-      data: {
-        name,
-        categoryId: categoryId || undefined,
-        sku: sku || undefined,
-        price: price || undefined,
-        criticalThreshold: criticalThreshold || undefined,
-        stockAlerts: stockAlerts !== undefined ? stockAlerts : undefined,
-        itemType: (itemType as "SALE" | "INTERNAL_USE") || undefined,
-      },
+      data: updateData,
     });
 
     return NextResponse.json(updatedItem);

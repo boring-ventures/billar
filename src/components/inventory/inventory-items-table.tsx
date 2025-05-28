@@ -7,6 +7,7 @@ import {
   useInventoryItemsQuery,
   useInventoryCategoriesQuery,
 } from "@/hooks/use-inventory-query";
+import { useInventoryItems } from "@/hooks/use-inventory-items";
 import { useQueryClient } from "@tanstack/react-query";
 import { DataTable } from "@/components/tables/data-table";
 import { TableSkeleton } from "@/components/tables/table-skeleton";
@@ -34,6 +35,8 @@ import {
   Minus,
   Eye,
   AlertTriangle,
+  Power,
+  PowerOff,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { InventoryItemDialog } from "@/components/inventory/inventory-item-dialog";
@@ -60,6 +63,7 @@ interface InventoryItem {
   stockAlerts: boolean;
   createdAt: string;
   updatedAt: string;
+  active: boolean;
   category?: {
     id: string;
     name: string;
@@ -99,6 +103,11 @@ export function InventoryItemsTable({
   // Fetch categories for the filter dropdown
   const { data: categories = [] } = useInventoryCategoriesQuery({
     companyId,
+  });
+
+  // Get toggle active function from the hook
+  const { toggleActiveItem } = useInventoryItems({
+    companyId: companyId || "",
   });
 
   // Filter items by search query
@@ -157,6 +166,19 @@ export function InventoryItemsTable({
     if (canModify) {
       setDeleteItem(item);
       setShowDeleteDialog(true);
+    }
+  };
+
+  const handleToggleActive = async (item: InventoryItem) => {
+    if (canModify) {
+      try {
+        await toggleActiveItem.mutateAsync({
+          id: item.id,
+          active: !item.active,
+        });
+      } catch (error) {
+        console.error("Error toggling item active status:", error);
+      }
     }
   };
 
@@ -240,6 +262,25 @@ export function InventoryItemsTable({
       },
     },
     {
+      accessorKey: "active",
+      header: "Estado",
+      cell: ({ row }) => {
+        const item = row.original;
+        return (
+          <Badge
+            variant={item.active ? "default" : "secondary"}
+            className={
+              item.active
+                ? "bg-green-500/15 text-green-600 hover:bg-green-500/25"
+                : "bg-gray-500/15 text-gray-600 hover:bg-gray-500/25"
+            }
+          >
+            {item.active ? "Activo" : "Inactivo"}
+          </Badge>
+        );
+      },
+    },
+    {
       id: "actions",
       header: "Acciones",
       cell: ({ row }) => {
@@ -264,26 +305,54 @@ export function InventoryItemsTable({
 
               {canModify && (
                 <>
-                  <DropdownMenuItem onClick={() => handleAddStock(item)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Agregar Stock
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleRemoveStock(item)}>
-                    <Minus className="mr-2 h-4 w-4" />
-                    Retirar Stock
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
+                  {item.active && (
+                    <>
+                      <DropdownMenuItem onClick={() => handleAddStock(item)}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Agregar Stock
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleRemoveStock(item)}>
+                        <Minus className="mr-2 h-4 w-4" />
+                        Retirar Stock
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
                   <DropdownMenuItem onClick={() => handleEditItem(item)}>
                     <Edit className="mr-2 h-4 w-4" />
                     Editar
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={() => handleDeleteItem(item)}
-                    className="text-destructive focus:text-destructive"
+                    onClick={() => handleToggleActive(item)}
+                    className={
+                      item.active
+                        ? "text-amber-600 focus:text-amber-600"
+                        : "text-green-600 focus:text-green-600"
+                    }
                   >
-                    <Trash className="mr-2 h-4 w-4" />
-                    Eliminar
+                    {item.active ? (
+                      <>
+                        <PowerOff className="mr-2 h-4 w-4" />
+                        Eliminar
+                      </>
+                    ) : (
+                      <>
+                        
+                      </>
+                    )}
                   </DropdownMenuItem>
+                  {!item.active && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => handleDeleteItem(item)}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash className="mr-2 h-4 w-4" />
+                        Eliminar Permanentemente
+                      </DropdownMenuItem>
+                    </>
+                  )}
                 </>
               )}
             </DropdownMenuContent>
@@ -294,7 +363,7 @@ export function InventoryItemsTable({
   ];
 
   if (isLoading) {
-    return <TableSkeleton columnCount={6} />;
+    return <TableSkeleton columnCount={7} />;
   }
 
   const categoryFilterElement = (

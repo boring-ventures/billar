@@ -29,6 +29,8 @@ export async function GET(request: NextRequest) {
     const days = searchParams.has("days")
       ? parseInt(searchParams.get("days")!)
       : 7;
+    const startDateParam = searchParams.get("startDate");
+    const endDateParam = searchParams.get("endDate");
 
     if (!companyId) {
       return NextResponse.json(
@@ -49,18 +51,61 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get start date (n days ago)
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days + 1); // +1 to include today
-    startDate.setHours(0, 0, 0, 0);
+    let startDate: Date;
+    let endDate: Date;
 
-    // Get end date (today at 23:59:59)
-    const endDate = new Date();
-    endDate.setHours(23, 59, 59, 999);
+    // If specific dates are provided, use them
+    if (startDateParam && endDateParam) {
+      startDate = new Date(startDateParam);
+      startDate.setHours(0, 0, 0, 0);
+
+      endDate = new Date(endDateParam);
+      // If it's the same day or end date doesn't have time, set to end of day
+      if (endDate.getHours() === 0 && endDate.getMinutes() === 0) {
+        endDate.setHours(23, 59, 59, 999);
+      }
+    } else {
+      // Use the existing "days ago" logic
+      const now = new Date();
+
+      // For single day reports, use today's date range
+      if (days === 1) {
+        startDate = new Date(now);
+        startDate.setHours(0, 0, 0, 0);
+
+        endDate = new Date(now);
+        endDate.setHours(23, 59, 59, 999);
+      } else {
+        // For multi-day reports
+        startDate = new Date(now);
+        startDate.setDate(startDate.getDate() - days + 1);
+        startDate.setHours(0, 0, 0, 0);
+
+        endDate = new Date(now);
+        endDate.setHours(23, 59, 59, 999);
+      }
+    }
+
+    // Calculate the number of days in the range
+    const daysDiff =
+      Math.ceil(
+        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+      ) + 1;
+
+    // Debug logging
+    console.log("Sales Summary Debug:", {
+      companyId,
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      daysDiff,
+      startDateParam,
+      endDateParam,
+      days,
+    });
 
     // Get all days between start and end date
     const dateRange: DateRangeItem[] = [];
-    for (let i = 0; i < days; i++) {
+    for (let i = 0; i < daysDiff; i++) {
       const date = new Date(startDate);
       date.setDate(startDate.getDate() + i);
 
@@ -113,6 +158,20 @@ export async function GET(request: NextRequest) {
         totalCost: true,
         endedAt: true,
       },
+    });
+
+    // Debug logging for retrieved data
+    console.log("Retrieved data:", {
+      posOrdersCount: posOrders.length,
+      tableSessionsCount: tableSessions.length,
+      posOrdersTotal: posOrders.reduce(
+        (sum, order) => sum + Number(order.amount || 0),
+        0
+      ),
+      tableSessionsTotal: tableSessions.reduce(
+        (sum, session) => sum + Number(session.totalCost || 0),
+        0
+      ),
     });
 
     // Populate data into dateRange

@@ -60,6 +60,7 @@ interface Order {
   orderItems: OrderItem[];
   amount?: number | null;
   updatedAt?: string;
+  discount?: number | null;
 }
 
 // Brand colors from globals.css
@@ -226,42 +227,102 @@ export const generateOrderPDF = (order: Order) => {
     const finalY = (doc as ExtendedJsPdf).lastAutoTable.finalY + 10;
 
     // Calculate proper total
-    const productAmount = Number(order.amount || 0);
+    const productAmount =
+      order.orderItems?.reduce(
+        (sum, item) => sum + item.quantity * Number(item.unitPrice),
+        0
+      ) || 0;
     const sessionCost = Number(order.tableSession?.totalCost || 0);
-    const actualTotal = productAmount + sessionCost;
+    const discount = Number(order.discount || 0);
+    const actualTotal = productAmount + sessionCost - discount;
 
     // Show subtotals and total
     if (order.tableSession?.totalCost) {
-      doc.text("Subtotal mesa:", 130, finalY);
-      doc.text(formatCurrency(sessionCost), 175, finalY, { align: "right" });
-
-      doc.text("Subtotal productos:", 130, finalY + 7);
-      doc.text(formatCurrency(productAmount), 175, finalY + 7, {
+      doc.text("Subtotal productos:", 130, finalY);
+      doc.text(formatCurrency(productAmount), 175, finalY, {
         align: "right",
       });
 
-      doc.text("Total:", 130, finalY + 14);
-      doc.setTextColor(
-        brandColors.primary[0],
-        brandColors.primary[1],
-        brandColors.primary[2]
-      );
-      doc.text(formatCurrency(actualTotal), 175, finalY + 14, {
+      doc.text("Costo de Mesa:", 130, finalY + 7);
+      doc.text(formatCurrency(sessionCost), 175, finalY + 7, {
         align: "right",
       });
+
+      if (discount > 0) {
+        doc.text("Descuento:", 130, finalY + 14);
+        doc.setTextColor(255, 0, 0); // Red for discount
+        doc.text(`-${formatCurrency(discount)}`, 175, finalY + 14, {
+          align: "right",
+        });
+        doc.setTextColor(
+          brandColors.foreground[0],
+          brandColors.foreground[1],
+          brandColors.foreground[2]
+        );
+
+        doc.text("Total:", 130, finalY + 21);
+        doc.setTextColor(
+          brandColors.primary[0],
+          brandColors.primary[1],
+          brandColors.primary[2]
+        );
+        doc.text(formatCurrency(actualTotal), 175, finalY + 21, {
+          align: "right",
+        });
+      } else {
+        doc.text("Total:", 130, finalY + 14);
+        doc.setTextColor(
+          brandColors.primary[0],
+          brandColors.primary[1],
+          brandColors.primary[2]
+        );
+        doc.text(formatCurrency(actualTotal), 175, finalY + 14, {
+          align: "right",
+        });
+      }
       doc.setTextColor(
         brandColors.foreground[0],
         brandColors.foreground[1],
         brandColors.foreground[2]
       );
     } else {
-      doc.text("Total:", 130, finalY);
-      doc.setTextColor(
-        brandColors.primary[0],
-        brandColors.primary[1],
-        brandColors.primary[2]
-      );
-      doc.text(formatCurrency(productAmount), 175, finalY, { align: "right" });
+      if (discount > 0) {
+        doc.text("Subtotal:", 130, finalY);
+        doc.text(formatCurrency(productAmount), 175, finalY, {
+          align: "right",
+        });
+
+        doc.text("Descuento:", 130, finalY + 7);
+        doc.setTextColor(255, 0, 0); // Red for discount
+        doc.text(`-${formatCurrency(discount)}`, 175, finalY + 7, {
+          align: "right",
+        });
+        doc.setTextColor(
+          brandColors.foreground[0],
+          brandColors.foreground[1],
+          brandColors.foreground[2]
+        );
+
+        doc.text("Total:", 130, finalY + 14);
+        doc.setTextColor(
+          brandColors.primary[0],
+          brandColors.primary[1],
+          brandColors.primary[2]
+        );
+        doc.text(formatCurrency(actualTotal), 175, finalY + 14, {
+          align: "right",
+        });
+      } else {
+        doc.text("Total:", 130, finalY);
+        doc.setTextColor(
+          brandColors.primary[0],
+          brandColors.primary[1],
+          brandColors.primary[2]
+        );
+        doc.text(formatCurrency(productAmount), 175, finalY, {
+          align: "right",
+        });
+      }
       doc.setTextColor(
         brandColors.foreground[0],
         brandColors.foreground[1],
@@ -378,44 +439,102 @@ export const generateMultipleOrdersPDF = (orders: Order[]) => {
       const finalY = (doc as ExtendedJsPdf).lastAutoTable.finalY + 10;
 
       // Calculate proper total
-      const productAmount = Number(order.amount || 0);
+      const productAmount =
+        order.orderItems?.reduce(
+          (sum, item) => sum + item.quantity * Number(item.unitPrice),
+          0
+        ) || 0;
       const sessionCost = Number(order.tableSession?.totalCost || 0);
-      const actualTotal = productAmount + sessionCost;
+      const discount = Number(order.discount || 0);
+      const actualTotal = productAmount + sessionCost - discount;
 
       // Show subtotals and total
       if (order.tableSession?.totalCost) {
-        doc.text("Subtotal mesa:", 130, finalY);
-        doc.text(formatCurrency(sessionCost), 175, finalY, { align: "right" });
-
-        doc.text("Subtotal productos:", 130, finalY + 7);
-        doc.text(formatCurrency(productAmount), 175, finalY + 7, {
+        doc.text("Subtotal productos:", 130, finalY);
+        doc.text(formatCurrency(productAmount), 175, finalY, {
           align: "right",
         });
 
-        doc.text("Total:", 130, finalY + 14);
-        doc.setTextColor(
-          brandColors.primary[0],
-          brandColors.primary[1],
-          brandColors.primary[2]
-        );
-        doc.text(formatCurrency(actualTotal), 175, finalY + 14, {
+        doc.text("Costo de Mesa:", 130, finalY + 7);
+        doc.text(formatCurrency(sessionCost), 175, finalY + 7, {
           align: "right",
         });
+
+        if (discount > 0) {
+          doc.text("Descuento:", 130, finalY + 14);
+          doc.setTextColor(255, 0, 0); // Red for discount
+          doc.text(`-${formatCurrency(discount)}`, 175, finalY + 14, {
+            align: "right",
+          });
+          doc.setTextColor(
+            brandColors.foreground[0],
+            brandColors.foreground[1],
+            brandColors.foreground[2]
+          );
+
+          doc.text("Total:", 130, finalY + 21);
+          doc.setTextColor(
+            brandColors.primary[0],
+            brandColors.primary[1],
+            brandColors.primary[2]
+          );
+          doc.text(formatCurrency(actualTotal), 175, finalY + 21, {
+            align: "right",
+          });
+        } else {
+          doc.text("Total:", 130, finalY + 14);
+          doc.setTextColor(
+            brandColors.primary[0],
+            brandColors.primary[1],
+            brandColors.primary[2]
+          );
+          doc.text(formatCurrency(actualTotal), 175, finalY + 14, {
+            align: "right",
+          });
+        }
         doc.setTextColor(
           brandColors.foreground[0],
           brandColors.foreground[1],
           brandColors.foreground[2]
         );
       } else {
-        doc.text("Total:", 130, finalY);
-        doc.setTextColor(
-          brandColors.primary[0],
-          brandColors.primary[1],
-          brandColors.primary[2]
-        );
-        doc.text(formatCurrency(productAmount), 175, finalY, {
-          align: "right",
-        });
+        if (discount > 0) {
+          doc.text("Subtotal:", 130, finalY);
+          doc.text(formatCurrency(productAmount), 175, finalY, {
+            align: "right",
+          });
+
+          doc.text("Descuento:", 130, finalY + 7);
+          doc.setTextColor(255, 0, 0); // Red for discount
+          doc.text(`-${formatCurrency(discount)}`, 175, finalY + 7, {
+            align: "right",
+          });
+          doc.setTextColor(
+            brandColors.foreground[0],
+            brandColors.foreground[1],
+            brandColors.foreground[2]
+          );
+
+          doc.text("Total:", 130, finalY + 14);
+          doc.setTextColor(
+            brandColors.primary[0],
+            brandColors.primary[1],
+            brandColors.primary[2]
+          );
+          doc.text(formatCurrency(actualTotal), 175, finalY + 14, {
+            align: "right",
+          });
+        } else {
+          doc.text("Total:", 130, finalY);
+          doc.setTextColor(
+            brandColors.primary[0],
+            brandColors.primary[1],
+            brandColors.primary[2]
+          );
+          doc.text(formatCurrency(productAmount), 175, finalY, {
+            align: "right",
+          });
+        }
         doc.setTextColor(
           brandColors.foreground[0],
           brandColors.foreground[1],

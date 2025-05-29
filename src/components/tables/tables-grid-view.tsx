@@ -6,7 +6,13 @@ import { TableStatus } from "@prisma/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
-import { MoreHorizontal, Edit, PlayCircle, StopCircle, X } from "lucide-react";
+import {
+  MoreHorizontal,
+  Edit,
+  PlayCircle,
+  StopCircle,
+  ArrowRight,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
@@ -36,6 +42,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/providers/auth-provider";
+import { MoveSessionDialog } from "./move-session-dialog";
 
 interface TablesGridViewProps {
   companyId?: string;
@@ -65,6 +72,7 @@ export function TablesGridView({ companyId, query }: TablesGridViewProps) {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
     null
   );
+  const [moveSessionDialogOpen, setMoveSessionDialogOpen] = useState(false);
 
   const cancelSessionMutation = useCancelTableSessionMutation();
 
@@ -146,6 +154,17 @@ export function TablesGridView({ companyId, query }: TablesGridViewProps) {
       await cancelSessionMutation.mutateAsync(selectedSessionId);
       setIsCancelSessionAlertOpen(false);
       setSelectedSessionId(null);
+    }
+  };
+
+  const handleMoveSession = (table: Table) => {
+    const activeSession = activeSessions.find(
+      (session: TableSession) => session.tableId === table.id
+    );
+    if (activeSession) {
+      setSelectedTable(table);
+      setSelectedSessionId(activeSession.id);
+      setMoveSessionDialogOpen(true);
     }
   };
 
@@ -231,13 +250,28 @@ export function TablesGridView({ companyId, query }: TablesGridViewProps) {
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedSessionId(activeSession.id);
-                        setIsCancelSessionAlertOpen(true);
+                        handleMoveSession(table);
                       }}
-                      className="text-destructive"
                     >
-                      <X className="mr-2 h-4 w-4" />
-                      Cancelar Sesión
+                      <ArrowRight className="mr-2 h-4 w-4" />
+                      Mover Sesión
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const activeSession = activeSessions.find(
+                          (session: TableSession) =>
+                            session.tableId === table.id
+                        );
+                        if (activeSession) {
+                          setSelectedSessionId(activeSession.id);
+                          setIsCancelSessionAlertOpen(true);
+                        }
+                      }}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <StopCircle className="mr-2 h-4 w-4" />
+                      Finalizar Sesión
                     </DropdownMenuItem>
                   </>
                 )}
@@ -363,6 +397,19 @@ export function TablesGridView({ companyId, query }: TablesGridViewProps) {
         onSuccess={() => {
           setEditDialogOpen(false);
           setSelectedTable(null);
+        }}
+      />
+
+      <MoveSessionDialog
+        open={moveSessionDialogOpen}
+        onOpenChange={setMoveSessionDialogOpen}
+        sessionId={selectedSessionId || undefined}
+        currentTableName={selectedTable?.name}
+        currentTableId={selectedTable?.id}
+        onSuccess={() => {
+          setMoveSessionDialogOpen(false);
+          setSelectedTable(null);
+          setSelectedSessionId(null);
         }}
       />
 

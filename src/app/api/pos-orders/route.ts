@@ -381,8 +381,8 @@ export async function POST(request: NextRequest) {
       0
     );
 
-    // For table sessions without items, get the session cost from the tableSession
-    if (orderItems.length === 0 && tableSessionId && tableSession?.totalCost) {
+    // Add table session cost if present (regardless of whether there are items)
+    if (tableSessionId && tableSession?.totalCost) {
       console.log(
         `Adding session cost of ${tableSession.totalCost} to total amount`
       );
@@ -393,7 +393,9 @@ export async function POST(request: NextRequest) {
     const discountAmount = Math.max(0, Number(discount) || 0);
     const finalAmount = Math.max(0, totalAmount - discountAmount);
 
-    console.log(`Order total calculation: subtotal=${totalAmount}, discount=${discountAmount}, final=${finalAmount}`);
+    console.log(
+      `Order total calculation: subtotal=${totalAmount}, discount=${discountAmount}, final=${finalAmount}`
+    );
 
     // If this is only a session payment with no real items, we need to look up the session
     // to get the table session cost

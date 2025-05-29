@@ -87,6 +87,10 @@ interface Order {
     lastName?: string;
     userId: string;
   };
+  orderItems?: {
+    quantity: number;
+    unitPrice: number;
+  }[];
 }
 
 export function OrderHistory() {
@@ -522,15 +526,18 @@ export function OrderHistory() {
       accessorKey: "amount",
       header: "Total",
       cell: ({ row }) => {
-        const amount = row.getValue("amount") as number | null;
-        return (
-          <div className="font-medium">
-            Bs.{" "}
-            {amount !== null && amount !== undefined
-              ? Number(amount).toFixed(2)
-              : "0.00"}
-          </div>
-        );
+        const order = row.original;
+        // Calculate correct total: products + table cost - discount
+        const productTotal =
+          order.orderItems?.reduce(
+            (sum, item) => sum + item.quantity * Number(item.unitPrice),
+            0
+          ) || 0;
+        const tableCost = Number(order.tableSession?.totalCost) || 0;
+        const discount = Number(order.discount) || 0;
+        const correctTotal = productTotal + tableCost - discount;
+
+        return <div className="font-medium">Bs. {correctTotal.toFixed(2)}</div>;
       },
     },
     {

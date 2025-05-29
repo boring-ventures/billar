@@ -13,6 +13,7 @@ import {
   StopCircle,
   ShoppingCart,
   User,
+  ArrowRight,
 } from "lucide-react";
 import { SessionStatus } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +34,7 @@ import { SessionDetailsSkeleton } from "@/components/tables/session-details-skel
 import { SessionOrderCreator } from "@/components/tables/session-order-creator";
 import { SessionTrackedItemsList } from "@/components/tables/session-tracked-items-list";
 import { EndSessionDialog } from "@/components/tables/end-session-dialog";
+import { MoveSessionDialog } from "@/components/tables/move-session-dialog";
 
 export default function TableSessionDetailsPage() {
   const params = useParams();
@@ -45,6 +47,7 @@ export default function TableSessionDetailsPage() {
   const [duration, setDuration] = useState<string>("");
   const [currentCost, setCurrentCost] = useState<number | null>(null);
   const [isActive, setIsActive] = useState(false);
+  const [moveSessionDialogOpen, setMoveSessionDialogOpen] = useState(false);
 
   // Calculate and update the session duration and cost
   useEffect(() => {
@@ -86,6 +89,10 @@ export default function TableSessionDetailsPage() {
 
   const handleBack = () => {
     router.back();
+  };
+
+  const handleMoveSession = () => {
+    setMoveSessionDialogOpen(true);
   };
 
   const getStatusColor = (status: SessionStatus) => {
@@ -139,6 +146,10 @@ export default function TableSessionDetailsPage() {
         <div className="flex flex-col gap-2 sm:flex-row">
           {session.status === "ACTIVE" && (
             <>
+              <Button size="sm" variant="outline" onClick={handleMoveSession}>
+                <ArrowRight className="mr-2 h-4 w-4" />
+                Mover Mesa
+              </Button>
               <EndSessionDialog
                 sessionId={sessionId}
                 sessionStartTime={new Date(session.startedAt)}
@@ -288,6 +299,17 @@ export default function TableSessionDetailsPage() {
           <SessionOrdersList sessionId={sessionId} />
         </div>
       )}
+
+      <MoveSessionDialog
+        open={moveSessionDialogOpen}
+        onOpenChange={setMoveSessionDialogOpen}
+        sessionId={sessionId}
+        currentTableName={session?.table?.name}
+        currentTableId={session?.tableId}
+        onSuccess={() => {
+          setMoveSessionDialogOpen(false);
+        }}
+      />
     </div>
   );
 }

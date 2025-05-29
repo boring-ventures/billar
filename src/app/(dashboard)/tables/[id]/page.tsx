@@ -7,7 +7,14 @@ import {
   useEndTableSessionMutation,
 } from "@/hooks/use-table-sessions-query";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Edit, Play, StopCircle, Timer } from "lucide-react";
+import {
+  ArrowLeft,
+  Edit,
+  Play,
+  StopCircle,
+  Timer,
+  ArrowRight,
+} from "lucide-react";
 import { TableStatus, SessionStatus } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";
 import { TableSessionsHistory } from "@/components/tables/table-sessions-history";
@@ -31,6 +38,7 @@ import { TableDetailsSkeleton } from "@/components/tables/table-details-skeleton
 import { ActiveSessionSkeleton } from "@/components/tables/active-session-skeleton";
 import { TableDialog } from "@/components/tables/table-dialog";
 import { useAuth } from "@/providers/auth-provider";
+import { MoveSessionDialog } from "@/components/tables/move-session-dialog";
 
 export default function TableDetailsPage() {
   const params = useParams();
@@ -41,6 +49,7 @@ export default function TableDetailsPage() {
   const [activeDuration, setActiveDuration] = useState("");
   const [quickStartDialogOpen, setQuickStartDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [moveSessionDialogOpen, setMoveSessionDialogOpen] = useState(false);
 
   // Check if user has admin privileges (ADMIN or SUPERADMIN)
   const isAdmin = profile?.role === "ADMIN" || profile?.role === "SUPERADMIN";
@@ -108,6 +117,12 @@ export default function TableDetailsPage() {
   const handleViewSessionDetails = () => {
     if (activeSession) {
       router.push(`/tables/${tableId}/sessions/${activeSession.id}`);
+    }
+  };
+
+  const handleMoveSession = () => {
+    if (activeSession) {
+      setMoveSessionDialogOpen(true);
     }
   };
 
@@ -226,6 +241,10 @@ export default function TableDetailsPage() {
                     : "Finalizar Sesión"}
                 </Button>
                 <SessionCancelDialog sessionId={activeSession.id} size="sm" />
+                <Button variant="outline" size="sm" onClick={handleMoveSession}>
+                  <ArrowRight className="mr-2 h-4 w-4" />
+                  Mover Mesa
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -347,6 +366,17 @@ export default function TableDetailsPage() {
         table={table}
         onSuccess={() => {
           setEditDialogOpen(false);
+        }}
+      />
+
+      <MoveSessionDialog
+        open={moveSessionDialogOpen}
+        onOpenChange={setMoveSessionDialogOpen}
+        sessionId={activeSession?.id}
+        currentTableName={table?.name}
+        currentTableId={table?.id}
+        onSuccess={() => {
+          setMoveSessionDialogOpen(false);
         }}
       />
     </div>

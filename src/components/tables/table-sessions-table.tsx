@@ -20,13 +20,12 @@ import {
 } from "@/components/ui/select";
 import { formatCurrency, formatDuration } from "@/lib/utils";
 import { DataTable } from "./data-table";
-import { MoreHorizontal, StopCircle, X, Eye } from "lucide-react";
+import { MoreHorizontal, StopCircle, Eye, ArrowRight, X } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -41,6 +40,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { SessionDialog } from "./session-dialog";
 import { TableSessionsTableSkeleton } from "./table-sessions-table-skeleton";
+import { MoveSessionDialog } from "./move-session-dialog";
 
 interface TableSessionsTableProps {
   activeOnly?: boolean;
@@ -64,7 +64,7 @@ interface SessionWithDuration extends ExtendedTableSession {
 }
 
 export function TableSessionsTable({
-  activeOnly = true,
+  activeOnly = false,
 }: TableSessionsTableProps) {
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<string>(
@@ -76,6 +76,7 @@ export function TableSessionsTable({
   const [selectedSession, setSelectedSession] =
     useState<SessionWithDuration | null>(null);
   const [sessionDialogOpen, setSessionDialogOpen] = useState(false);
+  const [moveDialogOpen, setMoveDialogOpen] = useState(false);
 
   // Update statusFilter when activeOnly prop changes
   useEffect(() => {
@@ -122,6 +123,11 @@ export function TableSessionsTable({
 
   const handleStartNewSession = () => {
     setSessionDialogOpen(true);
+  };
+
+  const handleMoveSession = (session: SessionWithDuration) => {
+    setSelectedSession(session);
+    setMoveDialogOpen(true);
   };
 
   const columns: ColumnDef<SessionWithDuration>[] = [
@@ -236,7 +242,10 @@ export function TableSessionsTable({
 
               {session.status === "ACTIVE" && (
                 <>
-                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => handleMoveSession(session)}>
+                    <ArrowRight className="mr-2 h-4 w-4" />
+                    Mover Mesa
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => {
                       setSelectedSession(session);
@@ -365,6 +374,18 @@ export function TableSessionsTable({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <MoveSessionDialog
+        open={moveDialogOpen}
+        onOpenChange={setMoveDialogOpen}
+        sessionId={selectedSession?.id}
+        currentTableName={selectedSession?.table?.name}
+        currentTableId={selectedSession?.tableId}
+        onSuccess={() => {
+          setMoveDialogOpen(false);
+          setSelectedSession(null);
+        }}
+      />
     </>
   );
 }

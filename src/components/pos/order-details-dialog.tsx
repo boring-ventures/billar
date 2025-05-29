@@ -391,7 +391,18 @@ export function OrderDetailsDialog({
               )}
               <div className="flex justify-between text-lg font-bold border-t pt-2">
                 <span>Total de la Orden:</span>
-                <span>Bs. {Number(order.amount || 0).toFixed(2)}</span>
+                <span>
+                  Bs.{" "}
+                  {(
+                    (order.orderItems?.reduce(
+                      (sum, item) =>
+                        sum + item.quantity * Number(item.unitPrice),
+                      0
+                    ) || 0) +
+                    (Number(order.tableSession?.totalCost) || 0) -
+                    (Number(order.discount) || 0)
+                  ).toFixed(2)}
+                </span>
               </div>
             </div>
           </CardFooter>

@@ -154,6 +154,29 @@ const deleteTableSessionApi = async (sessionId: string) => {
   return response.json();
 };
 
+const moveTableSessionApi = async ({
+  sessionId,
+  targetTableId,
+}: {
+  sessionId: string;
+  targetTableId: string;
+}) => {
+  const response = await fetch(`/api/table-sessions/${sessionId}/move`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ targetTableId }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to move table session");
+  }
+
+  return response.json();
+};
+
 // React Query Hooks
 export function useTableSessionsQuery(params?: {
   tableId?: string;
@@ -384,6 +407,36 @@ export function useCancelTableSessionMutation() {
       toast({
         title: "Error",
         description: error.message || "Failed to cancel session",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useMoveTableSessionMutation() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: moveTableSessionApi,
+    onSuccess: (data, variables) => {
+      toast({
+        title: "Éxito",
+        description: "Sesión movida exitosamente",
+      });
+      // Invalidate relevant queries
+      queryClient.invalidateQueries({ queryKey: ["tableSessions"] });
+      queryClient.invalidateQueries({ queryKey: ["tableSession"] });
+      queryClient.invalidateQueries({ queryKey: ["tables"] });
+
+      // Navigate to the new table's page
+      router.push(`/tables/${variables.targetTableId}`);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Error al mover la sesión",
         variant: "destructive",
       });
     },

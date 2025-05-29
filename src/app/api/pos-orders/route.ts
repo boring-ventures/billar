@@ -180,8 +180,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { companyId, tableSessionId, paymentMethod, paymentStatus, items } =
-      body;
+    const {
+      companyId,
+      tableSessionId,
+      paymentMethod,
+      paymentStatus,
+      items,
+      discount = 0,
+    } = body;
 
     // Validate required fields
     if (!companyId) {
@@ -378,12 +384,16 @@ export async function POST(request: NextRequest) {
     // For table sessions without items, get the session cost from the tableSession
     if (orderItems.length === 0 && tableSessionId && tableSession?.totalCost) {
       console.log(
-        "Empty order with table session, using session cost:",
-        tableSession.totalCost
+        `Adding session cost of ${tableSession.totalCost} to total amount`
       );
-      // Set the total amount to the table session cost
-      totalAmount = Number(tableSession.totalCost);
+      totalAmount += Number(tableSession.totalCost);
     }
+
+    // Apply discount to the total amount
+    const discountAmount = Math.max(0, Number(discount) || 0);
+    const finalAmount = Math.max(0, totalAmount - discountAmount);
+
+    console.log(`Order total calculation: subtotal=${totalAmount}, discount=${discountAmount}, final=${finalAmount}`);
 
     // If this is only a session payment with no real items, we need to look up the session
     // to get the table session cost
@@ -418,7 +428,8 @@ export async function POST(request: NextRequest) {
           companyId,
           staffId: staffProfile?.id,
           tableSessionId: tableSessionId || undefined,
-          amount: totalAmount,
+          amount: finalAmount,
+          discount: discountAmount,
           paymentMethod: paymentMethod || "CASH",
           paymentStatus: paymentStatus || "UNPAID",
         },

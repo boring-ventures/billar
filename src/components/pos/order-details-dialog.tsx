@@ -344,14 +344,6 @@ export function OrderDetailsDialog({
           {/* Order Summary */}
           <CardFooter className="border-t bg-muted/50">
             <div className="w-full space-y-2">
-              {order.tableSession?.totalCost && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Costo de Mesa:</span>
-                  <span>
-                    Bs. {Number(order.tableSession.totalCost).toFixed(2)}
-                  </span>
-                </div>
-              )}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">
                   Subtotal de Productos:
@@ -367,6 +359,36 @@ export function OrderDetailsDialog({
                     .toFixed(2) || "0.00"}
                 </span>
               </div>
+              {order.tableSession?.totalCost && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Costo de Mesa:</span>
+                  <span>
+                    Bs. {Number(order.tableSession.totalCost).toFixed(2)}
+                  </span>
+                </div>
+              )}
+              {(order.orderItems?.length > 0 ||
+                order.tableSession?.totalCost) && (
+                <div className="flex justify-between text-sm border-t pt-2">
+                  <span className="text-muted-foreground">Subtotal:</span>
+                  <span>
+                    Bs.{" "}
+                    {(
+                      (order.orderItems?.reduce(
+                        (sum, item) =>
+                          sum + item.quantity * Number(item.unitPrice),
+                        0
+                      ) || 0) + (Number(order.tableSession?.totalCost) || 0)
+                    ).toFixed(2)}
+                  </span>
+                </div>
+              )}
+              {order.discount && Number(order.discount) > 0 && (
+                <div className="flex justify-between text-red-600">
+                  <span>Descuento:</span>
+                  <span>-Bs. {Number(order.discount).toFixed(2)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-lg font-bold border-t pt-2">
                 <span>Total de la Orden:</span>
                 <span>Bs. {Number(order.amount || 0).toFixed(2)}</span>

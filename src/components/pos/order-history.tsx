@@ -77,6 +77,7 @@ interface Order {
     };
   };
   amount: number;
+  discount?: number;
   paymentMethod: "CASH" | "QR" | "CREDIT_CARD";
   paymentStatus: "PAID" | "UNPAID";
   staffId?: string;
@@ -528,6 +529,20 @@ export function OrderHistory() {
             {amount !== null && amount !== undefined
               ? Number(amount).toFixed(2)
               : "0.00"}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "discount",
+      header: "Descuento",
+      cell: ({ row }) => {
+        const discount = row.getValue("discount") as number | null;
+        return (
+          <div className="text-red-600">
+            {discount && Number(discount) > 0
+              ? `-Bs. ${Number(discount).toFixed(2)}`
+              : "--"}
           </div>
         );
       },

@@ -29,6 +29,7 @@ interface PosOrder {
   staffId: string | null;
   tableSessionId: string | null;
   amount: number | null;
+  discount?: number | null;
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   createdAt: string;
@@ -72,6 +73,7 @@ interface CreatePosOrderPayload {
   tableSessionId?: string;
   paymentMethod?: PaymentMethod;
   paymentStatus?: PaymentStatus;
+  discount?: number;
   items: {
     itemId: string;
     quantity: number;

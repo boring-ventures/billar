@@ -133,6 +133,7 @@ export function NewOrder() {
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [selectedItem, setSelectedItem] = useState<string>("");
   const [selectedQuantity, setSelectedQuantity] = useState<number>(1);
+  const [discount, setDiscount] = useState<number>(0);
 
   // Automatically set company ID based on user profile for non-superadmins
   useEffect(() => {
@@ -339,6 +340,7 @@ export function NewOrder() {
     console.log("Company changed - resetting cart");
     setCart([]);
     setTableSessionId("none");
+    setDiscount(0);
   }, [companyId, sessionId]);
 
   // Log cart changes for debugging
@@ -364,6 +366,9 @@ export function NewOrder() {
     ? Number(sessionData.totalCost)
     : 0;
   const cartTotal = cartItemsTotal + sessionCost;
+
+  // Calculate final total with discount
+  const finalTotal = Math.max(0, cartTotal - discount);
 
   // Modify the handleCompanyChange to apply only for superadmins
   const handleCompanyChange = (id: string) => {
@@ -597,6 +602,7 @@ export function NewOrder() {
             paymentMethod: paymentMethod as "CASH" | "QR" | "CREDIT_CARD",
             paymentStatus: paymentStatus as "PAID" | "UNPAID",
             items: [], // Empty items array is now allowed by the API
+            discount: discount > 0 ? discount : 0,
           };
 
           console.log("Submitting session-only payment:", sessionPaymentData);
@@ -641,6 +647,10 @@ export function NewOrder() {
               router.push(`/pos?tab=history`);
             }
           }, 1000);
+
+          // Reset the cart after successful order
+          setCart([]);
+          setDiscount(0);
 
           return;
         } catch (error) {
@@ -700,6 +710,7 @@ export function NewOrder() {
         paymentMethod: paymentMethod as "CASH" | "QR" | "CREDIT_CARD",
         paymentStatus: paymentStatus as "PAID" | "UNPAID",
         items: orderItems,
+        discount: discount > 0 ? discount : 0,
       };
 
       // Log the complete order data being sent
@@ -728,6 +739,7 @@ export function NewOrder() {
 
         // Reset the cart after successful order
         setCart([]);
+        setDiscount(0);
 
         // Explicitly invalidate the posOrders query to refresh the order history
         // Force an immediate refetch by setting refetchType to 'active'
@@ -1174,7 +1186,47 @@ export function NewOrder() {
             <div className="w-full space-y-4">
               <div className="flex items-center justify-between text-lg font-semibold">
                 <span>Total</span>
-                <span>Bs. {cartTotal.toFixed(2)}</span>
+                <span>Bs. {finalTotal.toFixed(2)}</span>
+              </div>
+
+              {/* Show breakdown if there's a discount */}
+              {discount > 0 && (
+                <div className="space-y-1 text-sm text-muted-foreground border-t pt-2">
+                  <div className="flex items-center justify-between">
+                    <span>Subtotal</span>
+                    <span>Bs. {cartTotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Descuento</span>
+                    <span>-Bs. {discount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-center justify-between font-semibold text-foreground">
+                    <span>Total Final</span>
+                    <span>Bs. {finalTotal.toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Descuento (Bs.)</label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  max={cartTotal}
+                  placeholder="0.00"
+                  value={discount || ""}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value) || 0;
+                    // Ensure discount doesn't exceed cart total
+                    setDiscount(Math.min(Math.max(0, value), cartTotal));
+                  }}
+                />
+                {discount > cartTotal && (
+                  <p className="text-xs text-amber-600">
+                    El descuento no puede ser mayor al total
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">

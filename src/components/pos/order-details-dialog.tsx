@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import {
   Dialog,
@@ -34,7 +35,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { User, FileDown } from "lucide-react";
 import { generateOrderPDF } from "@/lib/pdf-utils";
@@ -56,29 +56,72 @@ export function OrderDetailsDialog({
     });
 
   const { data: order, isLoading } = useOrder(orderId);
-  const [paymentMethod, setPaymentMethod] = useState<string | undefined>();
-  const [paymentStatus, setPaymentStatus] = useState<string | undefined>();
+  const [paymentMethod, setPaymentMethod] = useState<string>("");
+  const [paymentStatus, setPaymentStatus] = useState<string>("");
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
 
+  // Initialize state when order data loads
+  useEffect(() => {
+    if (order) {
+      setPaymentMethod(order.paymentMethod);
+      setPaymentStatus(order.paymentStatus);
+    }
+  }, [order]);
+
   const handleUpdatePayment = async () => {
     if (!order || (!paymentMethod && !paymentStatus)) return;
+
+    // Only send fields that have changed
+    const updates: { paymentMethod?: string; paymentStatus?: string } = {};
+
+    if (paymentMethod && paymentMethod !== order.paymentMethod) {
+      updates.paymentMethod = paymentMethod;
+    }
+
+    if (paymentStatus && paymentStatus !== order.paymentStatus) {
+      updates.paymentStatus = paymentStatus;
+    }
+
+    // If no changes were made, don't make the API call
+    if (Object.keys(updates).length === 0) {
+      toast({
+        title: "Sin cambios",
+        description: "No se han realizado cambios en el pago",
+      });
+      return;
+    }
 
     setIsUpdating(true);
     try {
       await updateOrder.mutateAsync({
         id: order.id,
-        paymentMethod:
-          (paymentMethod as "CASH" | "QR" | "CREDIT_CARD") || undefined,
-        paymentStatus: (paymentStatus as "PAID" | "UNPAID") || undefined,
+        paymentMethod: updates.paymentMethod as
+          | "CASH"
+          | "QR"
+          | "CREDIT_CARD"
+          | undefined,
+        paymentStatus: updates.paymentStatus as "PAID" | "UNPAID" | undefined,
       });
 
       toast({
         title: "Éxito",
         description: "Pago de orden actualizado exitosamente",
       });
+
+      // Close the dialog after successful update if only payment status was changed
+      if (updates.paymentStatus && !updates.paymentMethod) {
+        setTimeout(() => {
+          onOpenChange(false);
+        }, 1000);
+      }
     } catch (error) {
       console.error("Failed to update payment:", error);
+      toast({
+        title: "Error",
+        description: "Error al actualizar el pago de la orden",
+        variant: "destructive",
+      });
     } finally {
       setIsUpdating(false);
     }
@@ -240,11 +283,7 @@ export function OrderDetailsDialog({
             <CardContent className="space-y-4">
               <div>
                 <label className="text-sm font-medium">Método de Pago</label>
-                <Select
-                  value={paymentMethod}
-                  onValueChange={setPaymentMethod}
-                  defaultValue={order.paymentMethod}
-                >
+                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona método de pago" />
                   </SelectTrigger>
@@ -259,11 +298,7 @@ export function OrderDetailsDialog({
               </div>
               <div>
                 <label className="text-sm font-medium">Estado de Pago</label>
-                <Select
-                  value={paymentStatus}
-                  onValueChange={setPaymentStatus}
-                  defaultValue={order.paymentStatus}
-                >
+                <Select value={paymentStatus} onValueChange={setPaymentStatus}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona estado de pago" />
                   </SelectTrigger>
@@ -275,7 +310,12 @@ export function OrderDetailsDialog({
               </div>
               <Button
                 onClick={handleUpdatePayment}
-                disabled={isUpdating || (!paymentMethod && !paymentStatus)}
+                disabled={
+                  isUpdating ||
+                  !order ||
+                  (paymentMethod === order.paymentMethod &&
+                    paymentStatus === order.paymentStatus)
+                }
                 className="w-full"
               >
                 {isUpdating ? "Actualizando..." : "Actualizar Pago"}

@@ -429,34 +429,15 @@ export function OrderHistory() {
     try {
       setIsRefreshing(true);
 
-      // First find the order to get its current total
-      const orderResponse = await fetch(`/api/orders/${selectedOrderId}`);
-      if (!orderResponse.ok) {
-        throw new Error("Failed to fetch order details");
+      if (!selectedOrderId) {
+        throw new Error("No order selected");
       }
 
-      // Update order with PAID status
-      const response = await fetch(`/api/orders/${selectedOrderId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          paymentStatus: "PAID",
-        }),
+      // Use the existing updateOrder mutation instead of manual fetch
+      await updateOrder.mutateAsync({
+        id: selectedOrderId,
+        paymentStatus: "PAID",
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to update order");
-      }
-
-      // Update the order in UI optimistically
-      if (selectedOrderId) {
-        updateOrder.mutate({
-          id: selectedOrderId,
-          paymentStatus: "PAID",
-        });
-      }
 
       toast({
         title: "Éxito",
@@ -466,7 +447,10 @@ export function OrderHistory() {
       console.error("Failed to mark order as paid:", error);
       toast({
         title: "Error",
-        description: "Failed to mark order as paid",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to mark order as paid",
         variant: "destructive",
       });
     } finally {

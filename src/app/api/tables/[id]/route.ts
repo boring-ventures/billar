@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { TableStatus } from "@prisma/client";
+
+interface TableUpdateData {
+  name?: string;
+  status?: TableStatus;
+  hourlyRate?: number | null;
+  active?: boolean;
+}
 
 // GET /api/tables/[id] - Get a specific table
 export async function GET(
@@ -104,7 +112,7 @@ export async function PATCH(
     // Create a transaction to update table and log activity if status changes
     const result = await prisma.$transaction(async (tx) => {
       // Update the table
-      const updateData: any = {};
+      const updateData: TableUpdateData = {};
       if (name !== undefined) updateData.name = name;
       if (status !== undefined) updateData.status = status;
       if (hourlyRate !== undefined)

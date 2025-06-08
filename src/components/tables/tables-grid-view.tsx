@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Table, useTablesQuery } from "@/hooks/use-tables-query";
+import {
+  Table,
+  useTablesQuery,
+  useDeleteTableMutation,
+} from "@/hooks/use-tables-query";
 import { TableStatus } from "@prisma/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +16,7 @@ import {
   PlayCircle,
   StopCircle,
   ArrowRight,
+  Trash,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -69,12 +74,14 @@ export function TablesGridView({ companyId, query }: TablesGridViewProps) {
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [isCancelSessionAlertOpen, setIsCancelSessionAlertOpen] =
     useState(false);
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
     null
   );
   const [moveSessionDialogOpen, setMoveSessionDialogOpen] = useState(false);
 
   const cancelSessionMutation = useCancelTableSessionMutation();
+  const deleteTableMutation = useDeleteTableMutation();
 
   const getStatusColor = (status: TableStatus) => {
     switch (status) {
@@ -165,6 +172,20 @@ export function TablesGridView({ companyId, query }: TablesGridViewProps) {
       setSelectedTable(table);
       setSelectedSessionId(activeSession.id);
       setMoveSessionDialogOpen(true);
+    }
+  };
+
+  const handleDeleteTable = async (table: Table) => {
+    if (!isAdmin) return;
+    setSelectedTable(table);
+    setIsDeleteAlertOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (selectedTable) {
+      await deleteTableMutation.mutateAsync(selectedTable.id);
+      setIsDeleteAlertOpen(false);
+      setSelectedTable(null);
     }
   };
 
@@ -272,6 +293,21 @@ export function TablesGridView({ companyId, query }: TablesGridViewProps) {
                     >
                       <StopCircle className="mr-2 h-4 w-4" />
                       Finalizar Sesión
+                    </DropdownMenuItem>
+                  </>
+                )}
+                {isAdmin && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteTable(table);
+                      }}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash className="mr-2 h-4 w-4" />
+                      Eliminar Mesa
                     </DropdownMenuItem>
                   </>
                 )}
@@ -435,6 +471,31 @@ export function TablesGridView({ companyId, query }: TablesGridViewProps) {
               {cancelSessionMutation.isPending
                 ? "Procesando..."
                 : "Cancelar Sesión"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar mesa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción marcará la mesa como inactiva. La mesa no aparecerá en
+              las listas pero se mantendrán todos sus datos históricos y
+              sesiones registradas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground"
+              disabled={deleteTableMutation.isPending}
+            >
+              {deleteTableMutation.isPending
+                ? "Eliminando..."
+                : "Eliminar Mesa"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

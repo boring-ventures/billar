@@ -65,6 +65,9 @@ export async function GET(request: NextRequest) {
       whereClause.name = { contains: query, mode: "insensitive" };
     }
 
+    // Only show active tables by default
+    whereClause.active = true;
+
     const tables = await prisma.table.findMany({
       where: whereClause,
       include: {

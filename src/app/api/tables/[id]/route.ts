@@ -73,7 +73,7 @@ export async function PATCH(
   try {
     const tableId = (await params).id;
     const body = await request.json();
-    const { name, status, hourlyRate } = body;
+    const { name, status, hourlyRate, active } = body;
 
     // Find table first to check if it exists and get current status
     const existingTable = await prisma.table.findUnique({
@@ -84,16 +84,36 @@ export async function PATCH(
       return NextResponse.json({ error: "Table not found" }, { status: 404 });
     }
 
+    // If we're deactivating the table (soft delete), check for active sessions
+    if (active === false && existingTable.active === true) {
+      const activeSessions = await prisma.tableSession.findMany({
+        where: {
+          tableId,
+          status: "ACTIVE",
+        },
+      });
+
+      if (activeSessions.length > 0) {
+        return NextResponse.json(
+          { error: "No se puede eliminar una mesa con sesiones activas" },
+          { status: 400 }
+        );
+      }
+    }
+
     // Create a transaction to update table and log activity if status changes
     const result = await prisma.$transaction(async (tx) => {
       // Update the table
+      const updateData: any = {};
+      if (name !== undefined) updateData.name = name;
+      if (status !== undefined) updateData.status = status;
+      if (hourlyRate !== undefined)
+        updateData.hourlyRate = hourlyRate ? parseFloat(hourlyRate) : null;
+      if (active !== undefined) updateData.active = active;
+
       const updatedTable = await tx.table.update({
         where: { id: tableId },
-        data: {
-          name,
-          status: status,
-          hourlyRate: hourlyRate ? parseFloat(hourlyRate) : null,
-        },
+        data: updateData,
       });
 
       // If status is changing, log it in activity logs
@@ -104,6 +124,19 @@ export async function PATCH(
             previousStatus: existingTable.status,
             newStatus: status,
             notes: `Status updated from ${existingTable.status} to ${status}`,
+            // changedById would be set in a real application based on auth
+          },
+        });
+      }
+
+      // If we're deactivating the table, log this action
+      if (active === false && existingTable.active === true) {
+        await tx.tableActivityLog.create({
+          data: {
+            tableId,
+            previousStatus: existingTable.status,
+            newStatus: existingTable.status, // Status doesn't change, just deactivated
+            notes: "Mesa eliminada (desactivada)",
             // changedById would be set in a real application based on auth
           },
         });

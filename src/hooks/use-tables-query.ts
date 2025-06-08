@@ -10,6 +10,7 @@ export interface Table {
   name: string;
   status: TableStatus;
   hourlyRate: number | null;
+  active: boolean;
   createdAt: Date;
   updatedAt: Date;
   company?: {
@@ -193,22 +194,38 @@ export function useUpdateTableMutation() {
 
 export function useDeleteTableMutation() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (tableId: string) => {
       const response = await fetch(`/api/tables/${tableId}`, {
-        method: "DELETE",
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ active: false }),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || "Failed to delete table");
+        throw new Error(error.error || "Failed to delete table");
       }
 
       return response.json();
     },
     onSuccess: () => {
+      toast({
+        title: "Éxito",
+        description: "Mesa eliminada correctamente",
+      });
       queryClient.invalidateQueries({ queryKey: ["tables"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo eliminar la mesa",
+        variant: "destructive",
+      });
     },
   });
 }

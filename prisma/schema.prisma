@@ -58,6 +58,7 @@ model Table {
   name         String
   status       TableStatus        @default(AVAILABLE)
   hourlyRate   Decimal?           @map("hourly_rate") @db.Decimal(10, 2)
+  active       Boolean            @default(true)
   createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   activityLogs TableActivityLog[]

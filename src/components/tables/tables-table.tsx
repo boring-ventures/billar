@@ -344,10 +344,11 @@ export function TablesTable() {
       <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás completamente seguro?</AlertDialogTitle>
+            <AlertDialogTitle>¿Eliminar mesa?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Se eliminará permanentemente la
-              mesa y todos sus datos de nuestros servidores.
+              Esta acción marcará la mesa como inactiva. La mesa no aparecerá en
+              las listas pero se mantendrán todos sus datos históricos y
+              sesiones registradas.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -357,7 +358,9 @@ export function TablesTable() {
               className="bg-destructive text-destructive-foreground"
               disabled={deleteTableMutation.isPending}
             >
-              {deleteTableMutation.isPending ? "Eliminando..." : "Eliminar"}
+              {deleteTableMutation.isPending
+                ? "Eliminando..."
+                : "Eliminar Mesa"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

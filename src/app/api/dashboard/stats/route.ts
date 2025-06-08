@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
 
     if (
       !userProfile ||
-      (userProfile.companyId !== companyId && userProfile.role !== "ADMIN")
+      (userProfile.companyId !== companyId && userProfile.role !== "SUPERADMIN")
     ) {
       return NextResponse.json(
         { error: "Unauthorized access to company data" },
@@ -66,23 +66,37 @@ export async function GET(request: NextRequest) {
     // Calculate total sales for today
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
 
     // Debug logging
     console.log("Dashboard Stats Debug:", {
       companyId,
       today: today.toISOString(),
-      todayEnd: new Date(
-        today.getTime() + 24 * 60 * 60 * 1000 - 1
-      ).toISOString(),
+      tomorrow: tomorrow.toISOString(),
     });
 
     const todaySales = await prisma.posOrder.aggregate({
       where: {
         companyId,
-        createdAt: { gte: today },
+        createdAt: {
+          gte: today,
+          lt: tomorrow,
+        },
         paymentStatus: "PAID",
       },
       _sum: { amount: true },
+    });
+
+    // Count today's orders
+    const todayOrdersCount = await prisma.posOrder.count({
+      where: {
+        companyId,
+        createdAt: {
+          gte: today,
+          lt: tomorrow,
+        },
+      },
     });
 
     // Get total revenue this month
@@ -99,6 +113,14 @@ export async function GET(request: NextRequest) {
       _sum: { amount: true },
     });
 
+    // Count this month's orders
+    const monthOrdersCount = await prisma.posOrder.count({
+      where: {
+        companyId,
+        createdAt: { gte: firstDayOfMonth },
+      },
+    });
+
     // Return all stats together
     return NextResponse.json({
       tablesCount,
@@ -107,6 +129,8 @@ export async function GET(request: NextRequest) {
       lowStockItemsCount,
       todaySales: Number(todaySales._sum.amount || 0),
       monthSales: Number(monthSales._sum.amount || 0),
+      todayOrdersCount,
+      monthOrdersCount,
     });
   } catch (error) {
     console.error("Error fetching dashboard stats:", error);

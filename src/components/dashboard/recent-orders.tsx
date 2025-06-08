@@ -37,18 +37,22 @@ interface Order {
 }
 
 export function RecentOrders({ companyId }: RecentOrdersProps) {
-  const { data: orders, isLoading } = useQuery({
+  const { data: ordersResponse, isLoading } = useQuery({
     queryKey: ["recentOrders", companyId],
     queryFn: async () => {
       const response = await fetch(
-        `/api/pos/orders?companyId=${companyId}&limit=5`
+        `/api/pos-orders?companyId=${companyId}&limit=5`
       );
       if (!response.ok) {
         throw new Error("Failed to fetch recent orders");
       }
       return response.json();
     },
+    enabled: !!companyId,
   });
+
+  // Handle the paginated response format from pos-orders API
+  const orders = ordersResponse?.data || ordersResponse || [];
 
   if (isLoading) {
     return (

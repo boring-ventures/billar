@@ -10,7 +10,9 @@ import {
   Building2,
   CreditCard,
   DollarSign,
+  FileText,
   Package,
+  RefreshCw,
   ShieldCheck,
   Table,
   Users,
@@ -32,11 +34,13 @@ import { SalesSummaryChart } from "@/components/dashboard/sales-summary-chart";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useDashboardStats } from "@/hooks/use-dashboard-stats";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function DashboardPage() {
   const router = useRouter();
   const { profile, user, isLoading: isLoadingUser } = useCurrentUser();
   const { data: stats, isLoading: isLoadingStats } = useDashboardStats();
+  const queryClient = useQueryClient();
 
   // Redirect to sign-in if not authenticated
   useEffect(() => {
@@ -44,6 +48,17 @@ export default function DashboardPage() {
       router.push("/sign-in");
     }
   }, [isLoadingUser, user, router]);
+
+  // Function to refresh dashboard data
+  const handleRefresh = () => {
+    if (profile?.companyId) {
+      queryClient.invalidateQueries({ queryKey: ["dashboardStats"] });
+      queryClient.invalidateQueries({ queryKey: ["recentOrders"] });
+      queryClient.invalidateQueries({ queryKey: ["recentTableSessions"] });
+      queryClient.invalidateQueries({ queryKey: ["lowStockItems"] });
+      queryClient.invalidateQueries({ queryKey: ["salesSummary"] });
+    }
+  };
 
   // Loading state
   if (isLoadingUser) {
@@ -131,11 +146,29 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col space-y-6 p-4 md:p-8">
       <div className="flex flex-col gap-2">
-        <h2 className="text-3xl font-bold tracking-tight">Panel de Control</h2>
-        <p className="text-muted-foreground">
-          Bienvenido, {profile.firstName || "Usuario"}. Aquí tienes un resumen
-          de la actividad reciente de {profile.companyId ? "tu empresa" : ""}.
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">
+              Panel de Control
+            </h2>
+            <p className="text-muted-foreground">
+              Bienvenido, {profile.firstName || "Usuario"}. Aquí tienes un
+              resumen de la actividad reciente de{" "}
+              {profile.companyId ? "tu empresa" : ""}.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isLoadingStats}
+          >
+            <RefreshCw
+              className={`h-4 w-4 mr-2 ${isLoadingStats ? "animate-spin" : ""}`}
+            />
+            Actualizar
+          </Button>
+        </div>
       </div>
 
       {isLoadingStats ? (
@@ -169,7 +202,7 @@ export default function DashboardPage() {
                     {formatCurrency(stats?.todaySales || 0)}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    +20.1% desde ayer
+                    {stats?.todayOrdersCount || 0} órdenes hoy
                   </p>
                 </CardContent>
               </Card>
@@ -228,7 +261,7 @@ export default function DashboardPage() {
                     {formatCurrency(stats?.monthSales || 0)}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    +15% desde el mes pasado
+                    {stats?.monthOrdersCount || 0} órdenes este mes
                   </p>
                 </CardContent>
               </Card>
@@ -425,6 +458,28 @@ export default function DashboardPage() {
                       </div>
                       <div className="text-sm font-medium">
                         {formatCurrency(stats?.monthSales || 0)}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <FileText className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">
+                          Órdenes de Hoy
+                        </span>
+                      </div>
+                      <div className="text-sm font-medium">
+                        {stats?.todayOrdersCount || 0}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <BarChart3 className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">
+                          Órdenes del Mes
+                        </span>
+                      </div>
+                      <div className="text-sm font-medium">
+                        {stats?.monthOrdersCount || 0}
                       </div>
                     </div>
                   </div>

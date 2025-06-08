@@ -8,6 +8,8 @@ interface DashboardStats {
   lowStockItemsCount: number;
   todaySales: number;
   monthSales: number;
+  todayOrdersCount: number;
+  monthOrdersCount: number;
 }
 
 // Hook to fetch dashboard stats summary
@@ -26,6 +28,8 @@ export function useDashboardStats() {
           lowStockItemsCount: 0,
           todaySales: 0,
           monthSales: 0,
+          todayOrdersCount: 0,
+          monthOrdersCount: 0,
         };
       }
 
@@ -108,12 +112,14 @@ export function useRecentOrders(companyId?: string) {
       if (!companyId) return [];
 
       const response = await fetch(
-        `/api/pos/orders?companyId=${companyId}&limit=5`
+        `/api/pos-orders?companyId=${companyId}&limit=5`
       );
       if (!response.ok) {
         throw new Error("Failed to fetch recent orders");
       }
-      return response.json();
+      const data = await response.json();
+      // Handle paginated response format
+      return data.data || data || [];
     },
     enabled: !!companyId,
   });

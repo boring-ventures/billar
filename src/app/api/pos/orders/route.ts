@@ -37,11 +37,28 @@ export async function GET(request: NextRequest) {
       where: { userId: session.user.id },
     });
 
-    if (!userProfile || userProfile.companyId !== companyId) {
+    if (!userProfile) {
       return NextResponse.json(
-        { error: "Unauthorized access to company data" },
-        { status: 403 }
+        { error: "User profile not found" },
+        { status: 404 }
       );
+    }
+
+    // For non-superadmins, restrict to their company regardless of filter
+    if (userProfile.role !== "SUPERADMIN") {
+      if (!userProfile.companyId) {
+        return NextResponse.json(
+          { error: "User is not associated with a company" },
+          { status: 403 }
+        );
+      }
+      // Override companyId with user's company for non-superadmins
+      if (userProfile.companyId !== companyId) {
+        return NextResponse.json(
+          { error: "Unauthorized access to company data" },
+          { status: 403 }
+        );
+      }
     }
 
     // Build the query

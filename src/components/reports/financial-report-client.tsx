@@ -39,6 +39,7 @@ import {
   FileDown,
 } from "lucide-react";
 import { DateRangePicker, DateRange } from "@/components/ui/date-range-picker";
+import { DatePicker } from "@/components/ui/date-picker";
 import { useToast } from "@/components/ui/use-toast";
 import { formatCurrency } from "@/lib/utils";
 import { generateReportPDF } from "@/lib/pdf-utils";
@@ -76,6 +77,7 @@ export function FinancialReportClient() {
     from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
     to: new Date(),
   });
+  const [singleDate, setSingleDate] = useState<Date | undefined>(new Date());
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoadingLiveData, setIsLoadingLiveData] = useState(false);
   const [liveReportData, setLiveReportData] = useState<
@@ -102,23 +104,45 @@ export function FinancialReportClient() {
     }
   }, [companiesData]);
 
+  // Helper function to get the effective date range for API calls
+  const getEffectiveDateRange = () => {
+    if (reportType === "DAILY" && singleDate) {
+      return {
+        from: singleDate,
+        to: singleDate,
+      };
+    }
+    return dateRange;
+  };
+
   // Fetch saved financial reports based on filters
   const {
     data: savedReports,
     isLoading: isLoadingSavedReports,
     refetch: refetchSavedReports,
   } = useQuery({
-    queryKey: ["savedFinancialReports", selectedCompany, reportType, dateRange],
+    queryKey: [
+      "savedFinancialReports",
+      selectedCompany,
+      reportType,
+      reportType === "DAILY" ? singleDate : dateRange,
+    ],
     queryFn: async () => {
-      if (!selectedCompany || !dateRange?.from || !dateRange?.to) {
+      const effectiveDateRange = getEffectiveDateRange();
+
+      if (
+        !selectedCompany ||
+        !effectiveDateRange?.from ||
+        !effectiveDateRange?.to
+      ) {
         return [];
       }
 
       const params = new URLSearchParams({
         companyId: selectedCompany,
         reportType,
-        startDate: dateRange.from.toISOString(),
-        endDate: dateRange.to.toISOString(),
+        startDate: effectiveDateRange.from.toISOString(),
+        endDate: effectiveDateRange.to.toISOString(),
       });
 
       const response = await fetch(`/api/financial-reports?${params}`);
@@ -127,13 +151,22 @@ export function FinancialReportClient() {
       }
       return response.json();
     },
-    enabled: !!selectedCompany && !!dateRange?.from && !!dateRange?.to,
+    enabled:
+      !!selectedCompany &&
+      ((reportType === "DAILY" && !!singleDate) ||
+        (reportType !== "DAILY" && !!dateRange?.from && !!dateRange?.to)),
   });
 
   // Fetch live data whenever filters change
   useEffect(() => {
     const fetchLiveData = async () => {
-      if (!selectedCompany || !dateRange?.from || !dateRange?.to) {
+      const effectiveDateRange = getEffectiveDateRange();
+
+      if (
+        !selectedCompany ||
+        !effectiveDateRange?.from ||
+        !effectiveDateRange?.to
+      ) {
         return;
       }
 
@@ -143,8 +176,8 @@ export function FinancialReportClient() {
         const params = new URLSearchParams({
           companyId: selectedCompany,
           reportType,
-          startDate: dateRange.from.toISOString(),
-          endDate: dateRange.to.toISOString(),
+          startDate: effectiveDateRange.from.toISOString(),
+          endDate: effectiveDateRange.to.toISOString(),
           live: "true", // Add a parameter to indicate this is a live data request
         });
 
@@ -168,10 +201,14 @@ export function FinancialReportClient() {
       }
     };
 
-    if (selectedCompany && dateRange?.from && dateRange?.to) {
+    if (
+      selectedCompany &&
+      ((reportType === "DAILY" && singleDate) ||
+        (reportType !== "DAILY" && dateRange?.from && dateRange?.to))
+    ) {
       fetchLiveData();
     }
-  }, [selectedCompany, reportType, dateRange, toast]);
+  }, [selectedCompany, reportType, singleDate, dateRange, toast]);
 
   // Get report data - prioritize live data if available, fall back to saved reports
   const reports = liveReportData || savedReports || [];
@@ -200,10 +237,19 @@ export function FinancialReportClient() {
 
   // Generate and save a report
   const handleGenerateReport = async () => {
-    if (!selectedCompany || !dateRange?.from || !dateRange?.to) {
+    const effectiveDateRange = getEffectiveDateRange();
+
+    if (
+      !selectedCompany ||
+      !effectiveDateRange?.from ||
+      !effectiveDateRange?.to
+    ) {
       toast({
         title: "Error",
-        description: "Por favor selecciona una empresa y rango de fechas",
+        description:
+          reportType === "DAILY"
+            ? "Por favor selecciona una empresa y fecha"
+            : "Por favor selecciona una empresa y rango de fechas",
         variant: "destructive",
       });
       return;
@@ -220,8 +266,8 @@ export function FinancialReportClient() {
         body: JSON.stringify({
           companyId: selectedCompany,
           reportType,
-          startDate: dateRange.from.toISOString(),
-          endDate: dateRange.to.toISOString(),
+          startDate: effectiveDateRange.from.toISOString(),
+          endDate: effectiveDateRange.to.toISOString(),
         }),
       });
 
@@ -281,6 +327,82 @@ export function FinancialReportClient() {
     }
   };
 
+  // Handle report type change and automatically adjust date range for daily reports
+  const handleReportTypeChange = (newReportType: string) => {
+    setReportType(newReportType);
+
+    const now = new Date();
+
+    if (newReportType === "DAILY") {
+      // When switching to daily, use the current single date or set today if none
+      if (!singleDate) {
+        setSingleDate(now);
+      }
+    } else {
+      // Automatically set appropriate date ranges based on report type
+      let from: Date;
+      let to: Date;
+
+      switch (newReportType) {
+        case "WEEKLY":
+          // Current week (Monday to Sunday)
+          from = new Date(now);
+          const dayOfWeek = now.getDay();
+          const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Sunday = 0, so 6 days to Monday
+          from.setDate(now.getDate() - daysToMonday);
+          from.setHours(0, 0, 0, 0);
+
+          to = new Date(from);
+          to.setDate(from.getDate() + 6); // Sunday
+          to.setHours(23, 59, 59, 999);
+          break;
+
+        case "MONTHLY":
+          // Current month (1st to last day)
+          from = new Date(now.getFullYear(), now.getMonth(), 1);
+          from.setHours(0, 0, 0, 0);
+
+          to = new Date(now.getFullYear(), now.getMonth() + 1, 0); // Last day of current month
+          to.setHours(23, 59, 59, 999);
+          break;
+
+        case "QUARTERLY":
+          // Current quarter
+          const currentQuarter = Math.floor(now.getMonth() / 3);
+          const quarterStartMonth = currentQuarter * 3;
+
+          from = new Date(now.getFullYear(), quarterStartMonth, 1);
+          from.setHours(0, 0, 0, 0);
+
+          to = new Date(now.getFullYear(), quarterStartMonth + 3, 0); // Last day of quarter
+          to.setHours(23, 59, 59, 999);
+          break;
+
+        case "ANNUAL":
+          // Current year (January 1st to December 31st)
+          from = new Date(now.getFullYear(), 0, 1);
+          from.setHours(0, 0, 0, 0);
+
+          to = new Date(now.getFullYear(), 11, 31);
+          to.setHours(23, 59, 59, 999);
+          break;
+
+        case "CUSTOM":
+        default:
+          // For custom reports, use last 30 days as default
+          from = new Date(now);
+          from.setDate(now.getDate() - 29); // 30 days including today
+          from.setHours(0, 0, 0, 0);
+
+          to = new Date(now);
+          to.setHours(23, 59, 59, 999);
+          break;
+      }
+
+      setDateRange({ from, to });
+    }
+  };
+
   return (
     <div className="space-y-6 p-6">
       {/* Filters */}
@@ -308,7 +430,7 @@ export function FinancialReportClient() {
 
           <div className="space-y-2">
             <Label htmlFor="reportType">Tipo de Reporte</Label>
-            <Select value={reportType} onValueChange={setReportType}>
+            <Select value={reportType} onValueChange={handleReportTypeChange}>
               <SelectTrigger id="reportType">
                 <SelectValue placeholder="Seleccionar tipo" />
               </SelectTrigger>
@@ -324,13 +446,24 @@ export function FinancialReportClient() {
           </div>
 
           <div className="col-span-1 md:col-span-2 space-y-2">
-            <Label>Rango de Fechas</Label>
-            <DateRangePicker
-              value={dateRange}
-              onChange={setDateRange}
-              placeholder="Seleccionar rango"
-              className="w-full"
-            />
+            <Label>
+              {reportType === "DAILY" ? "Fecha del Reporte" : "Rango de Fechas"}
+            </Label>
+            {reportType === "DAILY" ? (
+              <DatePicker
+                value={singleDate}
+                onChange={setSingleDate}
+                placeholder="Seleccionar fecha"
+                className="w-full"
+              />
+            ) : (
+              <DateRangePicker
+                value={dateRange}
+                onChange={setDateRange}
+                placeholder="Seleccionar rango"
+                className="w-full"
+              />
+            )}
           </div>
         </div>
 

@@ -20,13 +20,36 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { Building2, MapPin, Phone, Users, Calendar } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Building2,
+  MapPin,
+  Phone,
+  Users,
+  Calendar,
+  Clock,
+  AlertCircle,
+  Save,
+  Loader2,
+} from "lucide-react";
 import { UserRole } from "@prisma/client";
+import {
+  parseOperatingDays,
+  stringifyOperatingDays,
+  createDefaultIndividualHours,
+  parseIndividualDayHours,
+  stringifyIndividualDayHours,
+  type IndividualDayHours,
+} from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 
 const companyFormSchema = z.object({
   name: z
@@ -36,13 +59,60 @@ const companyFormSchema = z.object({
   phone: z.string().optional(),
 });
 
+const businessHoursFormSchema = z.object({
+  businessHoursStart: z
+    .string()
+    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Formato inválido (HH:MM)")
+    .optional(),
+  businessHoursEnd: z
+    .string()
+    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Formato inválido (HH:MM)")
+    .optional(),
+  timezone: z.string().optional(),
+  operatingDays: z
+    .array(z.string())
+    .min(1, "Selecciona al menos un día")
+    .optional(),
+});
+
+// Schema for individual day hours
+const individualDaySchema = z.object({
+  start: z
+    .string()
+    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Formato inválido (HH:MM)"),
+  end: z
+    .string()
+    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Formato inválido (HH:MM)"),
+  enabled: z.boolean(),
+});
+
+const individualBusinessHoursFormSchema = z.object({
+  MON: individualDaySchema,
+  TUE: individualDaySchema,
+  WED: individualDaySchema,
+  THU: individualDaySchema,
+  FRI: individualDaySchema,
+  SAT: individualDaySchema,
+  SUN: individualDaySchema,
+});
+
 type CompanyFormValues = z.infer<typeof companyFormSchema>;
+type BusinessHoursFormValues = z.infer<typeof businessHoursFormSchema>;
+type IndividualBusinessHoursFormValues = z.infer<
+  typeof individualBusinessHoursFormSchema
+>;
 
 interface Company {
   id: string;
   name: string;
   address?: string;
   phone?: string;
+  businessHoursStart?: string;
+  businessHoursEnd?: string;
+  timezone?: string;
+  operatingDays?: string;
+  individualDayHours?: string;
+  useIndividualHours?: boolean;
   createdAt: string;
   _count?: {
     profiles: number;
@@ -51,12 +121,27 @@ interface Company {
   };
 }
 
+const DAYS_OF_WEEK = [
+  { value: "MON", label: "Lunes" },
+  { value: "TUE", label: "Martes" },
+  { value: "WED", label: "Miércoles" },
+  { value: "THU", label: "Jueves" },
+  { value: "FRI", label: "Viernes" },
+  { value: "SAT", label: "Sábado" },
+  { value: "SUN", label: "Domingo" },
+];
+
 export function CompanySection() {
   const { profile } = useCurrentUser();
   const { toast } = useToast();
   const [company, setCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmittingBusinessHours, setIsSubmittingBusinessHours] =
+    useState(false);
+  const [useIndividualHours, setUseIndividualHours] = useState(
+    company?.useIndividualHours || false
+  );
 
   const form = useForm<CompanyFormValues>({
     resolver: zodResolver(companyFormSchema),
@@ -65,6 +150,21 @@ export function CompanySection() {
       address: "",
       phone: "",
     },
+  });
+
+  const businessHoursForm = useForm<BusinessHoursFormValues>({
+    resolver: zodResolver(businessHoursFormSchema),
+    defaultValues: {
+      businessHoursStart: "",
+      businessHoursEnd: "",
+      timezone: "America/La_Paz",
+      operatingDays: ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"],
+    },
+  });
+
+  const individualHoursForm = useForm<IndividualBusinessHoursFormValues>({
+    resolver: zodResolver(individualBusinessHoursFormSchema),
+    defaultValues: createDefaultIndividualHours(),
   });
 
   // Fetch company data
@@ -85,6 +185,28 @@ export function CompanySection() {
             address: data.address || "",
             phone: data.phone || "",
           });
+
+          // Parse operating days from JSON
+          const operatingDays = parseOperatingDays(data.operatingDays);
+
+          businessHoursForm.reset({
+            businessHoursStart: data.businessHoursStart || "",
+            businessHoursEnd: data.businessHoursEnd || "",
+            timezone: data.timezone || "America/La_Paz",
+            operatingDays: operatingDays,
+          });
+
+          // Initialize individual hours form
+          const individualHours =
+            parseIndividualDayHours(data.individualDayHours) ||
+            createDefaultIndividualHours(
+              data.businessHoursStart,
+              data.businessHoursEnd,
+              operatingDays
+            );
+
+          individualHoursForm.reset(individualHours);
+          setUseIndividualHours(data.useIndividualHours || false);
         }
       } catch (error) {
         console.error("Error fetching company:", error);
@@ -99,7 +221,7 @@ export function CompanySection() {
     };
 
     fetchCompany();
-  }, [profile?.companyId, form, toast]);
+  }, [profile?.companyId, form, businessHoursForm, toast]);
 
   const onSubmit = async (data: CompanyFormValues) => {
     if (!profile?.companyId || profile.role === UserRole.SELLER) {
@@ -147,6 +269,186 @@ export function CompanySection() {
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const onSubmitBusinessHours = async (data: BusinessHoursFormValues) => {
+    if (!profile?.companyId || profile.role === UserRole.SELLER) {
+      toast({
+        title: "Error",
+        description:
+          "No tienes permisos para editar los horarios de la empresa",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmittingBusinessHours(true);
+    try {
+      const response = await fetch(`/api/companies/${profile.companyId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          businessHoursStart: data.businessHoursStart,
+          businessHoursEnd: data.businessHoursEnd,
+          timezone: data.timezone || "America/La_Paz",
+          operatingDays: stringifyOperatingDays(data.operatingDays || []),
+          useIndividualHours: false,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Error al actualizar los horarios");
+      }
+
+      toast({
+        title: "Éxito",
+        description: "Horarios de negocio actualizados correctamente",
+      });
+
+      // Refresh company data
+      const updatedCompany = await response.json();
+      setCompany(updatedCompany);
+    } catch (error) {
+      console.error("Error updating business hours:", error);
+      toast({
+        title: "Error",
+        description: "No se pudieron actualizar los horarios",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingBusinessHours(false);
+    }
+  };
+
+  const onSubmitIndividualHours = async (
+    data: IndividualBusinessHoursFormValues
+  ) => {
+    if (!profile?.companyId || profile.role === UserRole.SELLER) {
+      toast({
+        title: "Error",
+        description:
+          "No tienes permisos para editar los horarios de la empresa",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmittingBusinessHours(true);
+    try {
+      // Debug log the data being sent
+      console.log("Individual hours data being sent:", data);
+      const stringifiedData = stringifyIndividualDayHours(data);
+      console.log("Stringified individual hours:", stringifiedData);
+
+      const requestBody = {
+        individualDayHours: stringifiedData,
+        useIndividualHours: true,
+      };
+      console.log("Request body:", requestBody);
+
+      const response = await fetch(`/api/companies/${profile.companyId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        console.log("Response status:", response.status);
+        console.log("Response statusText:", response.statusText);
+        console.log(
+          "Response headers:",
+          Array.from(response.headers.entries())
+        );
+
+        let errorData;
+        try {
+          const responseText = await response.text();
+          console.log("Raw response text:", responseText);
+
+          if (responseText.trim()) {
+            errorData = JSON.parse(responseText);
+          } else {
+            errorData = { error: "Empty response from server" };
+          }
+        } catch (parseError) {
+          console.error("Failed to parse error response:", parseError);
+          errorData = { error: "Invalid response format from server" };
+        }
+
+        console.error("API Error:", errorData);
+        throw new Error(
+          errorData.error || "Error al actualizar los horarios individuales"
+        );
+      }
+
+      toast({
+        title: "Éxito",
+        description: "Horarios individuales actualizados correctamente",
+      });
+
+      // Refresh company data
+      const updatedCompany = await response.json();
+      setCompany(updatedCompany);
+    } catch (error) {
+      console.error("Error updating individual hours:", error);
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error
+            ? error.message
+            : "No se pudieron actualizar los horarios individuales",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingBusinessHours(false);
+    }
+  };
+
+  const handleModeToggle = async (useIndividual: boolean) => {
+    try {
+      setUseIndividualHours(useIndividual);
+
+      if (useIndividual) {
+        // Switching to individual mode - create default individual hours from general hours
+        const generalValues = businessHoursForm.getValues();
+        console.log(
+          "General values when switching to individual:",
+          generalValues
+        );
+
+        const defaultIndividualHours = createDefaultIndividualHours(
+          generalValues.businessHoursStart || undefined,
+          generalValues.businessHoursEnd || undefined,
+          generalValues.operatingDays
+        );
+        console.log(
+          "Created default individual hours:",
+          defaultIndividualHours
+        );
+
+        individualHoursForm.reset(defaultIndividualHours);
+
+        await onSubmitIndividualHours(defaultIndividualHours);
+      } else {
+        // Switching to general mode
+        const generalValues = businessHoursForm.getValues();
+        console.log("General values when switching to general:", generalValues);
+        await onSubmitBusinessHours(generalValues);
+      }
+    } catch (error) {
+      console.error("Error in handleModeToggle:", error);
+      // Revert the toggle state if there was an error
+      setUseIndividualHours(!useIndividual);
+      toast({
+        title: "Error",
+        description: "No se pudo cambiar el modo de horarios",
+        variant: "destructive",
+      });
     }
   };
 
@@ -252,6 +554,35 @@ export function CompanySection() {
                 </div>
               )}
             </div>
+
+            {/* Business Hours Display */}
+            {(company.businessHoursStart || company.businessHoursEnd) && (
+              <div className="mt-4 pt-4 border-t">
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <p className="text-sm font-medium">Horarios de Negocio</p>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {company.businessHoursStart && company.businessHoursEnd ? (
+                    <>
+                      {company.businessHoursStart} - {company.businessHoursEnd}
+                      {company.operatingDays && (
+                        <span className="ml-2">
+                          (
+                          {parseOperatingDays(company.operatingDays).length ===
+                          7
+                            ? "Todos los días"
+                            : `${parseOperatingDays(company.operatingDays).length} días por semana`}
+                          )
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    "No configurados"
+                  )}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -324,6 +655,396 @@ export function CompanySection() {
                 </div>
               </form>
             </Form>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Business Hours Form */}
+      {canEdit && company && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Horarios de Negocio
+            </CardTitle>
+            <CardDescription>
+              Configura los horarios de operación para mejorar el cálculo de
+              ventas diarias
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-blue-800">
+                <p className="font-medium mb-1">
+                  ¿Por qué configurar horarios de negocio?
+                </p>
+                <p>
+                  Los horarios configurados se usarán para calcular las "ventas
+                  de hoy" basándose en tu día laboral real, no en el día
+                  calendario (00:00-23:59).
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Label htmlFor="hours-mode">Horarios individuales por día</Label>
+              <Switch
+                id="hours-mode"
+                checked={useIndividualHours}
+                onCheckedChange={handleModeToggle}
+                disabled={isSubmittingBusinessHours}
+              />
+            </div>
+
+            {!useIndividualHours ? (
+              // General Hours Mode
+              <Form {...businessHoursForm}>
+                <form
+                  onSubmit={businessHoursForm.handleSubmit(
+                    onSubmitBusinessHours
+                  )}
+                  className="space-y-6"
+                >
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={businessHoursForm.control}
+                      name="businessHoursStart"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Hora de Apertura</FormLabel>
+                          <FormControl>
+                            <Input type="time" placeholder="08:00" {...field} />
+                          </FormControl>
+                          <FormDescription>
+                            Hora en que abre el negocio (formato 24h)
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={businessHoursForm.control}
+                      name="businessHoursEnd"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Hora de Cierre</FormLabel>
+                          <FormControl>
+                            <Input type="time" placeholder="22:00" {...field} />
+                          </FormControl>
+                          <FormDescription>
+                            Hora en que cierra el negocio (formato 24h)
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={businessHoursForm.control}
+                    name="timezone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Zona Horaria</FormLabel>
+                        <FormControl>
+                          <Input placeholder="America/La_Paz" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={businessHoursForm.control}
+                    name="operatingDays"
+                    render={() => (
+                      <FormItem>
+                        <FormLabel>Días de Operación</FormLabel>
+                        <div className="grid grid-cols-7 gap-2">
+                          {DAYS_OF_WEEK.map((day) => (
+                            <FormField
+                              key={day.value}
+                              control={businessHoursForm.control}
+                              name="operatingDays"
+                              render={({ field }) => {
+                                return (
+                                  <FormItem
+                                    key={day.value}
+                                    className="flex flex-col items-center space-y-2"
+                                  >
+                                    <FormControl>
+                                      <Checkbox
+                                        checked={field.value?.includes(
+                                          day.value
+                                        )}
+                                        onCheckedChange={(checked) => {
+                                          const currentDays = field.value || [];
+                                          return checked
+                                            ? field.onChange([
+                                                ...currentDays,
+                                                day.value,
+                                              ])
+                                            : field.onChange(
+                                                currentDays.filter(
+                                                  (value) => value !== day.value
+                                                )
+                                              );
+                                        }}
+                                      />
+                                    </FormControl>
+                                    <FormLabel className="text-xs font-normal">
+                                      {day.label}
+                                    </FormLabel>
+                                  </FormItem>
+                                );
+                              }}
+                            />
+                          ))}
+                        </div>
+                        <FormDescription>
+                          Los horarios de trabajo afectan los cálculos de
+                          "Ventas de Hoy" en el dashboard. Si no se configuran,
+                          se usará el día calendario completo (00:00 - 23:59).
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button type="submit" disabled={isSubmittingBusinessHours}>
+                    {isSubmittingBusinessHours ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Guardando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Guardar Horarios Generales
+                      </>
+                    )}
+                  </Button>
+                </form>
+              </Form>
+            ) : (
+              // Individual Hours Mode
+              <Form {...individualHoursForm}>
+                <form
+                  onSubmit={individualHoursForm.handleSubmit(
+                    onSubmitIndividualHours
+                  )}
+                  className="space-y-6"
+                >
+                  <div className="space-y-4">
+                    {DAYS_OF_WEEK.map((day) => (
+                      <div key={day.value} className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-medium">
+                            {day.label}
+                          </Label>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const sourceDayData =
+                                  individualHoursForm.getValues(
+                                    day.value as keyof IndividualBusinessHoursFormValues
+                                  );
+                                const allDays = [
+                                  "MON",
+                                  "TUE",
+                                  "WED",
+                                  "THU",
+                                  "FRI",
+                                  "SAT",
+                                  "SUN",
+                                ];
+
+                                allDays.forEach((targetDay) => {
+                                  if (targetDay !== day.value) {
+                                    individualHoursForm.setValue(
+                                      targetDay as keyof IndividualBusinessHoursFormValues,
+                                      {
+                                        ...sourceDayData,
+                                      }
+                                    );
+                                  }
+                                });
+                              }}
+                              className="text-xs"
+                            >
+                              Aplicar a todos
+                            </Button>
+                            <FormField
+                              control={individualHoursForm.control}
+                              name={`${day.value}.enabled` as any}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 pl-4">
+                          <FormField
+                            control={individualHoursForm.control}
+                            name={`${day.value}.start` as any}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs">
+                                  Apertura
+                                </FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="time"
+                                    {...field}
+                                    disabled={
+                                      !individualHoursForm.watch(
+                                        `${day.value}.enabled` as any
+                                      )
+                                    }
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={individualHoursForm.control}
+                            name={`${day.value}.end` as any}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs">
+                                  Cierre
+                                </FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="time"
+                                    {...field}
+                                    disabled={
+                                      !individualHoursForm.watch(
+                                        `${day.value}.enabled` as any
+                                      )
+                                    }
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        {day.value !== "SUN" && <Separator className="my-2" />}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="bg-muted p-3 rounded-md">
+                    <p className="text-sm text-muted-foreground">
+                      Los horarios individuales permiten configurar diferentes
+                      horarios para cada día de la semana. Esto afecta los
+                      cálculos de "Ventas de Hoy" en el dashboard usando los
+                      horarios específicos de cada día.
+                    </p>
+                  </div>
+
+                  <Button type="submit" disabled={isSubmittingBusinessHours}>
+                    {isSubmittingBusinessHours ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Guardando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Guardar Horarios Individuales
+                      </>
+                    )}
+                  </Button>
+                </form>
+              </Form>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Current Business Hours Display */}
+      {company && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Horarios Actuales
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {company.useIndividualHours ? (
+              <div className="space-y-2">
+                <p className="text-sm font-medium">
+                  Horarios individuales por día:
+                </p>
+                <div className="grid gap-2">
+                  {DAYS_OF_WEEK.map((day) => {
+                    const dayData = parseIndividualDayHours(
+                      company.individualDayHours
+                    )?.[day.value];
+                    return (
+                      <div
+                        key={day.value}
+                        className="flex justify-between items-center text-sm"
+                      >
+                        <span className="font-medium">{day.label}:</span>
+                        <span>
+                          {dayData?.enabled
+                            ? `${dayData.start} - ${dayData.end}`
+                            : "Cerrado"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="font-medium">Horario general:</span>
+                  <span>
+                    {company.businessHoursStart && company.businessHoursEnd
+                      ? `${company.businessHoursStart} - ${company.businessHoursEnd}`
+                      : "No configurado"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="font-medium">Días de operación:</span>
+                  <span>
+                    {company.operatingDays
+                      ? parseOperatingDays(company.operatingDays)
+                          .map(
+                            (day) =>
+                              DAYS_OF_WEEK.find((d) => d.value === day)?.label
+                          )
+                          .join(", ")
+                      : "Todos los días"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="font-medium">Zona horaria:</span>
+                  <span>{company.timezone || "America/La_Paz"}</span>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

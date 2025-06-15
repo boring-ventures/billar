@@ -2,6 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
+import {
+  getStartOfDay,
+  getEndOfDay,
+  getStartOfMonth,
+  getEndOfMonth,
+  getCurrentBusinessDay,
+  parseOperatingDays,
+  type BusinessHours,
+  parseIndividualDayHours,
+  type CompanyBusinessHours,
+} from "@/lib/utils";
 
 export async function GET(request: NextRequest) {
   try {
@@ -39,6 +50,62 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Get company for business hours configuration
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: {
+        businessHoursStart: true,
+        businessHoursEnd: true,
+        timezone: true,
+        operatingDays: true,
+        individualDayHours: true,
+        useIndividualHours: true,
+      },
+    });
+
+    // Set up business configuration
+    let businessConfig: CompanyBusinessHours | undefined;
+
+    if (company) {
+      if (company.useIndividualHours && company.individualDayHours) {
+        // Use individual day hours
+        businessConfig = {
+          useIndividualHours: true,
+          individualHours: parseIndividualDayHours(company.individualDayHours),
+        };
+      } else if (company.businessHoursStart && company.businessHoursEnd) {
+        // Use general business hours
+        businessConfig = {
+          useIndividualHours: false,
+          generalHours: {
+            start: company.businessHoursStart,
+            end: company.businessHoursEnd,
+            timezone: company.timezone || undefined,
+            operatingDays: parseOperatingDays(company.operatingDays),
+          },
+        };
+      }
+    }
+
+    console.log("Business Configuration:", {
+      useIndividual: company?.useIndividualHours,
+      hasIndividualHours: !!company?.individualDayHours,
+      hasGeneralHours: !!(
+        company?.businessHoursStart && company?.businessHoursEnd
+      ),
+      config: businessConfig,
+    });
+
+    // Calculate "today" based on business configuration
+    const { start: businessDayStart, end: businessDayEnd } =
+      getCurrentBusinessDay(businessConfig);
+
+    console.log("Business Day Boundaries:", {
+      start: businessDayStart.toISOString(),
+      end: businessDayEnd.toISOString(),
+      timezone: company?.timezone || "default",
+    });
+
     // Get tables stats
     const tablesCount = await prisma.table.count({
       where: { companyId },
@@ -63,25 +130,13 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Calculate total sales for today
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    // Debug logging
-    console.log("Dashboard Stats Debug:", {
-      companyId,
-      today: today.toISOString(),
-      tomorrow: tomorrow.toISOString(),
-    });
-
+    // Today's sales - filter by creation date within business day boundaries
     const todaySales = await prisma.posOrder.aggregate({
       where: {
         companyId,
         createdAt: {
-          gte: today,
-          lt: tomorrow,
+          gte: businessDayStart,
+          lte: businessDayEnd,
         },
         paymentStatus: "PAID",
       },
@@ -93,21 +148,23 @@ export async function GET(request: NextRequest) {
       where: {
         companyId,
         createdAt: {
-          gte: today,
-          lt: tomorrow,
+          gte: businessDayStart,
+          lte: businessDayEnd,
         },
       },
     });
 
-    // Get total revenue this month
-    const firstDayOfMonth = new Date();
-    firstDayOfMonth.setDate(1);
-    firstDayOfMonth.setHours(0, 0, 0, 0);
+    // Get total revenue this month using calendar month boundaries
+    const startOfMonth = getStartOfMonth();
+    const endOfMonth = getEndOfMonth();
 
     const monthSales = await prisma.posOrder.aggregate({
       where: {
         companyId,
-        createdAt: { gte: firstDayOfMonth },
+        createdAt: {
+          gte: startOfMonth,
+          lte: endOfMonth,
+        },
         paymentStatus: "PAID",
       },
       _sum: { amount: true },
@@ -117,7 +174,29 @@ export async function GET(request: NextRequest) {
     const monthOrdersCount = await prisma.posOrder.count({
       where: {
         companyId,
-        createdAt: { gte: firstDayOfMonth },
+        createdAt: {
+          gte: startOfMonth,
+          lte: endOfMonth,
+        },
+      },
+    });
+
+    // Additional debug logging for results
+    console.log("Dashboard Stats Results:", {
+      companyId,
+      todaySales: Number(todaySales._sum.amount || 0),
+      todayOrdersCount,
+      monthSales: Number(monthSales._sum.amount || 0),
+      monthOrdersCount,
+      dateRanges: {
+        businessDay: {
+          from: businessDayStart.toISOString(),
+          to: businessDayEnd.toISOString(),
+        },
+        month: {
+          from: startOfMonth.toISOString(),
+          to: endOfMonth.toISOString(),
+        },
       },
     });
 

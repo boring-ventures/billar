@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   Table,
   Users,
+  AlertCircle,
 } from "lucide-react";
 import {
   Card,
@@ -35,12 +36,20 @@ import { useCurrentUser } from "@/hooks/use-current-user";
 import { useDashboardStats } from "@/hooks/use-dashboard-stats";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQueryClient } from "@tanstack/react-query";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function DashboardPage() {
   const router = useRouter();
   const { profile, user, isLoading: isLoadingUser } = useCurrentUser();
-  const { data: stats, isLoading: isLoadingStats } = useDashboardStats();
+  const {
+    data: stats,
+    isLoading: isLoadingStats,
+    error: statsError,
+    refetch,
+  } = useDashboardStats();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // Redirect to sign-in if not authenticated
   useEffect(() => {
@@ -50,13 +59,38 @@ export default function DashboardPage() {
   }, [isLoadingUser, user, router]);
 
   // Function to refresh dashboard data
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     if (profile?.companyId) {
-      queryClient.invalidateQueries({ queryKey: ["dashboardStats"] });
-      queryClient.invalidateQueries({ queryKey: ["recentOrders"] });
-      queryClient.invalidateQueries({ queryKey: ["recentTableSessions"] });
-      queryClient.invalidateQueries({ queryKey: ["lowStockItems"] });
-      queryClient.invalidateQueries({ queryKey: ["salesSummary"] });
+      try {
+        // Show loading toast
+        toast({
+          title: "Actualizando datos...",
+          description: "Obteniendo la información más reciente",
+        });
+
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["dashboardStats"] }),
+          queryClient.invalidateQueries({ queryKey: ["recentOrders"] }),
+          queryClient.invalidateQueries({ queryKey: ["recentTableSessions"] }),
+          queryClient.invalidateQueries({ queryKey: ["lowStockItems"] }),
+          queryClient.invalidateQueries({ queryKey: ["salesSummary"] }),
+        ]);
+
+        // Success toast
+        toast({
+          title: "Datos actualizados",
+          description:
+            "La información del dashboard se ha actualizado correctamente",
+        });
+      } catch (error) {
+        console.error("Error refreshing dashboard:", error);
+        toast({
+          title: "Error al actualizar",
+          description:
+            "No se pudo actualizar la información. Inténtalo de nuevo.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -170,6 +204,25 @@ export default function DashboardPage() {
           </Button>
         </div>
       </div>
+
+      {/* Error Alert */}
+      {statsError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Error al cargar las estadísticas del dashboard. Por favor, intenta
+            actualizar la página o contacta al soporte técnico.
+            <Button
+              variant="outline"
+              size="sm"
+              className="ml-2"
+              onClick={() => refetch()}
+            >
+              Reintentar
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {isLoadingStats ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

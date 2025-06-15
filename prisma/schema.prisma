@@ -39,6 +39,12 @@ model Company {
   name                String
   address             String?
   phone               String?
+  businessHoursStart  String?             @map("business_hours_start") // Format: "HH:MM" (24-hour)
+  businessHoursEnd    String?             @map("business_hours_end")   // Format: "HH:MM" (24-hour)
+  timezone            String?             @default("America/La_Paz")   // Timezone for business hours
+  operatingDays       String?             @map("operating_days")       // JSON array of operating days ["MON", "TUE", ...]
+  individualDayHours  String?             @map("individual_day_hours") // JSON object with individual day configurations
+  useIndividualHours  Boolean?            @default(false) @map("use_individual_hours") // Whether to use individual day hours
   createdAt           DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
   expenses            Expense[]
   financialReports    FinancialReport[]

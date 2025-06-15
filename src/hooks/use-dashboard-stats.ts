@@ -34,14 +34,54 @@ export function useDashboardStats() {
       }
 
       const response = await fetch(
-        `/api/dashboard/stats?companyId=${companyId}`
+        `/api/dashboard/stats?companyId=${companyId}`,
+        {
+          method: "GET",
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        }
       );
+
       if (!response.ok) {
-        throw new Error("Failed to fetch dashboard stats");
+        const errorText = await response.text();
+        console.error("Dashboard stats fetch error:", {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText,
+          companyId,
+        });
+        throw new Error(
+          `Failed to fetch dashboard stats: ${response.status} ${response.statusText}`
+        );
       }
-      return response.json();
+
+      const data = await response.json();
+      console.log("Dashboard stats loaded:", {
+        companyId,
+        todaySales: data.todaySales,
+        todayOrdersCount: data.todayOrdersCount,
+        monthSales: data.monthSales,
+        monthOrdersCount: data.monthOrdersCount,
+      });
+
+      return data;
     },
     enabled: !!companyId && !isLoadingProfile,
+    staleTime: 1000 * 60 * 2, // Consider data stale after 2 minutes
+    refetchInterval: 1000 * 60 * 5, // Auto-refetch every 5 minutes for live updates
+    refetchOnWindowFocus: true, // Refetch when user returns to tab
+    retry: (failureCount, error) => {
+      // Don't retry if it's an authorization error
+      if (error instanceof Error && error.message.includes("401")) {
+        return false;
+      }
+      // Retry up to 3 times for other errors
+      return failureCount < 3;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 }
 

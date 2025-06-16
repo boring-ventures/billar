@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -105,7 +105,7 @@ export function FinancialReportClient() {
   }, [companiesData]);
 
   // Helper function to get the effective date range for API calls
-  const getEffectiveDateRange = () => {
+  const getEffectiveDateRange = useCallback(() => {
     if (reportType === "DAILY" && singleDate) {
       return {
         from: singleDate,
@@ -113,7 +113,7 @@ export function FinancialReportClient() {
       };
     }
     return dateRange;
-  };
+  }, [reportType, singleDate, dateRange]);
 
   // Fetch saved financial reports based on filters
   const {
@@ -208,7 +208,14 @@ export function FinancialReportClient() {
     ) {
       fetchLiveData();
     }
-  }, [selectedCompany, reportType, singleDate, dateRange, toast]);
+  }, [
+    selectedCompany,
+    reportType,
+    singleDate,
+    dateRange,
+    toast,
+    getEffectiveDateRange,
+  ]);
 
   // Get report data - prioritize live data if available, fall back to saved reports
   const reports = liveReportData || savedReports || [];

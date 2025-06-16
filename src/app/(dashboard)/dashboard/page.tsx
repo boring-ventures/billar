@@ -493,14 +493,14 @@ export default function DashboardPage() {
                     </div>
                     {companyBusinessHours.useIndividualHours ? (
                       <p className="text-xs text-muted-foreground mt-2">
-                        Usando horarios individuales por día. Las "Ventas de
-                        Hoy" incluyen todas las ventas del día actual de
+                        Usando horarios individuales por día. Las &quot;Ventas
+                        de Hoy&quot; incluyen todas las ventas del día actual de
                         negocio, incluso si cruzan medianoche.
                       </p>
                     ) : (
                       <p className="text-xs text-muted-foreground mt-2">
-                        Usando horarios generales. Las "Ventas de Hoy" se
-                        calculan desde la apertura hasta el cierre,
+                        Usando horarios generales. Las &quot;Ventas de Hoy&quot;
+                        se calculan desde la apertura hasta el cierre,
                         {companyBusinessHours.generalHours?.start &&
                           companyBusinessHours.generalHours?.end &&
                           companyBusinessHours.generalHours.end <
@@ -532,8 +532,9 @@ export default function DashboardPage() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Para calcular mejor las "Ventas de Hoy" según tu horario
-                      real de negocio, configura tus horarios de operación.
+                      Para calcular mejor las &quot;Ventas de Hoy&quot; según tu
+                      horario real de negocio, configura tus horarios de
+                      operación.
                     </p>
                     <Button asChild size="sm" className="w-full">
                       <Link href="/settings">Configurar Horarios Ahora</Link>

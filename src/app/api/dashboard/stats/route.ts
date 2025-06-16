@@ -3,13 +3,8 @@ import prisma from "@/lib/prisma";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import {
-  getStartOfDay,
-  getEndOfDay,
-  getStartOfMonth,
-  getEndOfMonth,
   getCurrentBusinessDay,
   parseOperatingDays,
-  type BusinessHours,
   parseIndividualDayHours,
   type CompanyBusinessHours,
 } from "@/lib/utils";
@@ -81,7 +76,9 @@ export async function GET(request: NextRequest) {
             start: company.businessHoursStart,
             end: company.businessHoursEnd,
             timezone: company.timezone || undefined,
-            operatingDays: parseOperatingDays(company.operatingDays),
+            operatingDays: parseOperatingDays(
+              company.operatingDays || undefined
+            ),
           },
         };
       }
@@ -153,6 +150,25 @@ export async function GET(request: NextRequest) {
         },
       },
     });
+
+    // Helper functions for calendar month boundaries
+    const getStartOfMonth = () => {
+      const now = new Date();
+      return new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    };
+
+    const getEndOfMonth = () => {
+      const now = new Date();
+      return new Date(
+        now.getFullYear(),
+        now.getMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+        999
+      );
+    };
 
     // Get total revenue this month using calendar month boundaries
     const startOfMonth = getStartOfMonth();

@@ -117,72 +117,68 @@ export async function PATCH(
       }
     }
 
-    // Validation for individual day hours JSON
+    // If individual day hours are provided, validate the JSON structure
     if (individualDayHours) {
-      console.log("Received individualDayHours:", individualDayHours);
+      let parsedIndividualHours: Record<
+        string,
+        { enabled: boolean; start?: string; end?: string }
+      >;
       try {
-        const parsedHours = JSON.parse(individualDayHours);
-        console.log("Parsed individualDayHours:", parsedHours);
+        parsedIndividualHours =
+          typeof individualDayHours === "string"
+            ? JSON.parse(individualDayHours)
+            : individualDayHours;
+      } catch (parseError) {
+        console.error("Individual day hours JSON parse error:", parseError);
+        return NextResponse.json(
+          { error: "Invalid individual day hours format" },
+          { status: 400 }
+        );
+      }
 
-        if (typeof parsedHours !== "object" || parsedHours === null) {
-          console.error("Invalid object type:", typeof parsedHours);
+      const validDays = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+
+      for (const [day, config] of Object.entries(parsedIndividualHours)) {
+        if (!validDays.includes(day)) {
           return NextResponse.json(
-            { error: "Individual day hours debe ser un objeto JSON válido" },
+            { error: `Invalid day: ${day}` },
             { status: 400 }
           );
         }
 
-        // Validate each day's structure
-        const validDays = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
-        for (const day of validDays) {
-          if (parsedHours[day]) {
-            const dayData = parsedHours[day];
-            console.log(`Validating ${day}:`, dayData);
+        if (typeof config !== "object" || typeof config.enabled !== "boolean") {
+          return NextResponse.json(
+            { error: `Invalid configuration for day ${day}` },
+            { status: 400 }
+          );
+        }
 
-            if (
-              typeof dayData !== "object" ||
-              typeof dayData.enabled !== "boolean" ||
-              (dayData.enabled && (!dayData.start || !dayData.end))
-            ) {
-              console.error(`Invalid structure for ${day}:`, dayData);
-              return NextResponse.json(
-                { error: `Estructura inválida para ${day}` },
-                { status: 400 }
-              );
-            }
-
-            // Validate time format if enabled
-            if (dayData.enabled) {
-              console.log(
-                `Validating times for ${day}: start=${dayData.start}, end=${dayData.end}`
-              );
-              if (
-                !/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(dayData.start) ||
-                !/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(dayData.end)
-              ) {
-                console.error(
-                  `Invalid time format for ${day}: start=${dayData.start}, end=${dayData.end}`
-                );
-                return NextResponse.json(
-                  { error: `Formato de tiempo inválido para ${day}` },
-                  { status: 400 }
-                );
-              }
-            }
+        if (config.enabled && config.start && config.end) {
+          const timeFormat = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+          if (!timeFormat.test(config.start) || !timeFormat.test(config.end)) {
+            return NextResponse.json(
+              {
+                error: `Invalid time format for day ${day}. Use HH:MM format.`,
+              },
+              { status: 400 }
+            );
           }
         }
-        console.log("Individual day hours validation passed");
-      } catch (parseError) {
-        console.error("JSON parse error:", parseError);
-        return NextResponse.json(
-          { error: "Individual day hours debe ser un JSON válido" },
-          { status: 400 }
-        );
       }
     }
 
     // Build the update data dynamically
-    const updateData: any = {};
+    const updateData: {
+      name?: string;
+      address?: string;
+      phone?: string;
+      businessHoursStart?: string;
+      businessHoursEnd?: string;
+      timezone?: string;
+      operatingDays?: string;
+      individualDayHours?: string;
+      useIndividualHours?: boolean;
+    } = {};
 
     if (name !== undefined) updateData.name = name;
     if (address !== undefined) updateData.address = address;
@@ -220,9 +216,9 @@ export async function PATCH(
     } catch (prismaError) {
       console.error("Prisma update failed:", prismaError);
       console.error("Prisma error details:", {
-        code: (prismaError as any)?.code,
-        meta: (prismaError as any)?.meta,
-        message: (prismaError as any)?.message,
+        code: (prismaError as { code?: string })?.code,
+        meta: (prismaError as { meta?: unknown })?.meta,
+        message: (prismaError as { message?: string })?.message,
       });
       throw prismaError;
     }

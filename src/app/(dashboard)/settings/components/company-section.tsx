@@ -45,7 +45,6 @@ import {
   createDefaultIndividualHours,
   parseIndividualDayHours,
   stringifyIndividualDayHours,
-  type IndividualDayHours,
 } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -205,7 +204,46 @@ export function CompanySection() {
               operatingDays
             );
 
-          individualHoursForm.reset(individualHours);
+          // Convert to the form's expected type structure
+          const formData: IndividualBusinessHoursFormValues = {
+            MON: individualHours.MON || {
+              start: "08:00",
+              end: "18:00",
+              enabled: true,
+            },
+            TUE: individualHours.TUE || {
+              start: "08:00",
+              end: "18:00",
+              enabled: true,
+            },
+            WED: individualHours.WED || {
+              start: "08:00",
+              end: "18:00",
+              enabled: true,
+            },
+            THU: individualHours.THU || {
+              start: "08:00",
+              end: "18:00",
+              enabled: true,
+            },
+            FRI: individualHours.FRI || {
+              start: "08:00",
+              end: "18:00",
+              enabled: true,
+            },
+            SAT: individualHours.SAT || {
+              start: "08:00",
+              end: "18:00",
+              enabled: true,
+            },
+            SUN: individualHours.SUN || {
+              start: "08:00",
+              end: "18:00",
+              enabled: true,
+            },
+          };
+
+          individualHoursForm.reset(formData);
           setUseIndividualHours(data.useIndividualHours || false);
         }
       } catch (error) {
@@ -221,7 +259,7 @@ export function CompanySection() {
     };
 
     fetchCompany();
-  }, [profile?.companyId, form, businessHoursForm, toast]);
+  }, [profile?.companyId, form, businessHoursForm, individualHoursForm, toast]);
 
   const onSubmit = async (data: CompanyFormValues) => {
     if (!profile?.companyId || profile.role === UserRole.SELLER) {
@@ -431,9 +469,47 @@ export function CompanySection() {
           defaultIndividualHours
         );
 
-        individualHoursForm.reset(defaultIndividualHours);
+        // Convert to the form's expected type structure
+        const formData: IndividualBusinessHoursFormValues = {
+          MON: defaultIndividualHours.MON || {
+            start: "08:00",
+            end: "18:00",
+            enabled: true,
+          },
+          TUE: defaultIndividualHours.TUE || {
+            start: "08:00",
+            end: "18:00",
+            enabled: true,
+          },
+          WED: defaultIndividualHours.WED || {
+            start: "08:00",
+            end: "18:00",
+            enabled: true,
+          },
+          THU: defaultIndividualHours.THU || {
+            start: "08:00",
+            end: "18:00",
+            enabled: true,
+          },
+          FRI: defaultIndividualHours.FRI || {
+            start: "08:00",
+            end: "18:00",
+            enabled: true,
+          },
+          SAT: defaultIndividualHours.SAT || {
+            start: "08:00",
+            end: "18:00",
+            enabled: true,
+          },
+          SUN: defaultIndividualHours.SUN || {
+            start: "08:00",
+            end: "18:00",
+            enabled: true,
+          },
+        };
 
-        await onSubmitIndividualHours(defaultIndividualHours);
+        individualHoursForm.reset(formData);
+        await onSubmitIndividualHours(formData);
       } else {
         // Switching to general mode
         const generalValues = businessHoursForm.getValues();
@@ -680,9 +756,9 @@ export function CompanySection() {
                   ¿Por qué configurar horarios de negocio?
                 </p>
                 <p>
-                  Los horarios configurados se usarán para calcular las "ventas
-                  de hoy" basándose en tu día laboral real, no en el día
-                  calendario (00:00-23:59).
+                  Los horarios configurados se usarán para calcular las
+                  &quot;ventas de hoy&quot; basándose en tu día laboral real, no
+                  en el día calendario (00:00-23:59).
                 </p>
               </div>
             </div>
@@ -805,8 +881,9 @@ export function CompanySection() {
                         </div>
                         <FormDescription>
                           Los horarios de trabajo afectan los cálculos de
-                          "Ventas de Hoy" en el dashboard. Si no se configuran,
-                          se usará el día calendario completo (00:00 - 23:59).
+                          &quot;Ventas de Hoy&quot; en el dashboard. Si no se
+                          configuran, se usará el día calendario completo (00:00
+                          - 23:59).
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -881,12 +958,14 @@ export function CompanySection() {
                             </Button>
                             <FormField
                               control={individualHoursForm.control}
-                              name={`${day.value}.enabled` as any}
+                              name={
+                                `${day.value}.enabled` as `${keyof IndividualBusinessHoursFormValues}.enabled`
+                              }
                               render={({ field }) => (
                                 <FormItem>
                                   <FormControl>
                                     <Checkbox
-                                      checked={field.value}
+                                      checked={field.value as boolean}
                                       onCheckedChange={field.onChange}
                                     />
                                   </FormControl>
@@ -899,7 +978,9 @@ export function CompanySection() {
                         <div className="grid grid-cols-2 gap-4 pl-4">
                           <FormField
                             control={individualHoursForm.control}
-                            name={`${day.value}.start` as any}
+                            name={
+                              `${day.value}.start` as `${keyof IndividualBusinessHoursFormValues}.start`
+                            }
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel className="text-xs">
@@ -911,7 +992,7 @@ export function CompanySection() {
                                     {...field}
                                     disabled={
                                       !individualHoursForm.watch(
-                                        `${day.value}.enabled` as any
+                                        `${day.value}.enabled` as `${keyof IndividualBusinessHoursFormValues}.enabled`
                                       )
                                     }
                                   />
@@ -923,7 +1004,9 @@ export function CompanySection() {
 
                           <FormField
                             control={individualHoursForm.control}
-                            name={`${day.value}.end` as any}
+                            name={
+                              `${day.value}.end` as `${keyof IndividualBusinessHoursFormValues}.end`
+                            }
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel className="text-xs">
@@ -935,7 +1018,7 @@ export function CompanySection() {
                                     {...field}
                                     disabled={
                                       !individualHoursForm.watch(
-                                        `${day.value}.enabled` as any
+                                        `${day.value}.enabled` as `${keyof IndividualBusinessHoursFormValues}.enabled`
                                       )
                                     }
                                   />
@@ -953,10 +1036,9 @@ export function CompanySection() {
 
                   <div className="bg-muted p-3 rounded-md">
                     <p className="text-sm text-muted-foreground">
-                      Los horarios individuales permiten configurar diferentes
-                      horarios para cada día de la semana. Esto afecta los
-                      cálculos de "Ventas de Hoy" en el dashboard usando los
-                      horarios específicos de cada día.
+                      Configura horarios específicos para cada día. Las
+                      &quot;Ventas de Hoy&quot; se calcularán según el día
+                      actual del negocio.
                     </p>
                   </div>
 

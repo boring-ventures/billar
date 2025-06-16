@@ -1,8 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { formatCurrency } from "@/lib/utils";
+import {
+  formatCurrency,
+  isWithinBusinessHours,
+  parseOperatingDays,
+  parseIndividualDayHours,
+  type CompanyBusinessHours,
+} from "@/lib/utils";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -17,6 +23,9 @@ import {
   Table,
   Users,
   AlertCircle,
+  Clock,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
 import {
   Card,
@@ -50,6 +59,116 @@ export default function DashboardPage() {
   } = useDashboardStats();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  const [businessStatus, setBusinessStatus] = useState<{
+    isOpen: boolean;
+    statusText: string;
+    nextChange?: string;
+  }>({ isOpen: false, statusText: "Verificando horarios..." });
+
+  const [companyBusinessHours, setCompanyBusinessHours] =
+    useState<CompanyBusinessHours | null>(null);
+
+  // Fetch company business hours
+  useEffect(() => {
+    const fetchCompanyBusinessHours = async () => {
+      if (!profile?.companyId) return;
+
+      try {
+        const response = await fetch(`/api/companies/${profile.companyId}`);
+        if (response.ok) {
+          const company = await response.json();
+
+          let businessConfig: CompanyBusinessHours | undefined;
+
+          if (company.useIndividualHours && company.individualDayHours) {
+            // Use individual day hours
+            businessConfig = {
+              useIndividualHours: true,
+              individualHours: parseIndividualDayHours(
+                company.individualDayHours
+              ),
+            };
+          } else if (company.businessHoursStart && company.businessHoursEnd) {
+            // Use general business hours
+            businessConfig = {
+              useIndividualHours: false,
+              generalHours: {
+                start: company.businessHoursStart,
+                end: company.businessHoursEnd,
+                timezone: company.timezone || "America/La_Paz",
+                operatingDays: parseOperatingDays(company.operatingDays),
+              },
+            };
+          }
+
+          setCompanyBusinessHours(businessConfig || null);
+        }
+      } catch (error) {
+        console.error("Error fetching company business hours:", error);
+      }
+    };
+
+    fetchCompanyBusinessHours();
+  }, [profile?.companyId]);
+
+  // Update business status every minute
+  useEffect(() => {
+    const updateBusinessStatus = () => {
+      if (!companyBusinessHours) {
+        setBusinessStatus({
+          isOpen: true, // Default to open if no hours configured
+          statusText: "Horarios no configurados",
+        });
+        return;
+      }
+
+      const now = new Date();
+      const isOpen = isWithinBusinessHours(now, companyBusinessHours);
+
+      // Get day of week for status text
+      const dayOfWeek = now
+        .toLocaleDateString("en-US", { weekday: "short" })
+        .toUpperCase();
+
+      let statusText = "";
+      if (
+        companyBusinessHours.useIndividualHours &&
+        companyBusinessHours.individualHours
+      ) {
+        const dayConfig = companyBusinessHours.individualHours[dayOfWeek];
+        if (!dayConfig?.enabled) {
+          statusText = "Cerrado hoy";
+        } else {
+          statusText = isOpen
+            ? `Abierto (${dayConfig.start} - ${dayConfig.end})`
+            : `Cerrado (${dayConfig.start} - ${dayConfig.end})`;
+        }
+      } else if (companyBusinessHours.generalHours) {
+        const { start, end, operatingDays } = companyBusinessHours.generalHours;
+        if (operatingDays && !operatingDays.includes(dayOfWeek)) {
+          statusText = "Cerrado hoy";
+        } else {
+          statusText = isOpen
+            ? `Abierto (${start} - ${end})`
+            : `Cerrado (${start} - ${end})`;
+        }
+      }
+
+      setBusinessStatus({
+        isOpen,
+        statusText,
+      });
+    };
+
+    // Update immediately
+    updateBusinessStatus();
+
+    // Update every minute
+    const interval = setInterval(updateBusinessStatus, 60000);
+
+    return () => clearInterval(interval);
+  }, [companyBusinessHours]);
 
   // Redirect to sign-in if not authenticated
   useEffect(() => {
@@ -181,16 +300,38 @@ export default function DashboardPage() {
     <div className="flex flex-col space-y-6 p-4 md:p-8">
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">
-              Panel de Control
-            </h2>
-            <p className="text-muted-foreground">
-              Bienvenido, {profile.firstName || "Usuario"}. Aquí tienes un
-              resumen de la actividad reciente de{" "}
-              {profile.companyId ? "tu empresa" : ""}.
-            </p>
+          <div className="flex items-center gap-4">
+            <div>
+              <h2 className="text-3xl font-bold tracking-tight">
+                Panel de Control
+              </h2>
+              <p className="text-muted-foreground">
+                Bienvenido, {profile.firstName || "Usuario"}. Aquí tienes un
+                resumen de la actividad reciente de{" "}
+                {profile.companyId ? "tu empresa" : ""}.
+              </p>
+            </div>
+
+            {/* Business Status Indicator */}
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-card">
+              {businessStatus.isOpen ? (
+                <CheckCircle className="h-4 w-4 text-green-500" />
+              ) : (
+                <XCircle className="h-4 w-4 text-red-500" />
+              )}
+              <div className="flex flex-col">
+                <span
+                  className={`text-sm font-medium ${businessStatus.isOpen ? "text-green-700" : "text-red-700"}`}
+                >
+                  {businessStatus.isOpen ? "Abierto" : "Cerrado"}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {businessStatus.statusText}
+                </span>
+              </div>
+            </div>
           </div>
+
           <Button
             variant="outline"
             size="sm"
@@ -255,7 +396,10 @@ export default function DashboardPage() {
                     {formatCurrency(stats?.todaySales || 0)}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {stats?.todayOrdersCount || 0} órdenes hoy
+                    {stats?.todayOrdersCount || 0} órdenes{" "}
+                    {companyBusinessHours
+                      ? "en el día actual de negocio"
+                      : "hoy"}
                   </p>
                 </CardContent>
               </Card>
@@ -319,6 +463,85 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Business Hours Info Card */}
+            {companyBusinessHours ? (
+              <Card className="border-blue-200 bg-blue-50/50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-blue-600" />
+                    Información del Día de Negocio
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-sm space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        Estado actual:
+                      </span>
+                      <span
+                        className={`font-medium ${businessStatus.isOpen ? "text-green-600" : "text-red-600"}`}
+                      >
+                        {businessStatus.isOpen ? "Abierto" : "Cerrado"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Horarios:</span>
+                      <span className="font-medium">
+                        {businessStatus.statusText}
+                      </span>
+                    </div>
+                    {companyBusinessHours.useIndividualHours ? (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Usando horarios individuales por día. Las "Ventas de
+                        Hoy" incluyen todas las ventas del día actual de
+                        negocio, incluso si cruzan medianoche.
+                      </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Usando horarios generales. Las "Ventas de Hoy" se
+                        calculan desde la apertura hasta el cierre,
+                        {companyBusinessHours.generalHours?.start &&
+                          companyBusinessHours.generalHours?.end &&
+                          companyBusinessHours.generalHours.end <
+                            companyBusinessHours.generalHours.start &&
+                          " incluyendo ventas después de medianoche."}
+                      </p>
+                    )}
+                  </div>
+                  <CardFooter className="p-0 pt-3">
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                    >
+                      <Link href="/settings">Configurar Horarios</Link>
+                    </Button>
+                  </CardFooter>
+                </CardContent>
+              </Card>
+            ) : (
+              businessStatus.statusText === "Horarios no configurados" && (
+                <Card className="border-amber-200 bg-amber-50/50">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-amber-600" />
+                      Horarios de Negocio No Configurados
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Para calcular mejor las "Ventas de Hoy" según tu horario
+                      real de negocio, configura tus horarios de operación.
+                    </p>
+                    <Button asChild size="sm" className="w-full">
+                      <Link href="/settings">Configurar Horarios Ahora</Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              )
+            )}
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
               <Card className="col-span-4">

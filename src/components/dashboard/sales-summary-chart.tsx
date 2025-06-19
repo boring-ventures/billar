@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Loader2, Info } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import {
   Bar,
@@ -37,6 +37,24 @@ export function SalesSummaryChart({ companyId }: SalesSummaryChartProps) {
       return response.json();
     },
   });
+
+  // Fetch company business hours to determine if business day filtering is active
+  const { data: company } = useQuery({
+    queryKey: ["companyBusinessHours", companyId],
+    queryFn: async () => {
+      const response = await fetch(`/api/companies/${companyId}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch company data");
+      }
+      return response.json();
+    },
+    enabled: !!companyId,
+  });
+
+  const hasBusinessHours =
+    company &&
+    ((company.useIndividualHours && company.individualDayHours) ||
+      (company.businessHoursStart && company.businessHoursEnd));
 
   if (isLoading) {
     return (
@@ -106,6 +124,14 @@ export function SalesSummaryChart({ companyId }: SalesSummaryChartProps) {
         <div className="text-center text-sm text-muted-foreground pt-2">
           No hay datos de ventas disponibles para mostrar.
         </div>
+        {hasBusinessHours && (
+          <div className="flex items-center justify-center gap-1 mt-2 text-xs text-blue-600">
+            <Info className="h-3 w-3" />
+            <span>
+              Datos filtrados por días de negocio según horarios configurados
+            </span>
+          </div>
+        )}
       </div>
     );
   }
@@ -159,6 +185,14 @@ export function SalesSummaryChart({ companyId }: SalesSummaryChartProps) {
           <Legend />
         </BarChart>
       </ResponsiveContainer>
+      {hasBusinessHours && (
+        <div className="flex items-center justify-center gap-1 mt-2 text-xs text-blue-600">
+          <Info className="h-3 w-3" />
+          <span>
+            Datos filtrados por días de negocio según horarios configurados
+          </span>
+        </div>
+      )}
     </div>
   );
 }

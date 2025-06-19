@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
+import {
+  getCurrentBusinessDay,
+  parseOperatingDays,
+  parseIndividualDayHours,
+  type CompanyBusinessHours,
+} from "@/lib/utils";
 
 // Define interface for date range items
 interface DateRangeItem {
@@ -51,6 +57,45 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Get company for business hours configuration
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: {
+        businessHoursStart: true,
+        businessHoursEnd: true,
+        timezone: true,
+        operatingDays: true,
+        individualDayHours: true,
+        useIndividualHours: true,
+      },
+    });
+
+    // Set up business configuration
+    let businessConfig: CompanyBusinessHours | undefined;
+
+    if (company) {
+      if (company.useIndividualHours && company.individualDayHours) {
+        // Use individual day hours
+        businessConfig = {
+          useIndividualHours: true,
+          individualHours: parseIndividualDayHours(company.individualDayHours),
+        };
+      } else if (company.businessHoursStart && company.businessHoursEnd) {
+        // Use general business hours
+        businessConfig = {
+          useIndividualHours: false,
+          generalHours: {
+            start: company.businessHoursStart,
+            end: company.businessHoursEnd,
+            timezone: company.timezone || undefined,
+            operatingDays: parseOperatingDays(
+              company.operatingDays || undefined
+            ),
+          },
+        };
+      }
+    }
+
     let startDate: Date;
     let endDate: Date;
 
@@ -65,24 +110,68 @@ export async function GET(request: NextRequest) {
         endDate.setHours(23, 59, 59, 999);
       }
     } else {
-      // Use the existing "days ago" logic
-      const now = new Date();
+      // Use business day logic for calculating date ranges
+      if (businessConfig) {
+        // For single day reports, use current business day
+        if (days === 1) {
+          const { start: businessDayStart, end: businessDayEnd } =
+            getCurrentBusinessDay(businessConfig);
+          startDate = businessDayStart;
+          endDate = businessDayEnd;
+        } else {
+          // For multi-day reports, calculate business days backwards
+          const currentBusinessDay = getCurrentBusinessDay(businessConfig);
+          endDate = currentBusinessDay.end;
 
-      // For single day reports, use today's date range
-      if (days === 1) {
-        startDate = new Date(now);
-        startDate.setHours(0, 0, 0, 0);
+          // Calculate start date by going back 'days' business days
+          startDate = new Date(currentBusinessDay.start);
+          startDate.setDate(startDate.getDate() - (days - 1));
 
-        endDate = new Date(now);
-        endDate.setHours(23, 59, 59, 999);
+          // If we have individual hours, we need to find the start of that business day
+          if (
+            businessConfig.useIndividualHours &&
+            businessConfig.individualHours
+          ) {
+            const startDayOfWeek = startDate
+              .toLocaleDateString("en-US", { weekday: "short" })
+              .toUpperCase();
+            const startDayConfig =
+              businessConfig.individualHours[startDayOfWeek];
+
+            if (startDayConfig?.enabled) {
+              const [startHour, startMinute] = startDayConfig.start
+                .split(":")
+                .map(Number);
+              startDate.setHours(startHour, startMinute, 0, 0);
+            } else {
+              // If that day is not enabled, use midnight
+              startDate.setHours(0, 0, 0, 0);
+            }
+          } else if (businessConfig.generalHours) {
+            const [startHour, startMinute] = businessConfig.generalHours.start
+              .split(":")
+              .map(Number);
+            startDate.setHours(startHour, startMinute, 0, 0);
+          }
+        }
       } else {
-        // For multi-day reports
-        startDate = new Date(now);
-        startDate.setDate(startDate.getDate() - days + 1);
-        startDate.setHours(0, 0, 0, 0);
+        // Fallback to calendar day logic if no business hours configured
+        const now = new Date();
 
-        endDate = new Date(now);
-        endDate.setHours(23, 59, 59, 999);
+        if (days === 1) {
+          startDate = new Date(now);
+          startDate.setHours(0, 0, 0, 0);
+
+          endDate = new Date(now);
+          endDate.setHours(23, 59, 59, 999);
+        } else {
+          startDate = new Date(now);
+          startDate.setDate(startDate.getDate() - days + 1);
+          startDate.setHours(0, 0, 0, 0);
+
+          endDate = new Date(now);
+          endDate.setHours(23, 59, 59, 999);
+        }
       }
     }
 
@@ -101,6 +190,10 @@ export async function GET(request: NextRequest) {
       startDateParam,
       endDateParam,
       days,
+      hasBusinessConfig: !!businessConfig,
+      businessConfigType: businessConfig?.useIndividualHours
+        ? "individual"
+        : "general",
     });
 
     // Get all days between start and end date
@@ -174,14 +267,158 @@ export async function GET(request: NextRequest) {
       ),
     });
 
-    // Populate data into dateRange
+    // Helper function to determine which business day an order/session belongs to
+    const getBusinessDayForDate = (date: Date): Date => {
+      if (!businessConfig) {
+        // Fallback to calendar day
+        const calendarDay = new Date(date);
+        calendarDay.setHours(0, 0, 0, 0);
+        return calendarDay;
+      }
+
+      // For business day logic, we need to check if this time falls within a business day
+      // that might have started the previous calendar day
+
+      if (businessConfig.useIndividualHours && businessConfig.individualHours) {
+        // Check current day first
+        const currentDayOfWeek = date
+          .toLocaleDateString("en-US", { weekday: "short" })
+          .toUpperCase();
+        const currentDayConfig =
+          businessConfig.individualHours[currentDayOfWeek];
+
+        if (currentDayConfig?.enabled) {
+          const [startHour, startMinute] = currentDayConfig.start
+            .split(":")
+            .map(Number);
+          const [endHour, endMinute] = currentDayConfig.end
+            .split(":")
+            .map(Number);
+
+          const startTime = new Date(date);
+          startTime.setHours(startHour, startMinute, 0, 0);
+
+          const endTime = new Date(date);
+          if (endHour < startHour) {
+            // Crosses midnight - end time is next day
+            endTime.setDate(endTime.getDate() + 1);
+          }
+          endTime.setHours(endHour, endMinute, 59, 999);
+
+          if (date >= startTime && date <= endTime) {
+            // This date belongs to the current business day
+            return new Date(
+              date.getFullYear(),
+              date.getMonth(),
+              date.getDate()
+            );
+          }
+        }
+
+        // Check if it belongs to the previous day's business hours
+        const previousDay = new Date(date);
+        previousDay.setDate(previousDay.getDate() - 1);
+        const previousDayOfWeek = previousDay
+          .toLocaleDateString("en-US", { weekday: "short" })
+          .toUpperCase();
+        const previousDayConfig =
+          businessConfig.individualHours[previousDayOfWeek];
+
+        if (previousDayConfig?.enabled) {
+          const [startHour, startMinute] = previousDayConfig.start
+            .split(":")
+            .map(Number);
+          const [endHour, endMinute] = previousDayConfig.end
+            .split(":")
+            .map(Number);
+
+          if (endHour < startHour) {
+            // Previous day crosses midnight
+            const endTime = new Date(date);
+            endTime.setHours(endHour, endMinute, 59, 999);
+
+            const startTime = new Date(previousDay);
+            startTime.setHours(startHour, startMinute, 0, 0);
+
+            if (date <= endTime) {
+              // This belongs to the previous business day
+              return new Date(
+                previousDay.getFullYear(),
+                previousDay.getMonth(),
+                previousDay.getDate()
+              );
+            }
+          }
+        }
+      } else if (businessConfig.generalHours) {
+        const { start, end, operatingDays } = businessConfig.generalHours;
+        const [startHour, startMinute] = start.split(":").map(Number);
+        const [endHour, endMinute] = end.split(":").map(Number);
+
+        const currentDayOfWeek = date
+          .toLocaleDateString("en-US", { weekday: "short" })
+          .toUpperCase();
+
+        // Check if current day is operating day
+        if (!operatingDays || operatingDays.includes(currentDayOfWeek)) {
+          const startTime = new Date(date);
+          startTime.setHours(startHour, startMinute, 0, 0);
+
+          const endTime = new Date(date);
+          if (endHour < startHour) {
+            // Crosses midnight
+            endTime.setDate(endTime.getDate() + 1);
+          }
+          endTime.setHours(endHour, endMinute, 59, 999);
+
+          if (date >= startTime && date <= endTime) {
+            return new Date(
+              date.getFullYear(),
+              date.getMonth(),
+              date.getDate()
+            );
+          }
+        }
+
+        // Check previous day if it crosses midnight
+        if (endHour < startHour) {
+          const previousDay = new Date(date);
+          previousDay.setDate(previousDay.getDate() - 1);
+          const previousDayOfWeek = previousDay
+            .toLocaleDateString("en-US", { weekday: "short" })
+            .toUpperCase();
+
+          if (!operatingDays || operatingDays.includes(previousDayOfWeek)) {
+            const endTime = new Date(date);
+            endTime.setHours(endHour, endMinute, 59, 999);
+
+            if (date <= endTime) {
+              return new Date(
+                previousDay.getFullYear(),
+                previousDay.getMonth(),
+                previousDay.getDate()
+              );
+            }
+          }
+        }
+      }
+
+      // Fallback to calendar day if no match
+      const calendarDay = new Date(date);
+      calendarDay.setHours(0, 0, 0, 0);
+      return calendarDay;
+    };
+
+    // Populate data into dateRange based on business day logic
     posOrders.forEach((order) => {
       const orderDate = new Date(order.createdAt);
+      const businessDay = getBusinessDayForDate(orderDate);
+
       const index = dateRange.findIndex(
         (d) =>
-          d.year === orderDate.getFullYear() &&
-          d.month === orderDate.getMonth() &&
-          d.day === orderDate.getDate()
+          d.year === businessDay.getFullYear() &&
+          d.month === businessDay.getMonth() &&
+          d.day === businessDay.getDate()
       );
 
       if (index !== -1 && order.amount) {
@@ -193,11 +430,13 @@ export async function GET(request: NextRequest) {
       if (!session.endedAt) return;
 
       const sessionDate = new Date(session.endedAt);
+      const businessDay = getBusinessDayForDate(sessionDate);
+
       const index = dateRange.findIndex(
         (d) =>
-          d.year === sessionDate.getFullYear() &&
-          d.month === sessionDate.getMonth() &&
-          d.day === sessionDate.getDate()
+          d.year === businessDay.getFullYear() &&
+          d.month === businessDay.getMonth() &&
+          d.day === businessDay.getDate()
       );
 
       if (index !== -1 && session.totalCost) {

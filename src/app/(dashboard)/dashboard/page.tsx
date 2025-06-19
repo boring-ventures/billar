@@ -458,7 +458,8 @@ export default function DashboardPage() {
                     {formatCurrency(stats?.monthSales || 0)}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {stats?.monthOrdersCount || 0} órdenes este mes
+                    {stats?.monthOrdersCount || 0} órdenes{" "}
+                    {companyBusinessHours ? "este mes calendario" : "este mes"}
                   </p>
                 </CardContent>
               </Card>
@@ -494,18 +495,21 @@ export default function DashboardPage() {
                     {companyBusinessHours.useIndividualHours ? (
                       <p className="text-xs text-muted-foreground mt-2">
                         Usando horarios individuales por día. Las &quot;Ventas
-                        de Hoy&quot; incluyen todas las ventas del día actual de
-                        negocio, incluso si cruzan medianoche.
+                        de Hoy&quot; y el gráfico incluyen todas las ventas del
+                        día actual de negocio según sus horarios configurados.
+                        Si opera después de medianoche, esas ventas se incluyen
+                        en el día de negocio correspondiente.
                       </p>
                     ) : (
                       <p className="text-xs text-muted-foreground mt-2">
                         Usando horarios generales. Las &quot;Ventas de Hoy&quot;
-                        se calculan desde la apertura hasta el cierre,
+                        y el gráfico se calculan desde la apertura hasta el
+                        cierre del día de negocio.
                         {companyBusinessHours.generalHours?.start &&
                           companyBusinessHours.generalHours?.end &&
                           companyBusinessHours.generalHours.end <
                             companyBusinessHours.generalHours.start &&
-                          " incluyendo ventas después de medianoche."}
+                          " Las ventas después de medianoche se incluyen en el día de negocio correspondiente."}
                       </p>
                     )}
                   </div>

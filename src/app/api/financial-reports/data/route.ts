@@ -3,6 +3,13 @@ import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import prisma from "@/lib/prisma";
 import { Decimal } from "decimal.js";
+import {
+  parseOperatingDays,
+  parseIndividualDayHours,
+  type CompanyBusinessHours,
+  getBusinessDayStart,
+  getBusinessDayEnd,
+} from "@/lib/utils";
 
 export async function GET(request: NextRequest) {
   const supabase = createRouteHandlerClient({ cookies });
@@ -70,37 +77,123 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Parse dates and ensure proper time boundaries
-    const parsedStartDate = new Date(startDate);
-    parsedStartDate.setHours(0, 0, 0, 0); // Start of day
+    // Get company for business hours configuration
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: {
+        businessHoursStart: true,
+        businessHoursEnd: true,
+        timezone: true,
+        operatingDays: true,
+        individualDayHours: true,
+        useIndividualHours: true,
+      },
+    });
 
-    const parsedEndDate = new Date(endDate);
-    // If it's the same day or end date doesn't have time, set to end of day
-    if (parsedEndDate.getHours() === 0 && parsedEndDate.getMinutes() === 0) {
-      parsedEndDate.setHours(23, 59, 59, 999); // End of day
+    // Set up business configuration
+    let businessConfig: CompanyBusinessHours | undefined;
+
+    if (company) {
+      if (company.useIndividualHours && company.individualDayHours) {
+        // Use individual day hours
+        businessConfig = {
+          useIndividualHours: true,
+          individualHours: parseIndividualDayHours(company.individualDayHours),
+        };
+      } else if (company.businessHoursStart && company.businessHoursEnd) {
+        // Use general business hours
+        businessConfig = {
+          useIndividualHours: false,
+          generalHours: {
+            start: company.businessHoursStart,
+            end: company.businessHoursEnd,
+            timezone: company.timezone || undefined,
+            operatingDays: parseOperatingDays(
+              company.operatingDays || undefined
+            ),
+          },
+        };
+      }
+    }
+
+    let parsedStartDate: Date;
+    let parsedEndDate: Date;
+
+    // Handle daily reports with business day logic
+    if (reportType === "DAILY" && businessConfig) {
+      // Use the selected date, not today
+      const selectedDate = new Date(startDate);
+      const businessDayStart = getBusinessDayStart(
+        selectedDate,
+        businessConfig
+      );
+      const businessDayEnd = getBusinessDayEnd(selectedDate, businessConfig);
+      parsedStartDate = businessDayStart;
+      parsedEndDate = businessDayEnd;
+    } else {
+      // For custom reports or when no business config, use provided dates
+      parsedStartDate = new Date(startDate);
+      parsedEndDate = new Date(endDate);
+
+      // If custom report, dates already include time from frontend
+      // If it's the same day or end date doesn't have time, set to end of day
+      if (reportType === "DAILY") {
+        parsedStartDate.setHours(0, 0, 0, 0);
+        if (
+          parsedEndDate.getHours() === 0 &&
+          parsedEndDate.getMinutes() === 0
+        ) {
+          parsedEndDate.setHours(23, 59, 59, 999);
+        }
+      }
     }
 
     // Calculate report name based on type and date range
     let reportName = "";
     switch (reportType) {
       case "DAILY":
-        reportName = `Reporte Diario ${parsedStartDate.toLocaleDateString()}`;
+        if (businessConfig) {
+          reportName = `Reporte Diario de Negocio ${parsedStartDate.toLocaleDateString()}`;
+        } else {
+          reportName = `Reporte Diario ${parsedStartDate.toLocaleDateString()}`;
+        }
         break;
-      case "WEEKLY":
-        reportName = `Reporte Semanal ${parsedStartDate.toLocaleDateString()} - ${parsedEndDate.toLocaleDateString()}`;
-        break;
-      case "MONTHLY":
-        reportName = `Reporte Mensual ${parsedStartDate.toLocaleDateString("es-ES", { month: "long", year: "numeric" })}`;
-        break;
-      case "QUARTERLY":
-        reportName = `Reporte Trimestral ${Math.ceil((parsedStartDate.getMonth() + 1) / 3)} ${parsedStartDate.getFullYear()}`;
-        break;
-      case "ANNUAL":
-        reportName = `Reporte Anual ${parsedStartDate.getFullYear()}`;
+      case "CUSTOM":
+        reportName = `Reporte Personalizado ${parsedStartDate.toLocaleDateString()} - ${parsedEndDate.toLocaleDateString()}`;
         break;
       default:
         reportName = `Reporte Personalizado ${parsedStartDate.toLocaleDateString()} - ${parsedEndDate.toLocaleDateString()}`;
     }
+
+    console.log("Financial Report Debug:", {
+      companyId,
+      reportType,
+      originalStart: startDate,
+      originalEnd: endDate,
+      parsedStartDate: parsedStartDate.toISOString(),
+      parsedEndDate: parsedEndDate.toISOString(),
+      hasBusinessConfig: !!businessConfig,
+      businessConfigType: businessConfig?.useIndividualHours
+        ? "individual"
+        : "general",
+    });
+
+    // First, let's check if there are any POS orders for this company at all
+    const totalOrdersCount = await prisma.posOrder.count({
+      where: {
+        companyId,
+        paymentStatus: "PAID",
+      },
+    });
+
+    console.log("Data Availability Debug:", {
+      companyId,
+      totalPaidOrders: totalOrdersCount,
+      queryDateRange: {
+        from: parsedStartDate.toISOString(),
+        to: parsedEndDate.toISOString(),
+      },
+    });
 
     // Calculate financial data from POS orders (sales income)
     const posOrders = await prisma.posOrder.findMany({
@@ -115,6 +208,21 @@ export async function GET(request: NextRequest) {
       include: {
         orderItems: true,
       },
+    });
+
+    console.log("POS Orders Debug:", {
+      companyId,
+      dateRange: {
+        from: parsedStartDate.toISOString(),
+        to: parsedEndDate.toISOString(),
+      },
+      foundOrders: posOrders.length,
+      orderSamples: posOrders.slice(0, 3).map((order) => ({
+        id: order.id,
+        amount: order.amount,
+        createdAt: order.createdAt.toISOString(),
+        paymentStatus: order.paymentStatus,
+      })),
     });
 
     // Calculate sales income from POS orders
@@ -137,6 +245,22 @@ export async function GET(request: NextRequest) {
           companyId,
         },
       },
+    });
+
+    console.log("Table Sessions Debug:", {
+      companyId,
+      dateRange: {
+        from: parsedStartDate.toISOString(),
+        to: parsedEndDate.toISOString(),
+      },
+      foundSessions: tableSessions.length,
+      sessionSamples: tableSessions.slice(0, 3).map((session) => ({
+        id: session.id,
+        totalCost: session.totalCost,
+        startedAt: session.startedAt.toISOString(),
+        endedAt: session.endedAt?.toISOString(),
+        status: session.status,
+      })),
     });
 
     const tableRentIncome = tableSessions.reduce((total, session) => {
@@ -267,6 +391,24 @@ export async function GET(request: NextRequest) {
       .plus(utilityCost)
       .plus(otherExpenses);
     const netProfit = totalIncome.minus(totalExpense);
+
+    console.log("Final Calculations Debug:", {
+      companyId,
+      reportType,
+      calculations: {
+        salesIncome: salesIncome.toFixed(2),
+        tableRentIncome: tableRentIncome.toFixed(2),
+        otherIncome: otherIncome.toFixed(2),
+        totalIncome: totalIncome.toFixed(2),
+        inventoryCost: inventoryCost.toFixed(2),
+        totalMaintenanceCost: totalMaintenanceCost.toFixed(2),
+        staffCost: staffCost.toFixed(2),
+        utilityCost: utilityCost.toFixed(2),
+        otherExpenses: otherExpenses.toFixed(2),
+        totalExpense: totalExpense.toFixed(2),
+        netProfit: netProfit.toFixed(2),
+      },
+    });
 
     // Generate a unique ID for this temporary report
     const tempId = `temp-${Date.now()}`;

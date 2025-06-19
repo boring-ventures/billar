@@ -128,7 +128,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Today's sales - filter by creation date within business day boundaries
-    const todaySales = await prisma.posOrder.aggregate({
+    const todayPOSSales = await prisma.posOrder.aggregate({
       where: {
         companyId,
         createdAt: {
@@ -139,6 +139,25 @@ export async function GET(request: NextRequest) {
       },
       _sum: { amount: true },
     });
+
+    // Today's table rental income
+    const todayTableIncome = await prisma.tableSession.aggregate({
+      where: {
+        table: { companyId },
+        endedAt: {
+          not: null,
+          gte: businessDayStart,
+          lte: businessDayEnd,
+        },
+        status: "COMPLETED",
+      },
+      _sum: { totalCost: true },
+    });
+
+    // Calculate total today's sales (POS + Table rentals)
+    const todaySales =
+      Number(todayPOSSales._sum.amount || 0) +
+      Number(todayTableIncome._sum.totalCost || 0);
 
     // Count today's orders
     const todayOrdersCount = await prisma.posOrder.count({
@@ -174,7 +193,8 @@ export async function GET(request: NextRequest) {
     const startOfMonth = getStartOfMonth();
     const endOfMonth = getEndOfMonth();
 
-    const monthSales = await prisma.posOrder.aggregate({
+    // POS sales for this month
+    const monthPOSSales = await prisma.posOrder.aggregate({
       where: {
         companyId,
         createdAt: {
@@ -185,6 +205,25 @@ export async function GET(request: NextRequest) {
       },
       _sum: { amount: true },
     });
+
+    // Table rental income for this month
+    const monthTableIncome = await prisma.tableSession.aggregate({
+      where: {
+        table: { companyId },
+        endedAt: {
+          not: null,
+          gte: startOfMonth,
+          lte: endOfMonth,
+        },
+        status: "COMPLETED",
+      },
+      _sum: { totalCost: true },
+    });
+
+    // Calculate total monthly sales (POS + Table rentals)
+    const monthSales =
+      Number(monthPOSSales._sum.amount || 0) +
+      Number(monthTableIncome._sum.totalCost || 0);
 
     // Count this month's orders
     const monthOrdersCount = await prisma.posOrder.count({
@@ -200,9 +239,13 @@ export async function GET(request: NextRequest) {
     // Additional debug logging for results
     console.log("Dashboard Stats Results:", {
       companyId,
-      todaySales: Number(todaySales._sum.amount || 0),
+      todayPOSSales: Number(todayPOSSales._sum.amount || 0),
+      todayTableIncome: Number(todayTableIncome._sum.totalCost || 0),
+      todaySales,
       todayOrdersCount,
-      monthSales: Number(monthSales._sum.amount || 0),
+      monthPOSSales: Number(monthPOSSales._sum.amount || 0),
+      monthTableIncome: Number(monthTableIncome._sum.totalCost || 0),
+      monthSales,
       monthOrdersCount,
       dateRanges: {
         businessDay: {
@@ -222,8 +265,8 @@ export async function GET(request: NextRequest) {
       activeSessionsCount,
       inventoryItemsCount,
       lowStockItemsCount,
-      todaySales: Number(todaySales._sum.amount || 0),
-      monthSales: Number(monthSales._sum.amount || 0),
+      todaySales,
+      monthSales,
       todayOrdersCount,
       monthOrdersCount,
     });

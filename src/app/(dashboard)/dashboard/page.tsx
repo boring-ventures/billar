@@ -387,7 +387,7 @@ export default function DashboardPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">
-                    Ventas de Hoy
+                    Ingresos de Hoy
                   </CardTitle>
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
@@ -396,7 +396,7 @@ export default function DashboardPage() {
                     {formatCurrency(stats?.todaySales || 0)}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {stats?.todayOrdersCount || 0} órdenes{" "}
+                    POS + Mesas | {stats?.todayOrdersCount || 0} órdenes{" "}
                     {companyBusinessHours
                       ? "en el día actual de negocio"
                       : "hoy"}
@@ -449,7 +449,7 @@ export default function DashboardPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">
-                    Ventas del Mes
+                    Ingresos del Mes
                   </CardTitle>
                   <BarChart3 className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
@@ -458,7 +458,7 @@ export default function DashboardPage() {
                     {formatCurrency(stats?.monthSales || 0)}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {stats?.monthOrdersCount || 0} órdenes{" "}
+                    POS + Mesas | {stats?.monthOrdersCount || 0} órdenes{" "}
                     {companyBusinessHours ? "este mes calendario" : "este mes"}
                   </p>
                 </CardContent>
@@ -494,22 +494,24 @@ export default function DashboardPage() {
                     </div>
                     {companyBusinessHours.useIndividualHours ? (
                       <p className="text-xs text-muted-foreground mt-2">
-                        Usando horarios individuales por día. Las &quot;Ventas
-                        de Hoy&quot; y el gráfico incluyen todas las ventas del
-                        día actual de negocio según sus horarios configurados.
-                        Si opera después de medianoche, esas ventas se incluyen
-                        en el día de negocio correspondiente.
+                        Usando horarios individuales por día. Los &quot;Ingresos
+                        de Hoy&quot; y el gráfico incluyen todas las ventas POS
+                        y alquiler de mesas del día actual de negocio según sus
+                        horarios configurados. Si opera después de medianoche,
+                        esos ingresos se incluyen en el día de negocio
+                        correspondiente.
                       </p>
                     ) : (
                       <p className="text-xs text-muted-foreground mt-2">
-                        Usando horarios generales. Las &quot;Ventas de Hoy&quot;
-                        y el gráfico se calculan desde la apertura hasta el
-                        cierre del día de negocio.
+                        Usando horarios generales. Los &quot;Ingresos de
+                        Hoy&quot; y el gráfico se calculan desde la apertura
+                        hasta el cierre del día de negocio e incluyen ventas POS
+                        y alquiler de mesas.
                         {companyBusinessHours.generalHours?.start &&
                           companyBusinessHours.generalHours?.end &&
                           companyBusinessHours.generalHours.end <
                             companyBusinessHours.generalHours.start &&
-                          " Las ventas después de medianoche se incluyen en el día de negocio correspondiente."}
+                          " Los ingresos después de medianoche se incluyen en el día de negocio correspondiente."}
                       </p>
                     )}
                   </div>
@@ -536,8 +538,8 @@ export default function DashboardPage() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Para calcular mejor las &quot;Ventas de Hoy&quot; según tu
-                      horario real de negocio, configura tus horarios de
+                      Para calcular mejor los &quot;Ingresos de Hoy&quot; según
+                      tu horario real de negocio, configura tus horarios de
                       operación.
                     </p>
                     <Button asChild size="sm" className="w-full">
@@ -723,7 +725,7 @@ export default function DashboardPage() {
                       <div className="flex items-center">
                         <DollarSign className="mr-2 h-4 w-4 text-muted-foreground" />
                         <span className="text-sm font-medium">
-                          Ventas de Hoy
+                          Ingresos de Hoy
                         </span>
                       </div>
                       <div className="text-sm font-medium">
@@ -734,7 +736,7 @@ export default function DashboardPage() {
                       <div className="flex items-center">
                         <CreditCard className="mr-2 h-4 w-4 text-muted-foreground" />
                         <span className="text-sm font-medium">
-                          Ventas del Mes
+                          Ingresos del Mes
                         </span>
                       </div>
                       <div className="text-sm font-medium">

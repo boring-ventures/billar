@@ -196,6 +196,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Calculate financial data from POS orders (sales income)
+    // Only include standalone POS orders, not those linked to table sessions
     const posOrders = await prisma.posOrder.findMany({
       where: {
         companyId,
@@ -204,6 +205,7 @@ export async function GET(request: NextRequest) {
           lte: parsedEndDate,
         },
         paymentStatus: "PAID",
+        tableSessionId: null, // Only standalone orders, not linked to table sessions
       },
       include: {
         orderItems: true,
@@ -216,21 +218,23 @@ export async function GET(request: NextRequest) {
         from: parsedStartDate.toISOString(),
         to: parsedEndDate.toISOString(),
       },
-      foundOrders: posOrders.length,
+      foundStandaloneOrders: posOrders.length,
       orderSamples: posOrders.slice(0, 3).map((order) => ({
         id: order.id,
         amount: order.amount,
         createdAt: order.createdAt.toISOString(),
         paymentStatus: order.paymentStatus,
+        tableSessionId: order.tableSessionId,
       })),
+      note: "Only standalone POS orders (not linked to table sessions) to avoid double-counting.",
     });
 
-    // Calculate sales income from POS orders
+    // Calculate sales income from standalone POS orders only
     const salesIncome = posOrders.reduce((total, order) => {
       return total.plus(order.amount || 0);
     }, new Decimal(0));
 
-    // Calculate table rent income from table sessions
+    // Calculate table rent income from table sessions (includes session rental + any linked POS orders)
     const tableSessions = await prisma.tableSession.findMany({
       where: {
         startedAt: {
@@ -261,6 +265,7 @@ export async function GET(request: NextRequest) {
         endedAt: session.endedAt?.toISOString(),
         status: session.status,
       })),
+      note: "Table session totalCost includes session rental + any linked POS orders.",
     });
 
     const tableRentIncome = tableSessions.reduce((total, session) => {

@@ -218,7 +218,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Get POS orders aggregated by date
+    // Get POS orders aggregated by date (only standalone orders, not linked to table sessions)
     const posOrders = await prisma.posOrder.findMany({
       where: {
         companyId,
@@ -227,6 +227,7 @@ export async function GET(request: NextRequest) {
           lte: endDate,
         },
         paymentStatus: "PAID",
+        tableSessionId: null, // Only standalone orders, not linked to table sessions
       },
       select: {
         amount: true,
@@ -234,7 +235,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Get table sessions aggregated by date
+    // Get table sessions aggregated by date (totalCost includes session rental + any linked POS orders)
     const tableSessions = await prisma.tableSession.findMany({
       where: {
         table: {
@@ -255,9 +256,9 @@ export async function GET(request: NextRequest) {
 
     // Debug logging for retrieved data
     console.log("Retrieved data:", {
-      posOrdersCount: posOrders.length,
+      standalonePosOrdersCount: posOrders.length,
       tableSessionsCount: tableSessions.length,
-      posOrdersTotal: posOrders.reduce(
+      standalonePosOrdersTotal: posOrders.reduce(
         (sum, order) => sum + Number(order.amount || 0),
         0
       ),
@@ -265,6 +266,7 @@ export async function GET(request: NextRequest) {
         (sum, session) => sum + Number(session.totalCost || 0),
         0
       ),
+      note: "Fixed double-counting: POS orders now only include standalone orders (not linked to table sessions).",
     });
 
     // Helper function to determine which business day an order/session belongs to

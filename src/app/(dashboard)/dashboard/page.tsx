@@ -497,8 +497,9 @@ export default function DashboardPage() {
                         Usando horarios individuales por día. Los &quot;Ingresos
                         de Hoy&quot; y el gráfico incluyen todas las ventas POS
                         y alquiler de mesas del día actual de negocio según sus
-                        horarios configurados. Si opera después de medianoche,
-                        esos ingresos se incluyen en el día de negocio
+                        horarios configurados. Los gastos se registran durante
+                        todo el día. Si opera después de medianoche, esos
+                        ingresos se incluyen en el día de negocio
                         correspondiente.
                       </p>
                     ) : (
@@ -506,7 +507,8 @@ export default function DashboardPage() {
                         Usando horarios generales. Los &quot;Ingresos de
                         Hoy&quot; y el gráfico se calculan desde la apertura
                         hasta el cierre del día de negocio e incluyen ventas POS
-                        y alquiler de mesas.
+                        y alquiler de mesas. Los gastos se registran durante
+                        todo el día.
                         {companyBusinessHours.generalHours?.start &&
                           companyBusinessHours.generalHours?.end &&
                           companyBusinessHours.generalHours.end <
@@ -540,7 +542,8 @@ export default function DashboardPage() {
                     <p className="text-sm text-muted-foreground mb-3">
                       Para calcular mejor los &quot;Ingresos de Hoy&quot; según
                       tu horario real de negocio, configura tus horarios de
-                      operación.
+                      operación. Los gastos siempre se incluyen durante todo el
+                      día.
                     </p>
                     <Button asChild size="sm" className="w-full">
                       <Link href="/settings">Configurar Horarios Ahora</Link>

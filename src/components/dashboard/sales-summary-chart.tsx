@@ -128,7 +128,8 @@ export function SalesSummaryChart({ companyId }: SalesSummaryChartProps) {
           <div className="flex items-center justify-center gap-1 mt-2 text-xs text-blue-600">
             <Info className="h-3 w-3" />
             <span>
-              Datos filtrados por días de negocio según horarios configurados
+              Datos de ingresos filtrados por días de negocio según horarios
+              configurados
             </span>
           </div>
         )}
@@ -189,7 +190,8 @@ export function SalesSummaryChart({ companyId }: SalesSummaryChartProps) {
         <div className="flex items-center justify-center gap-1 mt-2 text-xs text-blue-600">
           <Info className="h-3 w-3" />
           <span>
-            Datos filtrados por días de negocio según horarios configurados
+            Datos de ingresos filtrados por días de negocio según horarios
+            configurados
           </span>
         </div>
       )}

@@ -745,7 +745,7 @@ export function CompanySection() {
             </CardTitle>
             <CardDescription>
               Configura los horarios de operación para mejorar el cálculo de
-              ventas diarias
+              ingresos diarios (no afecta a los gastos)
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -756,9 +756,10 @@ export function CompanySection() {
                   ¿Por qué configurar horarios de negocio?
                 </p>
                 <p>
-                  Los horarios configurados se usarán para calcular las
-                  &quot;ventas de hoy&quot; basándose en tu día laboral real, no
-                  en el día calendario (00:00-23:59).
+                  Los horarios configurados se usarán para calcular los
+                  &quot;ingresos de hoy&quot; basándose en tu día laboral real,
+                  no en el día calendario (00:00-23:59). Los gastos siempre
+                  incluyen todo el día.
                 </p>
               </div>
             </div>
@@ -881,9 +882,9 @@ export function CompanySection() {
                         </div>
                         <FormDescription>
                           Los horarios de trabajo afectan los cálculos de
-                          &quot;Ventas de Hoy&quot; en el dashboard. Si no se
-                          configuran, se usará el día calendario completo (00:00
-                          - 23:59).
+                          &quot;Ingresos de Hoy&quot; en el dashboard, no los
+                          gastos. Si no se configuran, se usará el día
+                          calendario completo (00:00 - 23:59).
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -1036,9 +1037,9 @@ export function CompanySection() {
 
                   <div className="bg-muted p-3 rounded-md">
                     <p className="text-sm text-muted-foreground">
-                      Configura horarios específicos para cada día. Las
-                      &quot;Ventas de Hoy&quot; se calcularán según el día
-                      actual del negocio.
+                      Configura horarios específicos para cada día. Los
+                      &quot;Ingresos de Hoy&quot; se calcularán según el día
+                      actual del negocio (los gastos incluyen todo el día).
                     </p>
                   </div>
 

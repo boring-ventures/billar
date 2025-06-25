@@ -118,8 +118,10 @@ export async function POST(request: NextRequest) {
 
     let parsedStartDate: Date;
     let parsedEndDate: Date;
+    let expenseStartDate: Date;
+    let expenseEndDate: Date;
 
-    // Handle daily reports with business day logic
+    // Handle daily reports with business day logic for INCOMES only
     if (reportType === "DAILY" && businessConfig) {
       // Use the selected date, not today
       const selectedDate = new Date(startDate);
@@ -128,10 +130,18 @@ export async function POST(request: NextRequest) {
         businessConfig
       );
       const businessDayEnd = getBusinessDayEnd(selectedDate, businessConfig);
+
+      // Business hours for income calculations (POS orders and table sessions)
       parsedStartDate = businessDayStart;
       parsedEndDate = businessDayEnd;
+
+      // Full calendar day for expense calculations (stock movements, maintenance, expenses)
+      expenseStartDate = new Date(selectedDate);
+      expenseStartDate.setHours(0, 0, 0, 0);
+      expenseEndDate = new Date(selectedDate);
+      expenseEndDate.setHours(23, 59, 59, 999);
     } else {
-      // For custom reports or when no business config, use provided dates
+      // For custom reports or when no business config, use provided dates for both
       parsedStartDate = new Date(startDate);
       parsedEndDate = new Date(endDate);
 
@@ -146,6 +156,10 @@ export async function POST(request: NextRequest) {
           parsedEndDate.setHours(23, 59, 59, 999);
         }
       }
+
+      // Use same dates for expenses
+      expenseStartDate = parsedStartDate;
+      expenseEndDate = parsedEndDate;
     }
 
     // Calculate the report name based on type and date range
@@ -170,8 +184,16 @@ export async function POST(request: NextRequest) {
       reportType,
       originalStart: startDate,
       originalEnd: endDate,
-      parsedStartDate: parsedStartDate.toISOString(),
-      parsedEndDate: parsedEndDate.toISOString(),
+      incomeDateRange: {
+        from: parsedStartDate.toISOString(),
+        to: parsedEndDate.toISOString(),
+        note: "Business hours applied for POS orders and table sessions",
+      },
+      expenseDateRange: {
+        from: expenseStartDate.toISOString(),
+        to: expenseEndDate.toISOString(),
+        note: "Full calendar day for stock movements, maintenance, and expenses",
+      },
       hasBusinessConfig: !!businessConfig,
       businessConfigType: businessConfig?.useIndividualHours
         ? "individual"
@@ -180,6 +202,7 @@ export async function POST(request: NextRequest) {
 
     // Calculate financial data from POS orders (sales income)
     // Only include standalone POS orders, not those linked to table sessions
+    // Use business hours for income data
     const posOrders = await prisma.posOrder.findMany({
       where: {
         companyId,
@@ -201,6 +224,7 @@ export async function POST(request: NextRequest) {
     }, new Decimal(0));
 
     // Calculate table rent income from table sessions (includes session rental + any linked POS orders)
+    // Use business hours for income data
     const tableSessions = await prisma.tableSession.findMany({
       where: {
         startedAt: {
@@ -222,11 +246,12 @@ export async function POST(request: NextRequest) {
     }, new Decimal(0));
 
     // Calculate inventory costs (purchases) - separate by item type
+    // Use full calendar day for expense data
     const stockMovements = await prisma.stockMovement.findMany({
       where: {
         createdAt: {
-          gte: parsedStartDate,
-          lte: parsedEndDate,
+          gte: expenseStartDate,
+          lte: expenseEndDate,
         },
         type: "PURCHASE",
         item: {
@@ -265,11 +290,12 @@ export async function POST(request: NextRequest) {
     const inventoryCost = saleItemsCost;
 
     // Calculate maintenance costs
+    // Use full calendar day for expense data
     const maintenances = await prisma.tableMaintenance.findMany({
       where: {
         maintenanceAt: {
-          gte: parsedStartDate,
-          lte: parsedEndDate,
+          gte: expenseStartDate,
+          lte: expenseEndDate,
         },
         table: {
           companyId,
@@ -282,12 +308,13 @@ export async function POST(request: NextRequest) {
     }, new Decimal(0));
 
     // Calculate expenses from the new Expense model
+    // Use full calendar day for expense data
     const expenses = await prisma.expense.findMany({
       where: {
         companyId,
         expenseDate: {
-          gte: parsedStartDate,
-          lte: parsedEndDate,
+          gte: expenseStartDate,
+          lte: expenseEndDate,
         },
       },
     });

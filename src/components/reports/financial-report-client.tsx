@@ -473,7 +473,7 @@ export function FinancialReportClient() {
                     <span>Diario</span>
                     {hasBusinessHours && (
                       <span className="text-xs text-blue-600">
-                        (Día de negocio)
+                        (Día de negocio para ingresos)
                       </span>
                     )}
                   </div>
@@ -500,7 +500,8 @@ export function FinancialReportClient() {
                   <div className="flex items-center gap-1 text-xs text-blue-600">
                     <Info className="h-3 w-3" />
                     <span>
-                      Reporte calculado según horarios de negocio configurados
+                      Ingresos calculados según horarios de negocio. Gastos
+                      incluyen todo el día.
                     </span>
                   </div>
                 )}

@@ -11,4 +11,5 @@ export interface Profile {
   firstName?: string;
   lastName?: string;
   role: UserRole;
-} 
+  companyId?: string | null;
+}

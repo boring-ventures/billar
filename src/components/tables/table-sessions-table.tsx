@@ -41,6 +41,7 @@ import {
 import { SessionDialog } from "./session-dialog";
 import { TableSessionsTableSkeleton } from "./table-sessions-table-skeleton";
 import { MoveSessionDialog } from "./move-session-dialog";
+import { useAuth } from "@/providers/auth-provider";
 
 interface TableSessionsTableProps {
   activeOnly?: boolean;
@@ -67,6 +68,7 @@ export function TableSessionsTable({
   activeOnly = false,
 }: TableSessionsTableProps) {
   const router = useRouter();
+  const { profile } = useAuth();
   const [statusFilter, setStatusFilter] = useState<string>(
     activeOnly ? "ACTIVE" : "all"
   );
@@ -83,11 +85,16 @@ export function TableSessionsTable({
     setStatusFilter(activeOnly ? "ACTIVE" : "all");
   }, [activeOnly]);
 
+  // Determine if user should see all company sessions or just their company's
+  const isSuperAdmin = profile?.role === "SUPERADMIN";
+  const companyId = isSuperAdmin ? undefined : profile?.companyId || undefined;
+
   const { data: sessions = [], isLoading } = useTableSessionsQuery({
     status:
       statusFilter === "all"
         ? undefined
         : (statusFilter as SessionStatus | undefined),
+    companyId,
   });
 
   const endSessionMutation = useEndTableSessionMutation();

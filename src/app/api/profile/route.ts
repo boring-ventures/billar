@@ -47,6 +47,14 @@ export async function GET() {
       // Fetch profile from the database
       const profile = await prisma.profile.findUnique({
         where: { userId },
+        include: {
+          company: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
       });
 
       if (!profile) {

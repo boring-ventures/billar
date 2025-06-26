@@ -33,6 +33,15 @@ export interface TableSession {
     amount: number;
     paymentStatus: string;
   }>;
+  trackedItems?: Array<{
+    id: string;
+    quantity: number;
+    unitPrice: number;
+    item: {
+      name: string;
+      price: number;
+    };
+  }>;
 }
 
 // API functions
@@ -275,12 +284,18 @@ export function useEndTableSessionMutation() {
         queryKey: ["table", data.tableId],
       });
 
-      // If the session has a total cost, redirect to POS to finalize payment
-      if (data.totalCost) {
+      // Check if we need to redirect to POS for payment
+      // This includes cases where:
+      // 1. Session has a total cost (table hourly rate > 0)
+      // 2. Session has tracked items that need to be paid for (even if table cost is 0)
+      const hasSessionCost = data.totalCost && data.totalCost > 0;
+      const hasTrackedItems = data.trackedItems && data.trackedItems.length > 0;
+
+      if (hasSessionCost || hasTrackedItems) {
         // Redirect to POS with the session ID as a parameter
         router.push(`/pos?tab=new&sessionId=${data.id}`);
       } else {
-        // Just go back to the table detail page if no cost
+        // Just go back to the table detail page if no cost and no items
         router.push(`/tables/${data.tableId}`);
       }
     },

@@ -128,8 +128,8 @@ export async function GET(request: NextRequest) {
     });
 
     // Today's sales - filter by creation date within business day boundaries
-    // Separate POS orders: standalone orders vs table session orders
-    const todayStandalonePOSSales = await prisma.posOrder.aggregate({
+    // Include ALL POS orders (both standalone and session-linked)
+    const todayAllPOSSales = await prisma.posOrder.aggregate({
       where: {
         companyId,
         createdAt: {
@@ -137,12 +137,12 @@ export async function GET(request: NextRequest) {
           lte: businessDayEnd,
         },
         paymentStatus: "PAID",
-        tableSessionId: null, // Only standalone orders, not linked to table sessions
+        // Remove tableSessionId: null filter to include ALL POS orders
       },
       _sum: { amount: true },
     });
 
-    // Today's table rental income (includes both session rental cost and any linked POS orders)
+    // Today's table rental income (pure table rental cost)
     const todayTableIncome = await prisma.tableSession.aggregate({
       where: {
         table: { companyId },
@@ -156,14 +156,9 @@ export async function GET(request: NextRequest) {
       _sum: { totalCost: true },
     });
 
-    // For table sessions, we need to get the total cost which includes:
-    // 1. Session rental cost (hourly rate * duration)
-    // 2. Any linked POS orders (food/drinks ordered for the table)
-    // This is already calculated in the totalCost field when the session ends
-
-    // Calculate total today's sales (Standalone POS + Table sessions with all their costs)
+    // Calculate total today's sales (All POS orders + Table rental income)
     const todaySales =
-      Number(todayStandalonePOSSales._sum.amount || 0) +
+      Number(todayAllPOSSales._sum.amount || 0) +
       Number(todayTableIncome._sum.totalCost || 0);
 
     // Count today's orders
@@ -200,8 +195,8 @@ export async function GET(request: NextRequest) {
     const startOfMonth = getStartOfMonth();
     const endOfMonth = getEndOfMonth();
 
-    // POS sales for this month
-    const monthPOSSales = await prisma.posOrder.aggregate({
+    // ALL POS sales for this month (both standalone and session-linked)
+    const monthAllPOSSales = await prisma.posOrder.aggregate({
       where: {
         companyId,
         createdAt: {
@@ -209,12 +204,12 @@ export async function GET(request: NextRequest) {
           lte: endOfMonth,
         },
         paymentStatus: "PAID",
-        tableSessionId: null, // Only standalone orders, not linked to table sessions
+        // Remove tableSessionId: null filter to include ALL POS orders
       },
       _sum: { amount: true },
     });
 
-    // Table rental income for this month (includes both session rental cost and any linked POS orders)
+    // Table rental income for this month (pure table rental cost)
     const monthTableIncome = await prisma.tableSession.aggregate({
       where: {
         table: { companyId },
@@ -228,9 +223,9 @@ export async function GET(request: NextRequest) {
       _sum: { totalCost: true },
     });
 
-    // Calculate total monthly sales (Standalone POS + Table sessions with all their costs)
+    // Calculate total monthly sales (All POS orders + Table rental income)
     const monthSales =
-      Number(monthPOSSales._sum.amount || 0) +
+      Number(monthAllPOSSales._sum.amount || 0) +
       Number(monthTableIncome._sum.totalCost || 0);
 
     // Count this month's orders
@@ -247,11 +242,11 @@ export async function GET(request: NextRequest) {
     // Additional debug logging for results
     console.log("Dashboard Stats Results:", {
       companyId,
-      todayStandalonePOSSales: Number(todayStandalonePOSSales._sum.amount || 0),
+      todayAllPOSSales: Number(todayAllPOSSales._sum.amount || 0),
       todayTableIncome: Number(todayTableIncome._sum.totalCost || 0),
       todaySales,
       todayOrdersCount,
-      monthStandalonePOSSales: Number(monthPOSSales._sum.amount || 0),
+      monthAllPOSSales: Number(monthAllPOSSales._sum.amount || 0),
       monthTableIncome: Number(monthTableIncome._sum.totalCost || 0),
       monthSales,
       monthOrdersCount,
@@ -265,7 +260,7 @@ export async function GET(request: NextRequest) {
           to: endOfMonth.toISOString(),
         },
       },
-      note: "Fixed double-counting: POS sales now only include standalone orders (not linked to table sessions). Table income includes session rental costs + any linked POS orders.",
+      note: "Fixed: POS sales now include ALL orders (both standalone and session-linked). Table income shows pure rental cost.",
     });
 
     // Return all stats together

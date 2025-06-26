@@ -201,7 +201,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Calculate financial data from POS orders (sales income)
-    // Only include standalone POS orders, not those linked to table sessions
+    // Include ALL POS orders, both standalone and linked to table sessions
     // Use business hours for income data
     const posOrders = await prisma.posOrder.findMany({
       where: {
@@ -211,14 +211,14 @@ export async function POST(request: NextRequest) {
           lte: parsedEndDate,
         },
         paymentStatus: "PAID",
-        tableSessionId: null, // Only standalone orders, not linked to table sessions
+        // Remove the tableSessionId: null filter to include ALL POS orders
       },
       include: {
         orderItems: true,
       },
     });
 
-    // Calculate sales income from standalone POS orders only
+    // Calculate sales income from ALL POS orders (both standalone and session-linked)
     const salesIncome = posOrders.reduce((total, order) => {
       return total.plus(order.amount || 0);
     }, new Decimal(0));

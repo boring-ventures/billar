@@ -218,7 +218,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Get POS orders aggregated by date (only standalone orders, not linked to table sessions)
+    // Get POS orders aggregated by date (include ALL orders)
     const posOrders = await prisma.posOrder.findMany({
       where: {
         companyId,
@@ -227,15 +227,16 @@ export async function GET(request: NextRequest) {
           lte: endDate,
         },
         paymentStatus: "PAID",
-        tableSessionId: null, // Only standalone orders, not linked to table sessions
+        // Remove the tableSessionId: null filter to include ALL POS orders
       },
       select: {
         amount: true,
         createdAt: true,
+        tableSessionId: true, // Include this to track session-linked orders
       },
     });
 
-    // Get table sessions aggregated by date (totalCost includes session rental + any linked POS orders)
+    // Get table sessions aggregated by date (totalCost is pure table rental cost)
     const tableSessions = await prisma.tableSession.findMany({
       where: {
         table: {
@@ -256,9 +257,15 @@ export async function GET(request: NextRequest) {
 
     // Debug logging for retrieved data
     console.log("Retrieved data:", {
-      standalonePosOrdersCount: posOrders.length,
+      allPosOrdersCount: posOrders.length,
+      standalonePosOrdersCount: posOrders.filter(
+        (order) => !order.tableSessionId
+      ).length,
+      sessionLinkedPosOrdersCount: posOrders.filter(
+        (order) => !!order.tableSessionId
+      ).length,
       tableSessionsCount: tableSessions.length,
-      standalonePosOrdersTotal: posOrders.reduce(
+      allPosOrdersTotal: posOrders.reduce(
         (sum, order) => sum + Number(order.amount || 0),
         0
       ),
@@ -266,7 +273,7 @@ export async function GET(request: NextRequest) {
         (sum, session) => sum + Number(session.totalCost || 0),
         0
       ),
-      note: "Fixed double-counting: POS orders now only include standalone orders (not linked to table sessions).",
+      note: "Fixed: POS orders now include ALL orders (both standalone and session-linked). Table sessions show pure rental cost.",
     });
 
     // Helper function to determine which business day an order/session belongs to

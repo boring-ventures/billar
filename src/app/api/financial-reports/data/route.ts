@@ -210,7 +210,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Calculate financial data from POS orders (sales income)
-    // Include ALL POS orders, both standalone and linked to table sessions
+    // Include ALL POS orders, both standalone and session-linked
     // Use business hours for income data
     const posOrders = await prisma.posOrder.findMany({
       where: {
@@ -220,7 +220,6 @@ export async function GET(request: NextRequest) {
           lte: parsedEndDate,
         },
         paymentStatus: "PAID",
-        // Remove the tableSessionId: null filter to include ALL POS orders
       },
       include: {
         orderItems: true,
@@ -237,12 +236,7 @@ export async function GET(request: NextRequest) {
         from: expenseStartDate.toISOString(),
         to: expenseEndDate.toISOString(),
       },
-      foundAllOrders: posOrders.length,
-      standalonOrdersCount: posOrders.filter((order) => !order.tableSessionId)
-        .length,
-      sessionLinkedOrdersCount: posOrders.filter(
-        (order) => !!order.tableSessionId
-      ).length,
+      foundOrders: posOrders.length,
       orderSamples: posOrders.slice(0, 3).map((order) => ({
         id: order.id,
         amount: order.amount,
@@ -250,13 +244,42 @@ export async function GET(request: NextRequest) {
         paymentStatus: order.paymentStatus,
         tableSessionId: order.tableSessionId,
       })),
-      note: "Now including ALL POS orders (both standalone and session-linked) in sales income. Table rent income remains pure table rental cost.",
+      note: "FIXED: Sales income now includes ALL POS orders (both standalone and session-linked). Table rent income is calculated separately from table sessions.",
     });
 
-    // Calculate sales income from ALL POS orders (both standalone and session-linked)
+    // Calculate sales income from ALL POS orders - but only the product portion
+    // For orders linked to table sessions, we need to exclude the session cost from the amount
     const salesIncome = posOrders.reduce((total, order) => {
-      return total.plus(order.amount || 0);
+      // Calculate the product cost from order items
+      const productCost = order.orderItems.reduce((itemTotal, orderItem) => {
+        return itemTotal.plus(
+          new Decimal(orderItem.quantity).mul(orderItem.unitPrice)
+        );
+      }, new Decimal(0));
+
+      return total.plus(productCost);
     }, new Decimal(0));
+
+    console.log("Sales Income Debug:", {
+      companyId,
+      posOrdersAnalysis: posOrders.map((order) => {
+        const productCost = order.orderItems.reduce((itemTotal, orderItem) => {
+          return itemTotal.plus(
+            new Decimal(orderItem.quantity).mul(orderItem.unitPrice)
+          );
+        }, new Decimal(0));
+
+        return {
+          id: order.id,
+          totalAmount: order.amount,
+          productCost: productCost.toFixed(2),
+          hasTableSession: !!order.tableSessionId,
+          itemCount: order.orderItems.length,
+        };
+      }),
+      totalSalesIncome: salesIncome.toFixed(2),
+      note: "Sales income now calculated from order items only, excluding any table session costs embedded in order amount",
+    });
 
     // Calculate table rent income from table sessions (includes session rental + any linked POS orders)
     // Use business hours for income data
@@ -290,7 +313,7 @@ export async function GET(request: NextRequest) {
         endedAt: session.endedAt?.toISOString(),
         status: session.status,
       })),
-      note: "Table session totalCost includes session rental + any linked POS orders. Using business hours for income data.",
+      note: "Table session totalCost includes session rental + any linked POS orders.",
     });
 
     const tableRentIncome = tableSessions.reduce((total, session) => {

@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import {
   useTableSessionByIdQuery,
   useEndTableSessionMutation,
+  TableSession,
 } from "@/hooks/use-table-sessions-query";
 import { Button } from "@/components/ui/button";
 import {
@@ -42,7 +43,7 @@ export default function TableSessionDetailsPage() {
   const sessionId = params?.sessionId as string;
 
   const { data: session, isLoading } = useTableSessionByIdQuery(sessionId);
-  const endSessionMutation = useEndTableSessionMutation();
+  const endSessionMutation = useEndTableSessionMutation({ skipRedirect: true });
 
   const [duration, setDuration] = useState<string>("");
   const [currentCost, setCurrentCost] = useState<number | null>(null);
@@ -93,6 +94,22 @@ export default function TableSessionDetailsPage() {
 
   const handleMoveSession = () => {
     setMoveSessionDialogOpen(true);
+  };
+
+  // Handle successful session ending with proper redirection
+  const handleSessionEnded = (endedSession: TableSession) => {
+    // Check if we need to redirect to POS for payment
+    const hasSessionCost = endedSession.totalCost && endedSession.totalCost > 0;
+    const hasTrackedItems =
+      endedSession.trackedItems && endedSession.trackedItems.length > 0;
+
+    if (hasSessionCost || hasTrackedItems) {
+      // Redirect to POS with the session ID as a parameter
+      router.push(`/pos?tab=new&sessionId=${endedSession.id}`);
+    } else {
+      // Just go back to the table detail page if no cost and no items
+      router.push(`/tables/${endedSession.tableId}`);
+    }
   };
 
   const getStatusColor = (status: SessionStatus) => {
@@ -153,6 +170,7 @@ export default function TableSessionDetailsPage() {
               <EndSessionDialog
                 sessionId={sessionId}
                 sessionStartTime={new Date(session.startedAt)}
+                onSessionEnded={handleSessionEnded}
               >
                 <Button
                   size="sm"

@@ -201,7 +201,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Calculate financial data from POS orders (sales income)
-    // Include ALL POS orders, both standalone and linked to table sessions
+    // Include ALL POS orders, both standalone and session-linked
     // Use business hours for income data
     const posOrders = await prisma.posOrder.findMany({
       where: {
@@ -211,16 +211,23 @@ export async function POST(request: NextRequest) {
           lte: parsedEndDate,
         },
         paymentStatus: "PAID",
-        // Remove the tableSessionId: null filter to include ALL POS orders
       },
       include: {
         orderItems: true,
       },
     });
 
-    // Calculate sales income from ALL POS orders (both standalone and session-linked)
+    // Calculate sales income from ALL POS orders - but only the product portion
+    // For orders linked to table sessions, we need to exclude the session cost from the amount
     const salesIncome = posOrders.reduce((total, order) => {
-      return total.plus(order.amount || 0);
+      // Calculate the product cost from order items
+      const productCost = order.orderItems.reduce((itemTotal, orderItem) => {
+        return itemTotal.plus(
+          new Decimal(orderItem.quantity).mul(orderItem.unitPrice)
+        );
+      }, new Decimal(0));
+
+      return total.plus(productCost);
     }, new Decimal(0));
 
     // Calculate table rent income from table sessions (includes session rental + any linked POS orders)

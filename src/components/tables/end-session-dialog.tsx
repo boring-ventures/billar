@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useEndTableSessionMutation } from "@/hooks/use-table-sessions-query";
+import {
+  useEndTableSessionMutation,
+  TableSession,
+} from "@/hooks/use-table-sessions-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -36,18 +39,20 @@ interface EndSessionDialogProps {
   sessionId: string;
   sessionStartTime: Date;
   children?: React.ReactNode;
+  onSessionEnded?: (endedSession: TableSession) => void;
 }
 
 export function EndSessionDialog({
   sessionId,
   sessionStartTime,
   children,
+  onSessionEnded,
 }: EndSessionDialogProps) {
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showCustomTime, setShowCustomTime] = useState(false);
-  const endSessionMutation = useEndTableSessionMutation();
+  const endSessionMutation = useEndTableSessionMutation({ skipRedirect: true });
 
   // Update current time every second
   useEffect(() => {
@@ -81,8 +86,12 @@ export function EndSessionDialog({
   const handleEndNow = async () => {
     setIsSubmitting(true);
     try {
-      await endSessionMutation.mutateAsync({ sessionId });
+      const result = await endSessionMutation.mutateAsync({ sessionId });
       setOpen(false);
+      // Call the callback if provided
+      if (onSessionEnded) {
+        onSessionEnded(result);
+      }
     } catch (error) {
       console.error("Failed to end session:", error);
     } finally {
@@ -133,11 +142,15 @@ export function EndSessionDialog({
 
     setIsSubmitting(true);
     try {
-      await endSessionMutation.mutateAsync({
+      const result = await endSessionMutation.mutateAsync({
         sessionId,
         endedAt: customEndTime.toISOString(),
       });
       setOpen(false);
+      // Call the callback if provided
+      if (onSessionEnded) {
+        onSessionEnded(result);
+      }
     } catch (error) {
       console.error("Failed to end session:", error);
     } finally {

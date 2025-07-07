@@ -140,6 +140,22 @@ export async function POST(request: NextRequest) {
       expenseStartDate.setHours(0, 0, 0, 0);
       expenseEndDate = new Date(selectedDate);
       expenseEndDate.setHours(23, 59, 59, 999);
+
+      console.log("Business Day Calculation Debug (Generate):", {
+        selectedDate: selectedDate.toISOString(),
+        businessConfig: {
+          useIndividualHours: businessConfig.useIndividualHours,
+          generalHours: businessConfig.generalHours,
+          individualHours: businessConfig.individualHours,
+        },
+        calculatedBusinessDayStart: businessDayStart.toISOString(),
+        calculatedBusinessDayEnd: businessDayEnd.toISOString(),
+        spansMultipleDays:
+          businessDayEnd.getDate() !== businessDayStart.getDate(),
+        hoursDifference:
+          (businessDayEnd.getTime() - businessDayStart.getTime()) /
+          (1000 * 60 * 60),
+      });
     } else {
       // For custom reports or when no business config, use provided dates for both
       parsedStartDate = new Date(startDate);

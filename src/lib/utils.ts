@@ -225,8 +225,16 @@ export function getBusinessDayEnd(
     businessEnd.setHours(hours, minutes, 59, 999);
 
     // Handle business that closes after midnight (next day)
-    if (dayConfig.start && dayConfig.end < dayConfig.start) {
-      businessEnd.setDate(businessEnd.getDate() + 1);
+    // Convert time strings to minutes for proper comparison
+    if (dayConfig.start && dayConfig.end) {
+      const [startHour, startMin] = dayConfig.start.split(":").map(Number);
+      const [endHour, endMin] = dayConfig.end.split(":").map(Number);
+      const startMinutes = startHour * 60 + startMin;
+      const endMinutes = endHour * 60 + endMin;
+
+      if (endMinutes < startMinutes) {
+        businessEnd.setDate(businessEnd.getDate() + 1);
+      }
     }
 
     return businessEnd;
@@ -244,11 +252,20 @@ export function getBusinessDayEnd(
   businessEnd.setHours(hours, minutes, 59, 999);
 
   // Handle business that closes after midnight (next day)
-  if (
-    businessConfig.generalHours.start &&
-    businessConfig.generalHours.end < businessConfig.generalHours.start
-  ) {
-    businessEnd.setDate(businessEnd.getDate() + 1);
+  // Convert time strings to minutes for proper comparison
+  if (businessConfig.generalHours.start && businessConfig.generalHours.end) {
+    const [startHour, startMin] = businessConfig.generalHours.start
+      .split(":")
+      .map(Number);
+    const [endHour, endMin] = businessConfig.generalHours.end
+      .split(":")
+      .map(Number);
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+
+    if (endMinutes < startMinutes) {
+      businessEnd.setDate(businessEnd.getDate() + 1);
+    }
   }
 
   return businessEnd;
@@ -464,8 +481,16 @@ export function getBusinessDayEndLegacy(
   businessEnd.setHours(hours, minutes, 59, 999);
 
   // Handle business that closes after midnight (next day)
-  if (businessHours.start && businessHours.end < businessHours.start) {
-    businessEnd.setDate(businessEnd.getDate() + 1);
+  // Convert time strings to minutes for proper comparison
+  if (businessHours.start && businessHours.end) {
+    const [startHour, startMin] = businessHours.start.split(":").map(Number);
+    const [endHour, endMin] = businessHours.end.split(":").map(Number);
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+
+    if (endMinutes < startMinutes) {
+      businessEnd.setDate(businessEnd.getDate() + 1);
+    }
   }
 
   return businessEnd;

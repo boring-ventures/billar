@@ -214,6 +214,21 @@ export async function POST(request: NextRequest) {
       businessConfigType: businessConfig?.useIndividualHours
         ? "individual"
         : "general",
+      detailedBusinessConfig: businessConfig,
+    });
+
+    // Debug business hours configuration
+    console.log("Business Hours Configuration Debug (Generate):", {
+      companyId,
+      rawCompanyData: {
+        businessHoursStart: company?.businessHoursStart,
+        businessHoursEnd: company?.businessHoursEnd,
+        useIndividualHours: company?.useIndividualHours,
+        individualDayHours: company?.individualDayHours,
+        timezone: company?.timezone,
+        operatingDays: company?.operatingDays,
+      },
+      parsedBusinessConfig: businessConfig,
     });
 
     // Calculate financial data from POS orders (sales income)

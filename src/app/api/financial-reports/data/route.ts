@@ -206,6 +206,87 @@ export async function GET(request: NextRequest) {
       businessConfigType: businessConfig?.useIndividualHours
         ? "individual"
         : "general",
+      detailedBusinessConfig: businessConfig,
+    });
+
+    // First, let's check what business hours are actually configured
+    console.log("Business Hours Configuration Debug:", {
+      companyId,
+      rawCompanyData: {
+        businessHoursStart: company?.businessHoursStart,
+        businessHoursEnd: company?.businessHoursEnd,
+        useIndividualHours: company?.useIndividualHours,
+        individualDayHours: company?.individualDayHours,
+        timezone: company?.timezone,
+        operatingDays: company?.operatingDays,
+      },
+      parsedBusinessConfig: businessConfig,
+    });
+
+    // Let's also check what orders exist around the time period
+    const allOrdersInTimeframe = await prisma.posOrder.findMany({
+      where: {
+        companyId,
+        createdAt: {
+          gte: new Date(new Date(startDate).getTime() - 24 * 60 * 60 * 1000), // 24 hours before
+          lte: new Date(new Date(endDate).getTime() + 24 * 60 * 60 * 1000), // 24 hours after
+        },
+        paymentStatus: "PAID",
+      },
+      select: {
+        id: true,
+        amount: true,
+        createdAt: true,
+        tableSessionId: true,
+        orderItems: {
+          select: {
+            quantity: true,
+            unitPrice: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+    });
+
+    console.log("All POS Orders Around Timeframe Debug:", {
+      companyId,
+      searchTimeframe: {
+        extendedStart: new Date(
+          new Date(startDate).getTime() - 24 * 60 * 60 * 1000
+        ).toISOString(),
+        selectedStart: startDate,
+        selectedEnd: endDate,
+        extendedEnd: new Date(
+          new Date(endDate).getTime() + 24 * 60 * 60 * 1000
+        ).toISOString(),
+      },
+      businessDateRange: {
+        businessStart: parsedStartDate.toISOString(),
+        businessEnd: parsedEndDate.toISOString(),
+      },
+      foundOrders: allOrdersInTimeframe.length,
+      orderDetails: allOrdersInTimeframe.map((order) => {
+        const productCost = order.orderItems.reduce(
+          (sum, item) => sum + item.quantity * Number(item.unitPrice),
+          0
+        );
+
+        return {
+          id: order.id,
+          createdAt: order.createdAt.toISOString(),
+          totalAmount: order.amount,
+          productCost,
+          hasTableSession: !!order.tableSessionId,
+          isWithinBusinessHours:
+            order.createdAt >= parsedStartDate &&
+            order.createdAt <= parsedEndDate,
+          hoursSinceBusinessStart:
+            (order.createdAt.getTime() - parsedStartDate.getTime()) /
+            (1000 * 60 * 60),
+        };
+      }),
     });
 
     // First, let's check if there are any POS orders for this company at all
